@@ -19,22 +19,30 @@ export function ExportCommandesButton({
   function handleExport() {
     const headers = [
       "numero",
+      "code_barre_colis",
       "client",
       "telephone",
+      "adresse",
       "projet",
       "statut",
       "poids_kg",
       "montant_total_eur",
+      "description_contenu",
     ];
     const rows = commandes.map((c) =>
       [
         c.numero.toString(),
+        c.code_barre_colis ?? "",
         c.clients?.nom ?? "",
-        c.clients?.telephone ?? "",
+        c.clients?.telephone
+          ? `${c.clients.telephone_pays ?? ""} ${c.clients.telephone}`
+          : "",
+        c.clients?.adresse ?? "",
         c.projets?.nom ?? "",
         STATUT_LABELS[c.statut],
         c.poids_kg.toString(),
         c.montant_total.toString(),
+        c.description ?? "",
       ]
         .map(csvEscape)
         .join(";")

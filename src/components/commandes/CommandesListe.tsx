@@ -122,7 +122,15 @@ export function CommandesListe({
                       >
                         Imprimer
                       </Link>
-                      <NotifButtons commandeId={c.id} />
+                      <NotifButtons
+                        commandeId={c.id}
+                        numero={c.numero}
+                        clientNom={c.clients?.nom ?? ""}
+                        clientTelephone={c.clients?.telephone ?? null}
+                        clientTelephonePays={c.clients?.telephone_pays ?? null}
+                        poidsKg={c.poids_kg}
+                        montantTotal={c.montant_total}
+                      />
                       <SupprimerCommandeButton
                         commandeId={c.id}
                         numero={c.numero}
@@ -184,7 +192,15 @@ export function CommandesListe({
                 >
                   Imprimer
                 </Link>
-                <NotifButtons commandeId={c.id} />
+                <NotifButtons
+                        commandeId={c.id}
+                        numero={c.numero}
+                        clientNom={c.clients?.nom ?? ""}
+                        clientTelephone={c.clients?.telephone ?? null}
+                        clientTelephonePays={c.clients?.telephone_pays ?? null}
+                        poidsKg={c.poids_kg}
+                        montantTotal={c.montant_total}
+                      />
                 <SupprimerCommandeButton commandeId={c.id} numero={c.numero} />
               </div>
             </div>

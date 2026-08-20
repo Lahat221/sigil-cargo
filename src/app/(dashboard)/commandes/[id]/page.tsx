@@ -36,7 +36,12 @@ type CommandeDetail = {
   video_url: string | null;
   date_livraison_reelle: string | null;
   created_at: string;
-  clients: { nom: string; telephone: string | null; adresse: string | null } | null;
+  clients: {
+    nom: string;
+    telephone: string | null;
+    telephone_pays: string | null;
+    adresse: string | null;
+  } | null;
   projets: { nom: string } | null;
   produits: { nom: string } | null;
 };
@@ -51,7 +56,7 @@ export default async function CommandeDetailPage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, prix_par_kg, enveloppe, nombre_paquets, montant_total, adresse_livraison, description, remarque_interne, code_barre_colis, photo_urls, video_url, date_livraison_reelle, created_at, clients(nom, telephone, adresse), projets(nom), produits(nom)"
+      "id, numero, statut, poids_kg, prix_par_kg, enveloppe, nombre_paquets, montant_total, adresse_livraison, description, remarque_interne, code_barre_colis, photo_urls, video_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
     )
     .eq("id", params.id)
     .maybeSingle<CommandeDetail>();
@@ -129,7 +134,15 @@ export default async function CommandeDetailPage({
           <IconPrinter size={14} />
           Imprimer
         </Link>
-        <NotifButtons commandeId={commande.id} />
+        <NotifButtons
+          commandeId={commande.id}
+          numero={commande.numero}
+          clientNom={commande.clients?.nom ?? ""}
+          clientTelephone={commande.clients?.telephone ?? null}
+          clientTelephonePays={commande.clients?.telephone_pays ?? null}
+          poidsKg={commande.poids_kg}
+          montantTotal={commande.montant_total}
+        />
         <SupprimerCommandeButton
           commandeId={commande.id}
           numero={commande.numero}

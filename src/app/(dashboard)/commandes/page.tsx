@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { FiltresBar } from "@/components/commandes/FiltresBar";
 import { CommandesListe } from "@/components/commandes/CommandesListe";
 import { ExportCommandesButton } from "@/components/commandes/ExportCommandesButton";
+import { ActualiserButton } from "@/components/commandes/ActualiserButton";
+import { RecalculerPrixButton } from "@/components/commandes/RecalculerPrixButton";
 import { IconGrid, IconPlus } from "@/components/ui/Icons";
 import type { CommandeListItem } from "@/components/commandes/types";
 import type { StatutCommande } from "@/types/database.types";
@@ -27,7 +29,7 @@ export default async function CommandesPage({
   let query = supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, montant_total, created_at, clients(nom, telephone), projets(nom)"
+      "id, numero, statut, poids_kg, montant_total, description, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom)"
     )
     .order("created_at", { ascending: false });
 
@@ -77,7 +79,8 @@ export default async function CommandesPage({
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-white">Commandes</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <ActualiserButton />
           <Link
             href="/commandes/pipeline"
             className="flex items-center gap-1.5 rounded-md border border-white/25 px-3 py-1.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10"
@@ -85,6 +88,7 @@ export default async function CommandesPage({
             <IconGrid size={15} />
             Pipeline
           </Link>
+          <RecalculerPrixButton />
           <ExportCommandesButton commandes={commandes} />
           <Link
             href="/commandes/nouvelle"

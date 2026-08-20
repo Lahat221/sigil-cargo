@@ -104,19 +104,71 @@ export async function queuerNotification(
     telephone: string | null;
     telephone_pays: string | null;
   } | null;
-  const destinataire = client?.telephone
-    ? `${client.telephone_pays ?? ""}${client.telephone}`
-    : null;
+
+  let destinataire: string | null = null;
+  if (client?.telephone) {
+    const chiffres = client.telephone.replace(/\D/g, "");
+    const indicatif = (client.telephone_pays ?? "+33").replace(/\D/g, "");
+    destinataire = chiffres.startsWith(indicatif)
+      ? chiffres
+      : indicatif + chiffres;
+  }
 
   const { error } = await supabase.from("notifications_a_envoyer").insert({
     commande_id: commandeId,
     statut_commande: statutCommande,
     destinataire_telephone: destinataire,
+    envoyee: true,
+    envoyee_at: new Date().toISOString(),
   });
 
   if (error) return { error: error.message };
 
   return { success: true };
+}
+
+export async function recalculerPrix(): Promise<
+  { error: string } | { success: true; nbMisAJour: number }
+> {
+  const supabase = createClient();
+
+  const { data: commandes, error: fetchError } = await supabase
+    .from("commandes")
+    .select("id, produit_id, prix_par_kg")
+    .not("statut", "in", "(livree,annulee)");
+
+  if (fetchError) return { error: fetchError.message };
+  if (!commandes || commandes.length === 0) {
+    return { success: true, nbMisAJour: 0 };
+  }
+
+  const { data: produits, error: produitsError } = await supabase
+    .from("produits")
+    .select("id, prix_par_kg");
+
+  if (produitsError) return { error: produitsError.message };
+
+  const prixParProduit = new Map(
+    (produits ?? []).map((p) => [p.id, p.prix_par_kg])
+  );
+
+  let nbMisAJour = 0;
+  for (const c of commandes) {
+    const prixActuel = prixParProduit.get(c.produit_id);
+    if (prixActuel === undefined || prixActuel === c.prix_par_kg) continue;
+
+    const { error } = await supabase
+      .from("commandes")
+      .update({ prix_par_kg: prixActuel })
+      .eq("id", c.id);
+    if (error) return { error: error.message };
+    nbMisAJour += 1;
+  }
+
+  revalidatePath("/commandes");
+  revalidatePath("/commandes/pipeline");
+  revalidatePath("/tableau-de-bord");
+  return { success: true, nbMisAJour };
 }
 
 export async function supprimerCommande(
