@@ -3,7 +3,6 @@ import Link from "next/link";
 import { IconArrowRight } from "@/components/ui/Icons";
 
 const MODULES: Record<string, string> = {
-  "projets-gp": "Projets GP",
   publicites: "Publicités",
   "charges-depenses": "Charges & Dépenses",
   "notifications-whatsapp": "Notifications WhatsApp",

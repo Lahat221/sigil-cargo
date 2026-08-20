@@ -56,7 +56,6 @@ function NavLink({
 }
 
 const MODULES_AVANT_CLIENTS = [
-  { slug: "projets-gp", label: "Projets GP", icon: <IconFolder size={17} /> },
   { slug: "publicites", label: "Publicités", icon: <IconMegaphone size={17} /> },
 ];
 
@@ -124,6 +123,13 @@ export function Sidebar() {
               icon={<IconGrid size={15} />}
             >
               Pipeline
+            </NavLink>
+            <NavLink
+              href="/projets"
+              active={pathname.startsWith("/projets")}
+              icon={<IconFolder size={17} />}
+            >
+              Projets Fret Aérien
             </NavLink>
             {MODULES_AVANT_CLIENTS.map((m) => (
               <NavLink
