@@ -15,12 +15,12 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <div className="hidden md:block">
+      <div className="hidden md:block print:hidden">
         <Sidebar />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-slate-200 bg-white">
+        <header className="border-b border-slate-200 bg-white print:hidden">
           <div className="flex items-center justify-between px-4 py-3 sm:px-6">
             <Link
               href="/tableau-de-bord"
