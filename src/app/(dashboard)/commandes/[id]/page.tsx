@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { StatutBadge, STATUT_LABELS } from "@/components/commandes/StatutBadge";
 import { StatutStepper } from "@/components/commandes/StatutStepper";
 import { SupprimerCommandeButton } from "@/components/commandes/SupprimerCommandeButton";
+import { NotifButtons } from "@/components/commandes/NotifButtons";
 import type { StatutCommande } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -103,13 +104,28 @@ export default async function CommandeDetailPage({
         </div>
       </div>
 
-      <div className="mb-4 flex items-center gap-4">
+      <div className="mb-4 flex flex-wrap items-center gap-4">
         <Link
           href={`/commandes/${commande.id}/modifier`}
           className="text-sm font-medium text-slate-700 hover:underline"
         >
           Modifier
         </Link>
+        <Link
+          href={`/commandes/${commande.id}/facture`}
+          target="_blank"
+          className="text-sm text-slate-600 hover:underline"
+        >
+          Facture
+        </Link>
+        <Link
+          href={`/commandes/${commande.id}/facture?print=1`}
+          target="_blank"
+          className="text-sm text-slate-600 hover:underline"
+        >
+          Imprimer
+        </Link>
+        <NotifButtons commandeId={commande.id} />
         <SupprimerCommandeButton
           commandeId={commande.id}
           numero={commande.numero}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StatutBadge } from "./StatutBadge";
 import { SupprimerCommandeButton } from "./SupprimerCommandeButton";
+import { NotifButtons } from "./NotifButtons";
 import type { CommandeListItem } from "./types";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
@@ -100,13 +101,28 @@ export function CommandesListe({
                     {montantFormatter.format(c.montant_total)}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <Link
                         href={`/commandes/${c.id}/modifier`}
                         className="text-sm text-slate-600 hover:underline"
                       >
                         Modifier
                       </Link>
+                      <Link
+                        href={`/commandes/${c.id}/facture`}
+                        target="_blank"
+                        className="text-sm text-slate-600 hover:underline"
+                      >
+                        Facture
+                      </Link>
+                      <Link
+                        href={`/commandes/${c.id}/facture?print=1`}
+                        target="_blank"
+                        className="text-sm text-slate-600 hover:underline"
+                      >
+                        Imprimer
+                      </Link>
+                      <NotifButtons commandeId={c.id} />
                       <SupprimerCommandeButton
                         commandeId={c.id}
                         numero={c.numero}
@@ -147,13 +163,28 @@ export function CommandesListe({
                   </span>
                 </div>
               </Link>
-              <div className="mt-3 flex items-center gap-3 border-t border-slate-100 pt-2">
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 pt-2">
                 <Link
                   href={`/commandes/${c.id}/modifier`}
                   className="text-sm text-slate-600 hover:underline"
                 >
                   Modifier
                 </Link>
+                <Link
+                  href={`/commandes/${c.id}/facture`}
+                  target="_blank"
+                  className="text-sm text-slate-600 hover:underline"
+                >
+                  Facture
+                </Link>
+                <Link
+                  href={`/commandes/${c.id}/facture?print=1`}
+                  target="_blank"
+                  className="text-sm text-slate-600 hover:underline"
+                >
+                  Imprimer
+                </Link>
+                <NotifButtons commandeId={c.id} />
                 <SupprimerCommandeButton commandeId={c.id} numero={c.numero} />
               </div>
             </div>

@@ -84,6 +84,41 @@ export async function updateCommande(
   return { success: true };
 }
 
+export async function queuerNotification(
+  commandeId: string,
+  statutCommande: StatutCommande
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+
+  const { data: commande, error: commandeError } = await supabase
+    .from("commandes")
+    .select("client_id, clients(telephone, telephone_pays)")
+    .eq("id", commandeId)
+    .single();
+
+  if (commandeError || !commande) {
+    return { error: "Commande introuvable." };
+  }
+
+  const client = commande.clients as unknown as {
+    telephone: string | null;
+    telephone_pays: string | null;
+  } | null;
+  const destinataire = client?.telephone
+    ? `${client.telephone_pays ?? ""}${client.telephone}`
+    : null;
+
+  const { error } = await supabase.from("notifications_a_envoyer").insert({
+    commande_id: commandeId,
+    statut_commande: statutCommande,
+    destinataire_telephone: destinataire,
+  });
+
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
+
 export async function supprimerCommande(
   commandeId: string
 ): Promise<{ error: string } | { success: true }> {
