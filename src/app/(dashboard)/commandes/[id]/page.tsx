@@ -119,7 +119,7 @@ export default async function CommandeDetailPage({
           Facture
         </Link>
         <Link
-          href={`/commandes/${commande.id}/facture?print=1`}
+          href={`/commandes/${commande.id}/etiquette?print=1`}
           target="_blank"
           className="text-sm text-slate-600 hover:underline"
         >

@@ -116,7 +116,7 @@ export function CommandesListe({
                         Facture
                       </Link>
                       <Link
-                        href={`/commandes/${c.id}/facture?print=1`}
+                        href={`/commandes/${c.id}/etiquette?print=1`}
                         target="_blank"
                         className="text-sm text-slate-600 hover:underline"
                       >
@@ -178,7 +178,7 @@ export function CommandesListe({
                   Facture
                 </Link>
                 <Link
-                  href={`/commandes/${c.id}/facture?print=1`}
+                  href={`/commandes/${c.id}/etiquette?print=1`}
                   target="_blank"
                   className="text-sm text-slate-600 hover:underline"
                 >
