@@ -226,6 +226,32 @@ export interface Database {
           }
         ];
       };
+      charges: {
+        Row: {
+          id: string;
+          libelle: string;
+          montant: number;
+          categorie: string | null;
+          date_charge: string;
+          facture_url: string | null;
+          remarque: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          libelle: string;
+          montant: number;
+          categorie?: string | null;
+          date_charge?: string;
+          facture_url?: string | null;
+          remarque?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["charges"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

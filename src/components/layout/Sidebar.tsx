@@ -61,11 +61,6 @@ const MODULES_AVANT_CLIENTS = [
 
 const MODULES_APRES_CLIENTS = [
   {
-    slug: "charges-depenses",
-    label: "Charges & Dépenses",
-    icon: <IconInvoice size={17} />,
-  },
-  {
     slug: "notifications-whatsapp",
     label: "Notifications WhatsApp",
     icon: <IconSend size={17} />,
@@ -147,6 +142,13 @@ export function Sidebar() {
               icon={<IconUsers size={17} />}
             >
               Clients
+            </NavLink>
+            <NavLink
+              href="/charges-depenses"
+              active={pathname.startsWith("/charges-depenses")}
+              icon={<IconInvoice size={17} />}
+            >
+              Charges & Dépenses
             </NavLink>
             {MODULES_APRES_CLIENTS.map((m) => (
               <NavLink

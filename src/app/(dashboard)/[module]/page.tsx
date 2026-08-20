@@ -4,7 +4,6 @@ import { IconArrowRight } from "@/components/ui/Icons";
 
 const MODULES: Record<string, string> = {
   publicites: "Publicités",
-  "charges-depenses": "Charges & Dépenses",
   "notifications-whatsapp": "Notifications WhatsApp",
   chat: "Chat",
   parametres: "Paramètres",

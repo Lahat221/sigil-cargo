@@ -157,6 +157,22 @@ create trigger trg_enqueue_notification
 after update on commandes
 for each row execute function enqueue_notification_statut();
 
+-- ---------- CHARGES & DEPENSES ----------
+create table charges (
+  id uuid primary key default gen_random_uuid(),
+  libelle text not null,
+  montant numeric(10,2) not null,
+  categorie text,
+  date_charge date not null default current_date,
+  facture_url text,
+  remarque text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Bucket de stockage "charges-factures" créé via l'API Storage (public: false).
+-- Policies sur storage.objects pour ce bucket : voir bloc RLS ci-dessous.
+
 -- ---------- RLS (Row Level Security) - à activer et affiner selon l'auth ----------
 alter table clients enable row level security;
 alter table projets enable row level security;
@@ -164,6 +180,7 @@ alter table produits enable row level security;
 alter table commandes enable row level security;
 alter table commandes_historique enable row level security;
 alter table notifications_a_envoyer enable row level security;
+alter table charges enable row level security;
 
 -- Politique simple (mono-utilisateur pour commencer) : tout utilisateur authentifié a accès complet.
 create policy "authenticated_all" on clients for all using (auth.role() = 'authenticated');
@@ -172,3 +189,16 @@ create policy "authenticated_all" on produits for all using (auth.role() = 'auth
 create policy "authenticated_all" on commandes for all using (auth.role() = 'authenticated');
 create policy "authenticated_all" on commandes_historique for all using (auth.role() = 'authenticated');
 create policy "authenticated_all" on notifications_a_envoyer for all using (auth.role() = 'authenticated');
+create policy "authenticated_all" on charges for all using (auth.role() = 'authenticated');
+
+create policy "authenticated_read_charges_factures"
+on storage.objects for select
+using (bucket_id = 'charges-factures' and auth.role() = 'authenticated');
+
+create policy "authenticated_upload_charges_factures"
+on storage.objects for insert
+with check (bucket_id = 'charges-factures' and auth.role() = 'authenticated');
+
+create policy "authenticated_delete_charges_factures"
+on storage.objects for delete
+using (bucket_id = 'charges-factures' and auth.role() = 'authenticated');
