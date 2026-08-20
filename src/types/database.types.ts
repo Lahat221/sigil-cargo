@@ -261,6 +261,59 @@ export interface Database {
           }
         ];
       };
+      campagnes_whatsapp: {
+        Row: {
+          id: string;
+          nom: string;
+          message: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          nom: string;
+          message: string;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["campagnes_whatsapp"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      campagnes_whatsapp_destinataires: {
+        Row: {
+          id: string;
+          campagne_id: string;
+          client_id: string;
+          envoyee: boolean;
+          envoyee_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          campagne_id: string;
+          client_id: string;
+          envoyee?: boolean;
+          envoyee_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["campagnes_whatsapp_destinataires"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "campagnes_whatsapp_destinataires_campagne_id_fkey";
+            columns: ["campagne_id"];
+            referencedRelation: "campagnes_whatsapp";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "campagnes_whatsapp_destinataires_client_id_fkey";
+            columns: ["client_id"];
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

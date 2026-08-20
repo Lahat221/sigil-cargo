@@ -157,6 +157,23 @@ create trigger trg_enqueue_notification
 after update on commandes
 for each row execute function enqueue_notification_statut();
 
+-- ---------- CAMPAGNES WHATSAPP ----------
+create table campagnes_whatsapp (
+  id uuid primary key default gen_random_uuid(),
+  nom text not null,
+  message text not null,
+  created_at timestamptz default now()
+);
+
+create table campagnes_whatsapp_destinataires (
+  id uuid primary key default gen_random_uuid(),
+  campagne_id uuid references campagnes_whatsapp(id) on delete cascade not null,
+  client_id uuid references clients(id) not null,
+  envoyee boolean default false,
+  envoyee_at timestamptz,
+  created_at timestamptz default now()
+);
+
 -- ---------- CHARGES & DEPENSES ----------
 create table charges (
   id uuid primary key default gen_random_uuid(),
@@ -182,6 +199,8 @@ alter table commandes enable row level security;
 alter table commandes_historique enable row level security;
 alter table notifications_a_envoyer enable row level security;
 alter table charges enable row level security;
+alter table campagnes_whatsapp enable row level security;
+alter table campagnes_whatsapp_destinataires enable row level security;
 
 -- Politique simple (mono-utilisateur pour commencer) : tout utilisateur authentifié a accès complet.
 create policy "authenticated_all" on clients for all using (auth.role() = 'authenticated');
@@ -191,6 +210,8 @@ create policy "authenticated_all" on commandes for all using (auth.role() = 'aut
 create policy "authenticated_all" on commandes_historique for all using (auth.role() = 'authenticated');
 create policy "authenticated_all" on notifications_a_envoyer for all using (auth.role() = 'authenticated');
 create policy "authenticated_all" on charges for all using (auth.role() = 'authenticated');
+create policy "authenticated_all" on campagnes_whatsapp for all using (auth.role() = 'authenticated');
+create policy "authenticated_all" on campagnes_whatsapp_destinataires for all using (auth.role() = 'authenticated');
 
 create policy "authenticated_read_charges_factures"
 on storage.objects for select

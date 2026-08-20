@@ -60,11 +60,6 @@ const MODULES_AVANT_CLIENTS = [
 ];
 
 const MODULES_APRES_CLIENTS = [
-  {
-    slug: "notifications-whatsapp",
-    label: "Notifications WhatsApp",
-    icon: <IconSend size={17} />,
-  },
   { slug: "chat", label: "Chat", icon: <IconChat size={17} /> },
   { slug: "parametres", label: "Paramètres", icon: <IconSettings size={17} /> },
 ];
@@ -149,6 +144,13 @@ export function Sidebar() {
               icon={<IconInvoice size={17} />}
             >
               Charges & Dépenses
+            </NavLink>
+            <NavLink
+              href="/notifications-whatsapp"
+              active={pathname.startsWith("/notifications-whatsapp")}
+              icon={<IconSend size={17} />}
+            >
+              Notifications WhatsApp
             </NavLink>
             {MODULES_APRES_CLIENTS.map((m) => (
               <NavLink
