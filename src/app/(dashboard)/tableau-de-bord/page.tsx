@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { StatutBadge, STATUT_LABELS } from "@/components/commandes/StatutBadge";
 import { DashboardFiltres } from "@/components/dashboard/DashboardFiltres";
+import { BarChart } from "@/components/dashboard/BarChart";
 import type { StatutCommande } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +10,10 @@ export const dynamic = "force-dynamic";
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
   currency: "EUR",
+});
+const jourLabelFormatter = new Intl.DateTimeFormat("fr-FR", {
+  day: "2-digit",
+  month: "2-digit",
 });
 
 const STATUTS_PIPELINE: StatutCommande[] = [
@@ -50,6 +55,27 @@ function calculerPeriode(
     };
   }
   return { debut: null, fin: null };
+}
+
+function joursDeLaPeriode(debut: string | null, fin: string | null): Date[] {
+  const finDate = fin ? new Date(fin) : new Date();
+  let debutDate: Date;
+  if (debut) {
+    debutDate = new Date(debut);
+  } else {
+    debutDate = new Date(finDate);
+    debutDate.setDate(debutDate.getDate() - 13);
+  }
+  const jours: Date[] = [];
+  const cur = new Date(debutDate);
+  cur.setHours(0, 0, 0, 0);
+  const end = new Date(finDate);
+  end.setHours(0, 0, 0, 0);
+  while (cur <= end && jours.length < 60) {
+    jours.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return jours;
 }
 
 export default async function TableauDeBordPage({
@@ -107,6 +133,32 @@ export default async function TableauDeBordPage({
     Array.from(poidsParProduit.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ??
     "—";
 
+  const poidsTotal = actives.reduce((sum, c) => sum + c.poids_kg, 0);
+
+  const jours = joursDeLaPeriode(debut, fin);
+  const caParJourMap = new Map<string, number>();
+  for (const c of actives) {
+    const cle = c.created_at.slice(0, 10);
+    caParJourMap.set(cle, (caParJourMap.get(cle) ?? 0) + c.montant_total);
+  }
+  const caParJour = jours.map((j) => {
+    const cle = j.toISOString().slice(0, 10);
+    return {
+      label: jourLabelFormatter.format(j),
+      value: caParJourMap.get(cle) ?? 0,
+    };
+  });
+
+  const poidsParProjetMap = new Map<string, number>();
+  for (const c of actives) {
+    const nom = c.projets?.nom ?? "—";
+    poidsParProjetMap.set(nom, (poidsParProjetMap.get(nom) ?? 0) + c.poids_kg);
+  }
+  const poidsParProjet = Array.from(poidsParProjetMap.entries())
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
+
   const recentes = toutes.slice(0, 8);
 
   return (
@@ -118,12 +170,18 @@ export default async function TableauDeBordPage({
 
       <DashboardFiltres projets={projets ?? []} />
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Chiffre d'affaires"
           valeur={montantFormatter.format(chiffreAffaires)}
           sousTitre={`${actives.length} commande(s)`}
           couleur="bg-green-50 text-green-600"
+        />
+        <KpiCard
+          label="Poids total"
+          valeur={`${poidsTotal.toLocaleString("fr-FR")} kg`}
+          sousTitre="commandes actives"
+          couleur="bg-purple-50 text-purple-600"
         />
         <KpiCard
           label="Commandes"
@@ -138,6 +196,39 @@ export default async function TableauDeBordPage({
           couleur="bg-amber-50 text-amber-600"
           petit
         />
+      </div>
+
+      <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h2 className="mb-1 text-sm font-medium text-slate-700">
+            Chiffre d&apos;affaires par jour
+          </h2>
+          <p className="mb-4 text-xs text-slate-400">
+            {debut ? "Période sélectionnée" : "14 derniers jours"}
+          </p>
+          <BarChart
+            data={caParJour}
+            color="#D3A238"
+            formatValue={(v) => montantFormatter.format(v)}
+          />
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h2 className="mb-1 text-sm font-medium text-slate-700">
+            Poids par projet
+          </h2>
+          <p className="mb-4 text-xs text-slate-400">en kg, projets actifs</p>
+          {poidsParProjet.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-400">
+              Aucune donnée.
+            </p>
+          ) : (
+            <BarChart
+              data={poidsParProjet}
+              color="#0A1A33"
+              formatValue={(v) => `${v.toLocaleString("fr-FR")} kg`}
+            />
+          )}
+        </div>
       </div>
 
       <div className="mb-8 rounded-lg border border-slate-200 bg-white p-5">
