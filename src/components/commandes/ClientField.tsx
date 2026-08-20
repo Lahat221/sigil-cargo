@@ -156,7 +156,8 @@ export function ClientField({
             </select>
             <input
               type="tel"
-              placeholder="Téléphone"
+              placeholder="Téléphone *"
+              required
               value={newClient.telephone}
               onChange={(e) =>
                 setNewClient((c) => ({ ...c, telephone: e.target.value }))

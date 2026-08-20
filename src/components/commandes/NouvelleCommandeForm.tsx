@@ -64,14 +64,15 @@ export function NouvelleCommandeForm({
 
   const clientPret =
     clientSelection.clientId !== null ||
-    (clientSelection.nouveauClient?.nom.trim().length ?? 0) > 0;
+    ((clientSelection.nouveauClient?.nom.trim().length ?? 0) > 0 &&
+      (clientSelection.nouveauClient?.telephone.trim().length ?? 0) > 0);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
 
     if (!clientPret) {
-      setError("Sélectionne ou crée un client.");
+      setError("Le nom et le téléphone du client sont requis.");
       return;
     }
     if (!projetId) {

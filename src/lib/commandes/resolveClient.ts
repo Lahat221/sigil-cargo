@@ -18,6 +18,8 @@ export async function resolveClientId(
 
   const { nom, telephone, telephonePays, adresse } = nouveauClient;
   if (!nom.trim()) return { error: "Le nom du client est requis." };
+  if (!telephone.trim())
+    return { error: "Le téléphone du client est requis." };
 
   // Dernier filet anti-doublon avant création, au cas où un client
   // correspondant aurait été créé entre la recherche et la soumission.
