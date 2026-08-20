@@ -1,5 +1,4 @@
 const CHART_HEIGHT = 180;
-const MAX_BAR_WIDTH = 24;
 
 function niceMax(value: number) {
   if (value <= 0) return 10;

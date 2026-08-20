@@ -324,8 +324,8 @@ export function EditCommandeForm({
           {keptPhotos.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
               {keptPhotos.map((photo) => (
-                // eslint-disable-next-line @next/next/no-img-element
                 <div key={photo.path} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={photo.url}
                     alt="Photo existante"
