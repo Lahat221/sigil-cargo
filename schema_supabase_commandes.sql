@@ -160,6 +160,7 @@ for each row execute function enqueue_notification_statut();
 -- ---------- CHARGES & DEPENSES ----------
 create table charges (
   id uuid primary key default gen_random_uuid(),
+  projet_id uuid references projets(id) not null,  -- chaque charge est rattachée à un fret
   libelle text not null,
   montant numeric(10,2) not null,
   categorie text,

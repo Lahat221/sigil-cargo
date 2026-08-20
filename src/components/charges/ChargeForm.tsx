@@ -23,6 +23,8 @@ function todayIso() {
 
 export function ChargeForm({
   chargeId,
+  projets,
+  initialProjetId = "",
   initialLibelle = "",
   initialMontant = "",
   initialCategorie = "",
@@ -32,6 +34,8 @@ export function ChargeForm({
   initialFactureUrlSigned = null,
 }: {
   chargeId?: string;
+  projets: { id: string; nom: string }[];
+  initialProjetId?: string;
   initialLibelle?: string;
   initialMontant?: string;
   initialCategorie?: string;
@@ -41,6 +45,7 @@ export function ChargeForm({
   initialFactureUrlSigned?: string | null;
 }) {
   const router = useRouter();
+  const [projetId, setProjetId] = useState(initialProjetId || projets[0]?.id || "");
   const [libelle, setLibelle] = useState(initialLibelle);
   const [montant, setMontant] = useState(initialMontant);
   const [categorie, setCategorie] = useState(initialCategorie);
@@ -58,6 +63,10 @@ export function ChargeForm({
     e.preventDefault();
     setError(null);
 
+    if (!projetId) {
+      setError("Sélectionne un projet (fret).");
+      return;
+    }
     const montantNum = parseFloat(montant);
     if (Number.isNaN(montantNum) || montantNum < 0) {
       setError("Indique un montant valide.");
@@ -79,6 +88,7 @@ export function ChargeForm({
       }
 
       const input = {
+        projetId,
         libelle,
         montant: montantNum,
         categorie,
@@ -110,6 +120,25 @@ export function ChargeForm({
       onSubmit={handleSubmit}
       className="max-w-lg space-y-4 rounded-xl border border-slate-200/70 bg-white p-6 shadow-sm"
     >
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Projet (fret) *
+        </label>
+        <select
+          required
+          value={projetId}
+          onChange={(e) => setProjetId(e.target.value)}
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy/20"
+        >
+          {projets.length === 0 && <option value="">Aucun projet</option>}
+          {projets.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nom}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">
           Libellé *

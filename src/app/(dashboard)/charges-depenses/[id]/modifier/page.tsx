@@ -12,11 +12,16 @@ export default async function ModifierChargePage({
 }) {
   const supabase = createClient();
 
-  const { data: charge } = await supabase
-    .from("charges")
-    .select("id, libelle, montant, categorie, date_charge, remarque, facture_url")
-    .eq("id", params.id)
-    .maybeSingle();
+  const [{ data: charge }, { data: projets }] = await Promise.all([
+    supabase
+      .from("charges")
+      .select(
+        "id, projet_id, libelle, montant, categorie, date_charge, remarque, facture_url"
+      )
+      .eq("id", params.id)
+      .maybeSingle(),
+    supabase.from("projets").select("id, nom").order("created_at", { ascending: false }),
+  ]);
 
   if (!charge) notFound();
 
@@ -42,6 +47,8 @@ export default async function ModifierChargePage({
 
       <ChargeForm
         chargeId={charge.id}
+        projets={projets ?? []}
+        initialProjetId={charge.projet_id}
         initialLibelle={charge.libelle}
         initialMontant={charge.montant.toString()}
         initialCategorie={charge.categorie ?? ""}

@@ -1,7 +1,16 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import { ChargeForm } from "@/components/charges/ChargeForm";
 
-export default function NouvelleChargePage() {
+export const dynamic = "force-dynamic";
+
+export default async function NouvelleChargePage() {
+  const supabase = createClient();
+  const { data: projets } = await supabase
+    .from("projets")
+    .select("id, nom")
+    .order("created_at", { ascending: false });
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
@@ -14,7 +23,7 @@ export default function NouvelleChargePage() {
         </Link>
       </div>
 
-      <ChargeForm />
+      <ChargeForm projets={projets ?? []} />
     </div>
   );
 }

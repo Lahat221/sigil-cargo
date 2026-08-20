@@ -17,21 +17,50 @@ const STATUT_LABELS: Record<string, string> = {
 };
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
+const montantFormatter = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+});
 
 export default async function ProjetsPage() {
   const supabase = createClient();
 
-  const [{ data: projets, error }, { data: commandes }] = await Promise.all([
-    supabase
-      .from("projets")
-      .select("id, nom, statut, date_depart, date_arrivee")
-      .order("created_at", { ascending: false }),
-    supabase.from("commandes").select("projet_id"),
-  ]);
+  const [{ data: projets, error }, { data: commandes }, { data: charges }] =
+    await Promise.all([
+      supabase
+        .from("projets")
+        .select("id, nom, statut, date_depart, date_arrivee")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("commandes")
+        .select("projet_id, statut, montant_total, poids_kg"),
+      supabase.from("charges").select("projet_id, montant"),
+    ]);
 
-  const compteParProjet = new Map<string, number>();
+  const statsParProjet = new Map<
+    string,
+    { nbCommandes: number; ca: number; poids: number; depenses: number }
+  >();
+
+  function stats(projetId: string) {
+    let s = statsParProjet.get(projetId);
+    if (!s) {
+      s = { nbCommandes: 0, ca: 0, poids: 0, depenses: 0 };
+      statsParProjet.set(projetId, s);
+    }
+    return s;
+  }
+
   for (const c of commandes ?? []) {
-    compteParProjet.set(c.projet_id, (compteParProjet.get(c.projet_id) ?? 0) + 1);
+    const s = stats(c.projet_id);
+    s.nbCommandes += 1;
+    if (c.statut !== "annulee") {
+      s.ca += c.montant_total;
+      s.poids += c.poids_kg;
+    }
+  }
+  for (const ch of charges ?? []) {
+    stats(ch.projet_id).depenses += ch.montant;
   }
 
   return (
@@ -65,56 +94,83 @@ export default async function ProjetsPage() {
                   <th className="px-3 py-2 font-medium">Nom</th>
                   <th className="px-3 py-2 font-medium">Statut</th>
                   <th className="px-3 py-2 font-medium">Départ</th>
-                  <th className="px-3 py-2 font-medium">Arrivée</th>
                   <th className="px-3 py-2 font-medium">Commandes</th>
+                  <th className="px-3 py-2 font-medium">CA</th>
+                  <th className="px-3 py-2 font-medium">Dépenses</th>
+                  <th className="px-3 py-2 font-medium">Bénéfice</th>
+                  <th className="px-3 py-2 font-medium">Revient/kg</th>
                   <th className="px-3 py-2 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {projets.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50">
-                    <td className="px-3 py-2.5 font-medium text-slate-900">
-                      <Link
-                        href={`/commandes?projet=${p.id}`}
-                        className="hover:underline"
-                      >
-                        {p.nom}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUT_STYLES[p.statut]}`}
-                      >
-                        {STATUT_LABELS[p.statut]}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-600">
-                      {p.date_depart
-                        ? dateFormatter.format(new Date(p.date_depart))
-                        : "—"}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-600">
-                      {p.date_arrivee
-                        ? dateFormatter.format(new Date(p.date_arrivee))
-                        : "—"}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-600">
-                      {compteParProjet.get(p.id) ?? 0}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-1">
+                {projets.map((p) => {
+                  const s = statsParProjet.get(p.id) ?? {
+                    nbCommandes: 0,
+                    ca: 0,
+                    poids: 0,
+                    depenses: 0,
+                  };
+                  const benefice = s.ca - s.depenses;
+                  const revientKg = s.poids > 0 ? s.depenses / s.poids : null;
+
+                  return (
+                    <tr key={p.id} className="hover:bg-slate-50">
+                      <td className="px-3 py-2.5 font-medium text-slate-900">
                         <Link
-                          href={`/projets/${p.id}/modifier`}
-                          className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100"
+                          href={`/commandes?projet=${p.id}`}
+                          className="hover:underline"
                         >
-                          <IconPencil size={14} />
-                          Modifier
+                          {p.nom}
                         </Link>
-                        <SupprimerProjetButton projetId={p.id} nom={p.nom} />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUT_STYLES[p.statut]}`}
+                        >
+                          {STATUT_LABELS[p.statut]}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-600">
+                        {p.date_depart
+                          ? dateFormatter.format(new Date(p.date_depart))
+                          : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-600">
+                        {s.nbCommandes}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-900">
+                        {montantFormatter.format(s.ca)}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-900">
+                        {montantFormatter.format(s.depenses)}
+                      </td>
+                      <td
+                        className={`px-3 py-2.5 font-medium ${
+                          benefice >= 0 ? "text-green-700" : "text-red-600"
+                        }`}
+                      >
+                        {montantFormatter.format(benefice)}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-600">
+                        {revientKg !== null
+                          ? `${montantFormatter.format(revientKg)}/kg`
+                          : "—"}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-1">
+                          <Link
+                            href={`/projets/${p.id}/modifier`}
+                            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100"
+                          >
+                            <IconPencil size={14} />
+                            Modifier
+                          </Link>
+                          <SupprimerProjetButton projetId={p.id} nom={p.nom} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

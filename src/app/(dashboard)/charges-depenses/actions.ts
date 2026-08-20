@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 export type ChargeInput = {
+  projetId: string;
   libelle: string;
   montant: number;
   categorie: string;
@@ -15,6 +16,7 @@ export type ChargeInput = {
 export async function creerCharge(
   input: ChargeInput
 ): Promise<{ error: string } | { success: true; id: string }> {
+  if (!input.projetId) return { error: "Sélectionne un projet (fret)." };
   if (!input.libelle.trim()) return { error: "Le libellé est requis." };
   if (Number.isNaN(input.montant) || input.montant < 0) {
     return { error: "Indique un montant valide." };
@@ -24,6 +26,7 @@ export async function creerCharge(
   const { data, error } = await supabase
     .from("charges")
     .insert({
+      projet_id: input.projetId,
       libelle: input.libelle.trim(),
       montant: input.montant,
       categorie: input.categorie.trim() || null,
@@ -46,6 +49,7 @@ export async function modifierCharge(
   chargeId: string,
   input: ChargeInput
 ): Promise<{ error: string } | { success: true }> {
+  if (!input.projetId) return { error: "Sélectionne un projet (fret)." };
   if (!input.libelle.trim()) return { error: "Le libellé est requis." };
   if (Number.isNaN(input.montant) || input.montant < 0) {
     return { error: "Indique un montant valide." };
@@ -55,6 +59,7 @@ export async function modifierCharge(
   const { error } = await supabase
     .from("charges")
     .update({
+      projet_id: input.projetId,
       libelle: input.libelle.trim(),
       montant: input.montant,
       categorie: input.categorie.trim() || null,

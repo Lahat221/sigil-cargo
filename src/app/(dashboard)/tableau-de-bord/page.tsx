@@ -112,10 +112,18 @@ export default async function TableauDeBordPage({
     .from("clients")
     .select("id", { count: "exact", head: true });
 
+  let chargesQuery = supabase.from("charges").select("montant, date_charge");
+  if (searchParams.projet) chargesQuery = chargesQuery.eq("projet_id", searchParams.projet);
+  if (debut) chargesQuery = chargesQuery.gte("date_charge", debut.slice(0, 10));
+  if (fin) chargesQuery = chargesQuery.lte("date_charge", fin.slice(0, 10));
+  const { data: charges } = await chargesQuery;
+  const totalDepenses = (charges ?? []).reduce((sum, c) => sum + c.montant, 0);
+
   const toutes = commandes ?? [];
   const actives = toutes.filter((c) => c.statut !== "annulee");
 
   const chiffreAffaires = actives.reduce((sum, c) => sum + c.montant_total, 0);
+  const benefice = chiffreAffaires - totalDepenses;
   const compteParStatut = STATUTS_PIPELINE.reduce<Record<string, number>>(
     (acc, s) => {
       acc[s] = toutes.filter((c) => c.statut === s).length;
@@ -170,13 +178,31 @@ export default async function TableauDeBordPage({
 
       <DashboardFiltres projets={projets ?? []} />
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
           label="Chiffre d'affaires"
           valeur={montantFormatter.format(chiffreAffaires)}
           sousTitre={`${actives.length} commande(s)`}
           couleur="bg-green-50 text-green-600"
           icone="€"
+        />
+        <KpiCard
+          label="Dépenses"
+          valeur={montantFormatter.format(totalDepenses)}
+          sousTitre={`${(charges ?? []).length} charge(s)`}
+          couleur="bg-red-50 text-red-600"
+          icone="−"
+        />
+        <KpiCard
+          label="Bénéfice"
+          valeur={montantFormatter.format(benefice)}
+          sousTitre="CA − dépenses"
+          couleur={
+            benefice >= 0
+              ? "bg-green-50 text-green-600"
+              : "bg-red-50 text-red-600"
+          }
+          icone={benefice >= 0 ? "↑" : "↓"}
         />
         <KpiCard
           label="Poids total"

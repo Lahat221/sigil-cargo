@@ -229,6 +229,7 @@ export interface Database {
       charges: {
         Row: {
           id: string;
+          projet_id: string;
           libelle: string;
           montant: number;
           categorie: string | null;
@@ -240,6 +241,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
+          projet_id: string;
           libelle: string;
           montant: number;
           categorie?: string | null;
@@ -250,7 +252,14 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["charges"]["Insert"]>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "charges_projet_id_fkey";
+            columns: ["projet_id"];
+            referencedRelation: "projets";
+            referencedColumns: ["id"];
+          }
+        ];
       };
     };
     Views: Record<string, never>;

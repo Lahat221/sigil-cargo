@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { SupprimerChargeButton } from "@/components/charges/SupprimerChargeButton";
+import { ProjetFilterSelect } from "@/components/commandes/ProjetFilterSelect";
 import { IconFileText, IconInvoice, IconPencil, IconPlus } from "@/components/ui/Icons";
 
 export const dynamic = "force-dynamic";
@@ -11,13 +12,28 @@ const montantFormatter = new Intl.NumberFormat("fr-FR", {
 });
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
 
-export default async function ChargesDepensesPage() {
+export default async function ChargesDepensesPage({
+  searchParams,
+}: {
+  searchParams: { projet?: string };
+}) {
   const supabase = createClient();
 
-  const { data: charges, error } = await supabase
+  const { data: projets } = await supabase
+    .from("projets")
+    .select("id, nom")
+    .order("created_at", { ascending: false });
+
+  let query = supabase
     .from("charges")
-    .select("id, libelle, montant, categorie, date_charge, facture_url")
+    .select("id, libelle, montant, categorie, date_charge, facture_url, projets(nom)")
     .order("date_charge", { ascending: false });
+
+  if (searchParams.projet) {
+    query = query.eq("projet_id", searchParams.projet);
+  }
+
+  const { data: charges, error } = await query;
 
   const total = (charges ?? []).reduce((sum, c) => sum + c.montant, 0);
 
@@ -52,6 +68,10 @@ export default async function ChargesDepensesPage() {
       </div>
 
       <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
+        <div className="mb-4">
+          <ProjetFilterSelect projets={projets ?? []} />
+        </div>
+
         {error ? (
           <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             Erreur : {error.message}
@@ -67,6 +87,7 @@ export default async function ChargesDepensesPage() {
               <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-3 py-2 font-medium">Date</th>
+                  <th className="px-3 py-2 font-medium">Projet</th>
                   <th className="px-3 py-2 font-medium">Libellé</th>
                   <th className="px-3 py-2 font-medium">Catégorie</th>
                   <th className="px-3 py-2 font-medium">Montant</th>
@@ -79,6 +100,9 @@ export default async function ChargesDepensesPage() {
                   <tr key={c.id} className="hover:bg-slate-50">
                     <td className="px-3 py-2.5 text-slate-600">
                       {dateFormatter.format(new Date(c.date_charge))}
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-600">
+                      {c.projets?.nom ?? "—"}
                     </td>
                     <td className="px-3 py-2.5 font-medium text-slate-900">
                       {c.libelle}
