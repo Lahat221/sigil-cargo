@@ -1,4 +1,5 @@
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { Logo } from "@/components/layout/Logo";
 
 export default function LoginPage({
   searchParams,
@@ -6,22 +7,22 @@ export default function LoginPage({
   searchParams: { next?: string; error?: string };
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-xl font-semibold text-slate-900">
-          SIGIL CARGO
-        </h1>
-        <p className="mb-6 text-sm text-slate-500">
+    <div className="flex min-h-screen items-center justify-center bg-navy-gradient px-4">
+      <div className="w-full max-w-sm rounded-xl border border-line bg-navy-2/60 p-8 shadow-xl backdrop-blur">
+        <div className="mb-6 flex justify-center">
+          <Logo size={44} tagline />
+        </div>
+        <p className="mb-6 text-center text-sm text-muted2">
           Connexion à la gestion des commandes
         </p>
 
         {searchParams.error && (
-          <p className="mb-4 text-sm text-red-600" role="alert">
+          <p className="mb-4 text-sm text-red-400" role="alert">
             La connexion a échoué. Réessaie.
           </p>
         )}
 
-        <GoogleSignInButton next={searchParams.next ?? "/commandes"} />
+        <GoogleSignInButton next={searchParams.next ?? "/tableau-de-bord"} />
       </div>
     </div>
   );

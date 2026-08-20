@@ -16,7 +16,7 @@ export function PrintButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 print:hidden"
+      className="rounded-md bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-navy-2 print:hidden"
     >
       Imprimer
     </button>

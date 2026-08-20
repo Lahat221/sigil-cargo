@@ -391,7 +391,7 @@ export function EditCommandeForm({
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+        className="w-full rounded-md bg-navy px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-2 disabled:opacity-50"
       >
         {submitting ? "Enregistrement..." : "Enregistrer les modifications"}
       </button>

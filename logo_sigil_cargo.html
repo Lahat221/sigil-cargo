@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGIL CARGO — Logo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0A1A33; --navy2:#0E2547; --navy3:#12326B;
+    --gold1:#F3CE63; --gold2:#D3A238;
+    --white:#FFFFFF; --muted:#9FB2CC; --line:#223960;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Montserrat','Segoe UI',system-ui,sans-serif;
+    background:#0a1120;color:#e8eefb;padding:28px 16px 60px;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:14px;letter-spacing:3px;color:var(--muted);font-weight:600;text-transform:uppercase;text-align:center;margin-bottom:6px}
+  .sub{text-align:center;color:#67789a;font-size:12px;margin-bottom:26px}
+  .card{border-radius:20px;padding:34px 22px;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;overflow:hidden}
+  .dark{background:radial-gradient(120% 120% at 50% 0%, var(--navy3) 0%, var(--navy2) 42%, var(--navy) 100%);border:1px solid var(--line)}
+  .light{background:linear-gradient(180deg,#ffffff,#f2f5fb);border:1px solid #e3e8f2}
+  .label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#67789a;text-align:center;margin:2px 0 8px}
+
+  /* Wordmark */
+  .lockup{display:flex;align-items:center;gap:16px}
+  .lockup.stacked{flex-direction:column;gap:12px}
+  .wm{line-height:.9}
+  .wm .name{font-weight:800;letter-spacing:2px;font-size:34px}
+  .wm .name .c{font-weight:600}
+  .wm.onDark .s{color:#fff}
+  .wm.onDark .c{color:var(--gold1)}
+  .wm.onLight .s{color:var(--navy)}
+  .wm.onLight .c{color:var(--gold2)}
+  .tag{font-size:10.5px;letter-spacing:5px;text-transform:uppercase;margin-top:8px;font-weight:600}
+  .onDark .tag{color:var(--gold1)}
+  .onLight .tag{color:var(--gold2)}
+  .center{text-align:center}
+
+  /* avatar row */
+  .row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  .avatar{width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .av-navy{background:radial-gradient(120% 120% at 50% 15%,var(--navy3),var(--navy) 80%);border:1px solid var(--line)}
+  .av-gold{background:linear-gradient(160deg,var(--gold1),var(--gold2))}
+
+  /* palette */
+  .pal{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+  .sw{width:96px;border-radius:12px;overflow:hidden;border:1px solid var(--line);font-size:10px}
+  .sw .chip{height:52px}
+  .sw .hex{padding:6px;text-align:center;color:#c7d3ea;letter-spacing:.5px}
+  .note{color:#8496b6;font-size:12.5px;line-height:1.6;text-align:center;margin-top:22px;padding:0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SIGIL&nbsp;CARGO — Identité</h1>
+  <div class="sub">Aile ascendante vers un soleil levant · « regarder vers le haut » · fret aérien</div>
+
+  <!-- Hidden defs: shared gradients -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#F7D97A"/>
+        <stop offset="0.55" stop-color="#EBBF52"/>
+        <stop offset="1" stop-color="#C9962F"/>
+      </linearGradient>
+      <radialGradient id="sun" cx="50%" cy="45%" r="60%">
+        <stop offset="0" stop-color="#FCEBAE"/>
+        <stop offset="0.6" stop-color="#F3CE63"/>
+        <stop offset="1" stop-color="#D9A63C"/>
+      </radialGradient>
+    </defs>
+  </svg>
+
+  <!-- PRIMARY on dark -->
+  <div class="card dark">
+    <div class="label">Version principale</div>
+    <div class="lockup">
+      <!-- icon -->
+      <svg width="88" height="88" viewBox="0 0 120 120" aria-label="SIGIL CARGO icône">
+        <circle cx="60" cy="33" r="9.5" fill="url(#sun)"/>
+        <path d="M28,77 L60,43 L92,77 L79,77 L60,57 L41,77 Z" fill="url(#gold)"/>
+        <path d="M41,92 L60,71 L79,92 L70,92 L60,81 L50,92 Z" fill="url(#gold)" opacity="0.55"/>
+      </svg>
+      <div class="wm onDark">
+        <div class="name"><span class="s">SIGIL</span><span class="c">CARGO</span></div>
+        <div class="tag">Rapide · Fiable · Sûre</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STACKED on dark -->
+  <div class="card dark">
+    <div class="label">Version verticale (formats carrés)</div>
+    <div class="lockup stacked">
+      <svg width="96" height="96" viewBox="0 0 120 120" aria-label="icône">
+        <circle cx="60" cy="33" r="9.5" fill="url(#sun)"/>
+        <path d="M28,77 L60,43 L92,77 L79,77 L60,57 L41,77 Z" fill="url(#gold)"/>
+        <path d="M41,92 L60,71 L79,92 L70,92 L60,81 L50,92 Z" fill="url(#gold)" opacity="0.55"/>
+      </svg>
+      <div class="wm onDark center">
+        <div class="name"><span class="s">SIGIL</span><span class="c">CARGO</span></div>
+        <div class="tag">Rapide · Fiable · Sûre</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AVATARS -->
+  <div class="card dark">
+    <div class="label">Avatar / photo de profil (WhatsApp · Insta)</div>
+    <div class="row">
+      <div class="avatar av-navy">
+        <svg width="74" height="74" viewBox="0 0 120 120" aria-label="icône or">
+          <circle cx="60" cy="33" r="9.5" fill="url(#sun)"/>
+          <path d="M28,77 L60,43 L92,77 L79,77 L60,57 L41,77 Z" fill="url(#gold)"/>
+          <path d="M41,92 L60,71 L79,92 L70,92 L60,81 L50,92 Z" fill="url(#gold)" opacity="0.55"/>
+        </svg>
+      </div>
+      <div class="avatar av-gold">
+        <svg width="74" height="74" viewBox="0 0 120 120" aria-label="icône bleu nuit">
+          <circle cx="60" cy="33" r="9.5" fill="#0A1A33"/>
+          <path d="M28,77 L60,43 L92,77 L79,77 L60,57 L41,77 Z" fill="#0A1A33"/>
+          <path d="M41,92 L60,71 L79,92 L70,92 L60,81 L50,92 Z" fill="#0A1A33" opacity="0.5"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHT -->
+  <div class="card light">
+    <div class="label" style="color:#8a96ac">Version fond clair</div>
+    <div class="lockup">
+      <svg width="88" height="88" viewBox="0 0 120 120" aria-label="icône bleu nuit">
+        <circle cx="60" cy="33" r="9.5" fill="url(#gold)"/>
+        <path d="M28,77 L60,43 L92,77 L79,77 L60,57 L41,77 Z" fill="#0A1A33"/>
+        <path d="M41,92 L60,71 L79,92 L70,92 L60,81 L50,92 Z" fill="#12326B" opacity="0.85"/>
+      </svg>
+      <div class="wm onLight">
+        <div class="name"><span class="s">SIGIL</span><span class="c">CARGO</span></div>
+        <div class="tag">Rapide · Fiable · Sûre</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PALETTE -->
+  <div class="card dark">
+    <div class="label">Palette</div>
+    <div class="pal">
+      <div class="sw"><div class="chip" style="background:#0A1A33"></div><div class="hex">#0A1A33<br>Bleu nuit</div></div>
+      <div class="sw"><div class="chip" style="background:#12326B"></div><div class="hex">#12326B<br>Bleu ciel nuit</div></div>
+      <div class="sw"><div class="chip" style="background:linear-gradient(160deg,#F7D97A,#C9962F)"></div><div class="hex">#EBBF52<br>Or levant</div></div>
+      <div class="sw"><div class="chip" style="background:#FFFFFF"></div><div class="hex" style="color:#7688a6">#FFFFFF<br>Blanc</div></div>
+    </div>
+  </div>
+
+  <div class="note">
+    Concept : l'aile s'élève vers le soleil — le regard vers le haut, le vol, l'ascension.<br>
+    Lisible en tout petit (l'icône seule fonctionne en avatar). Fichier vectoriel → net à toute taille.
+  </div>
+</div>
+</body>
+</html>

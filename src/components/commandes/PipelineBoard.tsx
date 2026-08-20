@@ -74,7 +74,7 @@ export function PipelineBoard({
                       type="button"
                       disabled={isPending}
                       onClick={() => avancer(c.id, suivant)}
-                      className="mt-2 w-full rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+                      className="mt-2 w-full rounded-md bg-navy px-2 py-1 text-xs font-medium text-white hover:bg-navy-2 disabled:opacity-50"
                     >
                       → {STATUT_LABELS[suivant]}
                     </button>

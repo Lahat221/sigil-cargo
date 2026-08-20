@@ -86,7 +86,7 @@ export default async function CommandesPage({
           <ExportCommandesButton commandes={commandes} />
           <Link
             href="/commandes/nouvelle"
-            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+            className="rounded-md bg-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-navy-2"
           >
             + Nouvelle commande
           </Link>

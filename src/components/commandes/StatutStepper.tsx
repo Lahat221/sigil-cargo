@@ -63,7 +63,7 @@ export function StatutStepper({
               onClick={() => goTo(s)}
               className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
                 done
-                  ? "bg-slate-900 text-white hover:bg-slate-700"
+                  ? "bg-navy text-white hover:bg-navy-2"
                   : "bg-slate-100 text-slate-500 hover:bg-slate-200"
               }`}
             >
@@ -79,7 +79,7 @@ export function StatutStepper({
             type="button"
             disabled={isPending}
             onClick={() => goTo(PIPELINE[currentIndex + 1])}
-            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className="rounded-md bg-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-navy-2 disabled:opacity-50"
           >
             {isPending
               ? "..."

@@ -42,7 +42,7 @@ export function CommandesListe({
           onClick={() => setVue("table")}
           className={`rounded-md px-3 py-1 text-sm ${
             vue === "table"
-              ? "bg-slate-900 text-white"
+              ? "bg-navy text-white"
               : "bg-white text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -52,7 +52,7 @@ export function CommandesListe({
           onClick={() => setVue("cartes")}
           className={`rounded-md px-3 py-1 text-sm ${
             vue === "cartes"
-              ? "bg-slate-900 text-white"
+              ? "bg-navy text-white"
               : "bg-white text-slate-600 hover:bg-slate-100"
           }`}
         >
