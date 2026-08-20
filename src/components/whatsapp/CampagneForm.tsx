@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { creerCampagne } from "@/app/(dashboard)/notifications-whatsapp/actions";
 
 type Client = { id: string; nom: string; telephone: string | null };
@@ -12,6 +13,7 @@ export function CampagneForm({ clients }: { clients: Client[] }) {
   const [message, setMessage] = useState(
     "Bonjour {nom}, "
   );
+  const [affiche, setAffiche] = useState<File | null>(null);
   const [recherche, setRecherche] = useState("");
   const [selectionnes, setSelectionnes] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
@@ -55,16 +57,38 @@ export function CampagneForm({ clients }: { clients: Client[] }) {
     }
 
     setSubmitting(true);
-    const result = await creerCampagne(nom, message, Array.from(selectionnes));
 
-    if ("error" in result) {
-      setError(result.error);
+    try {
+      let imageUrl: string | null = null;
+      if (affiche) {
+        const supabase = createClient();
+        const path = `${crypto.randomUUID()}-${affiche.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("campagnes-media")
+          .upload(path, affiche);
+        if (uploadError) throw new Error(uploadError.message);
+        imageUrl = path;
+      }
+
+      const result = await creerCampagne(
+        nom,
+        message,
+        Array.from(selectionnes),
+        imageUrl
+      );
+
+      if ("error" in result) {
+        setError(result.error);
+        setSubmitting(false);
+        return;
+      }
+
+      router.push(`/notifications-whatsapp/${result.id}`);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inattendue.");
       setSubmitting(false);
-      return;
     }
-
-    router.push(`/notifications-whatsapp/${result.id}`);
-    router.refresh();
   }
 
   return (
@@ -101,6 +125,23 @@ export function CampagneForm({ clients }: { clients: Client[] }) {
         <p className="mt-1 text-xs text-slate-400">
           Utilise <code className="font-mono">{"{nom}"}</code> pour insérer le
           nom du client automatiquement.
+        </p>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Affiche / visuel (optionnel)
+        </label>
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          onChange={(e) => setAffiche(e.target.files?.[0] ?? null)}
+          className="w-full text-sm"
+        />
+        <p className="mt-1 text-xs text-slate-400">
+          WhatsApp ne permet pas de joindre automatiquement une image via un
+          lien — tu pourras la télécharger depuis la campagne et l&apos;attacher
+          toi-même dans chaque conversation.
         </p>
       </div>
 

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EnvoyerCampagneListe } from "@/components/whatsapp/EnvoyerCampagneListe";
 import { SupprimerCampagneButton } from "@/components/whatsapp/SupprimerCampagneButton";
+import { IconDownload } from "@/components/ui/Icons";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +16,19 @@ export default async function CampagnePage({
 
   const { data: campagne } = await supabase
     .from("campagnes_whatsapp")
-    .select("id, nom, message")
+    .select("id, nom, message, image_url")
     .eq("id", params.id)
     .maybeSingle();
 
   if (!campagne) notFound();
+
+  let imageUrlSigned: string | null = null;
+  if (campagne.image_url) {
+    const { data } = await supabase.storage
+      .from("campagnes-media")
+      .createSignedUrl(campagne.image_url, 3600);
+    imageUrlSigned = data?.signedUrl ?? null;
+  }
 
   const { data: destinataires } = await supabase
     .from("campagnes_whatsapp_destinataires")
@@ -57,6 +66,37 @@ export default async function CampagnePage({
           {campagne.message}
         </p>
       </div>
+
+      {imageUrlSigned && (
+        <div className="mb-4 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+            Affiche / visuel
+          </p>
+          <div className="flex items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrlSigned}
+              alt="Affiche de la campagne"
+              className="h-24 w-24 rounded-md border border-slate-200 object-cover"
+            />
+            <div>
+              <a
+                href={imageUrlSigned}
+                download
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-sm font-medium text-navy hover:underline"
+              >
+                <IconDownload size={14} />
+                Télécharger
+              </a>
+              <p className="mt-1 text-xs text-slate-400">
+                À joindre manuellement dans WhatsApp avant l&apos;envoi.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
         <EnvoyerCampagneListe

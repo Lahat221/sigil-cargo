@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 export async function creerCampagne(
   nom: string,
   message: string,
-  clientIds: string[]
+  clientIds: string[],
+  imageUrl: string | null
 ): Promise<{ error: string } | { success: true; id: string }> {
   if (!nom.trim()) return { error: "Le nom de la campagne est requis." };
   if (!message.trim()) return { error: "Le message est requis." };
@@ -18,7 +19,7 @@ export async function creerCampagne(
 
   const { data: campagne, error: campagneError } = await supabase
     .from("campagnes_whatsapp")
-    .insert({ nom: nom.trim(), message: message.trim() })
+    .insert({ nom: nom.trim(), message: message.trim(), image_url: imageUrl })
     .select("id")
     .single();
 

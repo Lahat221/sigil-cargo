@@ -162,6 +162,7 @@ create table campagnes_whatsapp (
   id uuid primary key default gen_random_uuid(),
   nom text not null,
   message text not null,
+  image_url text,  -- affiche/visuel jointe, à télécharger et attacher manuellement dans WhatsApp
   created_at timestamptz default now()
 );
 
@@ -224,3 +225,15 @@ with check (bucket_id = 'charges-factures' and auth.role() = 'authenticated');
 create policy "authenticated_delete_charges_factures"
 on storage.objects for delete
 using (bucket_id = 'charges-factures' and auth.role() = 'authenticated');
+
+create policy "authenticated_read_campagnes_media"
+on storage.objects for select
+using (bucket_id = 'campagnes-media' and auth.role() = 'authenticated');
+
+create policy "authenticated_upload_campagnes_media"
+on storage.objects for insert
+with check (bucket_id = 'campagnes-media' and auth.role() = 'authenticated');
+
+create policy "authenticated_delete_campagnes_media"
+on storage.objects for delete
+using (bucket_id = 'campagnes-media' and auth.role() = 'authenticated');
