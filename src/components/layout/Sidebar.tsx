@@ -3,29 +3,46 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
+import {
+  IconDashboard,
+  IconBox,
+  IconPlus,
+  IconGrid,
+} from "@/components/ui/Icons";
 
 function NavLink({
   href,
   children,
   active,
   indent = false,
+  icon,
 }: {
   href: string;
   children: React.ReactNode;
   active: boolean;
   indent?: boolean;
+  icon?: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
-      className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+      className={`group flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 ${
         indent ? "ml-3" : ""
       } ${
         active
           ? "bg-gold-1/15 text-gold-1"
-          : "text-white/70 hover:bg-white/5 hover:text-white"
+          : "text-white/70 hover:translate-x-0.5 hover:bg-white/5 hover:text-white"
       }`}
     >
+      {icon && (
+        <span
+          className={`shrink-0 transition-transform duration-150 group-hover:scale-110 ${
+            active ? "text-gold-1" : "text-white/50 group-hover:text-white"
+          }`}
+        >
+          {icon}
+        </span>
+      )}
       {children}
     </Link>
   );
@@ -62,7 +79,7 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-64 flex-shrink-0 flex-col bg-navy-gradient">
       <div className="border-b border-line px-5 py-6">
-        <Link href="/tableau-de-bord">
+        <Link href="/tableau-de-bord" className="transition-opacity hover:opacity-80">
           <Logo tagline />
         </Link>
       </div>
@@ -72,6 +89,7 @@ export function Sidebar() {
           <NavLink
             href="/tableau-de-bord"
             active={pathname === "/tableau-de-bord"}
+            icon={<IconDashboard size={17} />}
           >
             Tableau de bord
           </NavLink>
@@ -85,6 +103,7 @@ export function Sidebar() {
             <NavLink
               href="/commandes"
               active={pathname.startsWith("/commandes")}
+              icon={<IconBox size={17} />}
             >
               Commandes
             </NavLink>
@@ -92,13 +111,15 @@ export function Sidebar() {
               href="/commandes/nouvelle"
               active={pathname === "/commandes/nouvelle"}
               indent
+              icon={<IconPlus size={15} />}
             >
-              + Nouvelle commande
+              Nouvelle commande
             </NavLink>
             <NavLink
               href="/commandes/pipeline"
               active={pathname === "/commandes/pipeline"}
               indent
+              icon={<IconGrid size={15} />}
             >
               Pipeline
             </NavLink>

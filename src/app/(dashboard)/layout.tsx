@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { PageTransition } from "@/components/layout/PageTransition";
+import { IconLogout } from "@/components/ui/Icons";
 import { signOut } from "./actions";
 
 export default async function DashboardLayout({
@@ -13,33 +15,34 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-navy-gradient">
       <div className="print:hidden">
         <Sidebar />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-slate-200 bg-white print:hidden">
+        <header className="border-b border-line print:hidden">
           <div className="flex items-center justify-end px-4 py-3 sm:px-6">
             <div className="flex items-center gap-4">
               {user && (
-                <span className="hidden text-sm text-slate-500 sm:inline">
+                <span className="hidden text-sm text-white/60 sm:inline">
                   {user.email}
                 </span>
               )}
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-100"
+                  className="flex items-center gap-1.5 rounded-md border border-white/20 px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/10"
                 >
+                  <IconLogout size={14} />
                   Déconnexion
                 </button>
               </form>
             </div>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
-          {children}
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 print:bg-white">
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
     </div>

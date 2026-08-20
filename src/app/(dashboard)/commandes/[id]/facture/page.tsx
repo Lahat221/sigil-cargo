@@ -31,7 +31,7 @@ export default async function FactureCommandePage({
   return (
     <div className="mx-auto max-w-2xl p-8">
       <div className="mb-6 flex items-center justify-between print:hidden">
-        <h1 className="text-xl font-bold text-navy">
+        <h1 className="text-xl font-bold text-white">
           Facture — Commande #{commande.numero}
         </h1>
         <Suspense fallback={null}>
@@ -39,7 +39,7 @@ export default async function FactureCommandePage({
         </Suspense>
       </div>
 
-      <div className="rounded-lg border border-slate-200 p-8 print:border-0">
+      <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-lg print:border-0 print:shadow-none">
         <div className="mb-8 flex items-start justify-between">
           <div>
             <h2 className="text-xl font-bold text-slate-900">SIGIL CARGO</h2>

@@ -25,7 +25,7 @@ export default async function EtiquetteCommandePage({
   return (
     <div className="mx-auto max-w-md p-8">
       <div className="mb-6 flex items-center justify-between print:hidden">
-        <h1 className="text-xl font-bold text-navy">
+        <h1 className="text-xl font-bold text-white">
           Étiquette — Commande #{commande.numero}
         </h1>
         <Suspense fallback={null}>
@@ -33,7 +33,7 @@ export default async function EtiquetteCommandePage({
         </Suspense>
       </div>
 
-      <div className="etiquette rounded-lg border-2 border-slate-900 p-6 print:border-0">
+      <div className="etiquette rounded-lg border-2 border-slate-900 bg-white p-6 shadow-lg print:border-0 print:shadow-none">
         <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
           SIGIL CARGO
         </p>

@@ -5,6 +5,7 @@ import { StatutBadge, STATUT_LABELS } from "@/components/commandes/StatutBadge";
 import { StatutStepper } from "@/components/commandes/StatutStepper";
 import { SupprimerCommandeButton } from "@/components/commandes/SupprimerCommandeButton";
 import { NotifButtons } from "@/components/commandes/NotifButtons";
+import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -84,17 +85,17 @@ export default async function CommandeDetailPage({
     <div className="max-w-3xl">
       <Link
         href="/commandes"
-        className="mb-4 inline-block text-sm text-slate-500 hover:text-slate-900"
+        className="mb-4 inline-block text-sm text-white/60 hover:text-white"
       >
         ← Retour à la liste
       </Link>
 
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-navy">
+          <h1 className="text-2xl font-bold text-white">
             Commande #{commande.numero}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-white/60">
             {commande.clients?.nom ?? "—"}
             {commande.clients?.telephone && ` · ${commande.clients.telephone}`}
           </p>
@@ -104,25 +105,28 @@ export default async function CommandeDetailPage({
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/70 bg-white p-2 shadow-sm">
         <Link
           href={`/commandes/${commande.id}/modifier`}
-          className="text-sm font-medium text-slate-700 hover:underline"
+          className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
         >
+          <IconPencil size={14} />
           Modifier
         </Link>
         <Link
           href={`/commandes/${commande.id}/facture`}
           target="_blank"
-          className="text-sm text-slate-600 hover:underline"
+          className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100"
         >
+          <IconFileText size={14} />
           Facture
         </Link>
         <Link
           href={`/commandes/${commande.id}/etiquette?print=1`}
           target="_blank"
-          className="text-sm text-slate-600 hover:underline"
+          className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100"
         >
+          <IconPrinter size={14} />
           Imprimer
         </Link>
         <NotifButtons commandeId={commande.id} />

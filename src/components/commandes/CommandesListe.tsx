@@ -43,7 +43,7 @@ export function CommandesListe({
           className={`rounded-md px-3 py-1 text-sm ${
             vue === "table"
               ? "bg-navy text-white"
-              : "bg-white text-slate-600 hover:bg-slate-100"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
           }`}
         >
           Tableau
@@ -53,7 +53,7 @@ export function CommandesListe({
           className={`rounded-md px-3 py-1 text-sm ${
             vue === "cartes"
               ? "bg-navy text-white"
-              : "bg-white text-slate-600 hover:bg-slate-100"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
           }`}
         >
           Cartes

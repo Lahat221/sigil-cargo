@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FiltresBar } from "@/components/commandes/FiltresBar";
 import { CommandesListe } from "@/components/commandes/CommandesListe";
 import { ExportCommandesButton } from "@/components/commandes/ExportCommandesButton";
+import { IconGrid, IconPlus } from "@/components/ui/Icons";
 import type { CommandeListItem } from "@/components/commandes/types";
 import type { StatutCommande } from "@/types/database.types";
 
@@ -75,33 +76,37 @@ export default async function CommandesPage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-navy">Commandes</h1>
+        <h1 className="text-xl font-bold text-white">Commandes</h1>
         <div className="flex gap-2">
           <Link
             href="/commandes/pipeline"
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            className="flex items-center gap-1.5 rounded-md border border-white/25 px-3 py-1.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10"
           >
+            <IconGrid size={15} />
             Pipeline
           </Link>
           <ExportCommandesButton commandes={commandes} />
           <Link
             href="/commandes/nouvelle"
-            className="rounded-lg bg-gold-gradient px-4 py-1.5 text-sm font-semibold text-navy shadow-sm transition-all hover:shadow-md hover:brightness-105"
+            className="flex items-center gap-1.5 rounded-lg bg-gold-gradient px-4 py-1.5 text-sm font-semibold text-navy shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:brightness-105"
           >
-            + Nouvelle commande
+            <IconPlus size={15} />
+            Nouvelle commande
           </Link>
         </div>
       </div>
 
-      <FiltresBar projets={projets ?? []} />
+      <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
+        <FiltresBar projets={projets ?? []} />
 
-      {loadError ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          Erreur lors du chargement des commandes : {loadError}
-        </p>
-      ) : (
-        <CommandesListe commandes={commandes} />
-      )}
+        {loadError ? (
+          <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Erreur lors du chargement des commandes : {loadError}
+          </p>
+        ) : (
+          <CommandesListe commandes={commandes} />
+        )}
+      </div>
     </div>
   );
 }

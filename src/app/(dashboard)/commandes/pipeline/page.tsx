@@ -35,18 +35,18 @@ export default async function PipelinePage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-navy">
+        <h1 className="text-xl font-bold text-white">
           Pipeline de préparation
         </h1>
         <Link
           href="/commandes"
-          className="text-sm text-slate-500 hover:text-slate-900"
+          className="text-sm text-white/60 hover:text-white"
         >
           ← Vue liste
         </Link>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 inline-block rounded-lg bg-white p-1 shadow-sm">
         <ProjetFilterSelect projets={projets ?? []} />
       </div>
 

@@ -23,12 +23,12 @@ export default async function NouvelleCommandePage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-navy">
+        <h1 className="text-xl font-bold text-white">
           Nouvelle commande
         </h1>
         <Link
           href="/commandes"
-          className="text-sm text-slate-500 hover:text-slate-900"
+          className="text-sm text-white/60 hover:text-white"
         >
           ← Retour à la liste
         </Link>

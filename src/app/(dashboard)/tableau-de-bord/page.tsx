@@ -163,8 +163,8 @@ export default async function TableauDeBordPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-navy">Tableau de bord</h1>
-      <p className="mb-6 text-sm text-slate-500">
+      <h1 className="text-2xl font-bold text-white">Tableau de bord</h1>
+      <p className="mb-6 text-sm text-white/60">
         SIGIL CARGO · Vue d&apos;ensemble
       </p>
 

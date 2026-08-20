@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { supprimerCommande } from "@/app/(dashboard)/commandes/actions";
+import { IconTrash } from "@/components/ui/Icons";
 
 export function SupprimerCommandeButton({
   commandeId,
@@ -40,9 +41,10 @@ export function SupprimerCommandeButton({
       onClick={handleClick}
       className={
         className ??
-        "text-sm text-red-600 hover:underline disabled:opacity-50"
+        "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
       }
     >
+      <IconTrash size={14} />
       {isPending ? "..." : "Supprimer"}
     </button>
   );

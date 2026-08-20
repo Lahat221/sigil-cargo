@@ -1,6 +1,7 @@
 "use client";
 
 import { STATUT_LABELS } from "./StatutBadge";
+import { IconDownload } from "@/components/ui/Icons";
 import type { CommandeListItem } from "./types";
 
 function csvEscape(value: string) {
@@ -55,8 +56,9 @@ export function ExportCommandesButton({
       type="button"
       onClick={handleExport}
       disabled={commandes.length === 0}
-      className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+      className="flex items-center gap-1.5 rounded-md border border-white/25 px-3 py-1.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 disabled:opacity-50"
     >
+      <IconDownload size={15} />
       Exporter
     </button>
   );
