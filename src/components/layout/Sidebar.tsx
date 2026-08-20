@@ -65,7 +65,6 @@ const MODULES_A_VENIR: { slug: string; label: string; icon: React.ReactNode }[] 
   { slug: "projets-gp", label: "Projets GP", icon: <IconFolder size={17} /> },
   { slug: "reservations", label: "Réservations", icon: <IconCalendar size={17} /> },
   { slug: "publicites", label: "Publicités", icon: <IconMegaphone size={17} /> },
-  { slug: "clients", label: "Clients", icon: <IconUsers size={17} /> },
   { slug: "dettes", label: "Dettes (ce que je dois)", icon: <IconDocument size={17} /> },
   {
     slug: "creances",
@@ -143,7 +142,24 @@ export function Sidebar() {
             >
               Pipeline
             </NavLink>
-            {MODULES_A_VENIR.map((m) => (
+            {MODULES_A_VENIR.slice(0, 4).map((m) => (
+              <NavLink
+                key={m.slug}
+                href={`/${m.slug}`}
+                active={pathname === `/${m.slug}`}
+                icon={m.icon}
+              >
+                {m.label}
+              </NavLink>
+            ))}
+            <NavLink
+              href="/clients"
+              active={pathname.startsWith("/clients")}
+              icon={<IconUsers size={17} />}
+            >
+              Clients
+            </NavLink>
+            {MODULES_A_VENIR.slice(4).map((m) => (
               <NavLink
                 key={m.slug}
                 href={`/${m.slug}`}

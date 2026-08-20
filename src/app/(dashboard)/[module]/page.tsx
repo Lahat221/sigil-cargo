@@ -7,7 +7,6 @@ const MODULES: Record<string, string> = {
   "projets-gp": "Projets GP",
   reservations: "Réservations",
   publicites: "Publicités",
-  clients: "Clients",
   dettes: "Dettes (ce que je dois)",
   creances: "Créances (ce que l'on me doit)",
   "charges-depenses": "Charges & Dépenses",
