@@ -138,7 +138,7 @@ export function ClientField({
             onChange={(e) =>
               setNewClient((c) => ({ ...c, nom: e.target.value }))
             }
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
           />
           <div className="flex gap-1">
             <select
@@ -146,7 +146,7 @@ export function ClientField({
               onChange={(e) =>
                 setNewClient((c) => ({ ...c, telephonePays: e.target.value }))
               }
-              className="w-24 rounded-md border border-slate-300 px-1.5 py-2 text-sm focus:border-slate-500 focus:outline-none"
+              className="w-24 rounded-md border border-slate-300 px-1.5 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
             >
               {INDICATIFS.map((i) => (
                 <option key={i.code} value={i.code}>
@@ -162,7 +162,7 @@ export function ClientField({
               onChange={(e) =>
                 setNewClient((c) => ({ ...c, telephone: e.target.value }))
               }
-              className="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+              className="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
             />
           </div>
           <input
@@ -172,7 +172,7 @@ export function ClientField({
             onChange={(e) =>
               setNewClient((c) => ({ ...c, adresse: e.target.value }))
             }
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
           />
         </div>
       </div>
@@ -189,7 +189,7 @@ export function ClientField({
         placeholder="Rechercher par nom ou téléphone..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
       />
 
       {matches.length > 0 && (

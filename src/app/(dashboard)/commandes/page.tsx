@@ -75,7 +75,7 @@ export default async function CommandesPage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-lg font-semibold text-slate-900">Commandes</h1>
+        <h1 className="text-xl font-bold text-navy">Commandes</h1>
         <div className="flex gap-2">
           <Link
             href="/commandes/pipeline"
@@ -86,7 +86,7 @@ export default async function CommandesPage({
           <ExportCommandesButton commandes={commandes} />
           <Link
             href="/commandes/nouvelle"
-            className="rounded-md bg-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-navy-2"
+            className="rounded-lg bg-gold-gradient px-4 py-1.5 text-sm font-semibold text-navy shadow-sm transition-all hover:shadow-md hover:brightness-105"
           >
             + Nouvelle commande
           </Link>

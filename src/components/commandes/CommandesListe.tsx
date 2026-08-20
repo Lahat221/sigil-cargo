@@ -61,7 +61,7 @@ export function CommandesListe({
       </div>
 
       {vue === "table" ? (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded-xl border border-slate-200/70 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -139,7 +139,7 @@ export function CommandesListe({
           {commandes.map((c) => (
             <div
               key={c.id}
-              className="rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm"
+              className="rounded-xl border border-slate-200/70 bg-white shadow-sm p-4 transition-shadow hover:shadow-sm"
             >
               <Link href={`/commandes/${c.id}`}>
                 <div className="mb-2 flex items-center justify-between">

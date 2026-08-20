@@ -31,7 +31,7 @@ export function DashboardFiltres({
   }
 
   return (
-    <div className="mb-8 flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
+    <div className="mb-8 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/70 bg-white shadow-sm px-4 py-3">
       <select
         value={searchParams.get("projet") ?? ""}
         onChange={(e) => setParam("projet", e.target.value)}

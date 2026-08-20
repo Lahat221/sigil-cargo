@@ -176,30 +176,34 @@ export default async function TableauDeBordPage({
           valeur={montantFormatter.format(chiffreAffaires)}
           sousTitre={`${actives.length} commande(s)`}
           couleur="bg-green-50 text-green-600"
+          icone="€"
         />
         <KpiCard
           label="Poids total"
           valeur={`${poidsTotal.toLocaleString("fr-FR")} kg`}
           sousTitre="commandes actives"
           couleur="bg-purple-50 text-purple-600"
+          icone="kg"
         />
         <KpiCard
           label="Commandes"
           valeur={toutes.length.toString()}
           sousTitre={`${nombreClients ?? 0} client(s) au total`}
           couleur="bg-blue-50 text-blue-600"
+          icone="#"
         />
         <KpiCard
           label="Meilleur produit"
           valeur={meilleurProduit}
           sousTitre="par poids expédié"
           couleur="bg-amber-50 text-amber-600"
+          icone="★"
           petit
         />
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
+        <div className="rounded-xl border border-slate-200/70 bg-white shadow-sm p-5">
           <h2 className="mb-1 text-sm font-medium text-slate-700">
             Chiffre d&apos;affaires par jour
           </h2>
@@ -212,7 +216,7 @@ export default async function TableauDeBordPage({
             formatValue={(v) => montantFormatter.format(v)}
           />
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
+        <div className="rounded-xl border border-slate-200/70 bg-white shadow-sm p-5">
           <h2 className="mb-1 text-sm font-medium text-slate-700">
             Poids par projet
           </h2>
@@ -231,7 +235,7 @@ export default async function TableauDeBordPage({
         </div>
       </div>
 
-      <div className="mb-8 rounded-lg border border-slate-200 bg-white p-5">
+      <div className="mb-8 rounded-xl border border-slate-200/70 bg-white shadow-sm p-5">
         <h2 className="mb-4 text-sm font-medium text-slate-700">
           Pipeline de préparation
         </h2>
@@ -253,7 +257,7 @@ export default async function TableauDeBordPage({
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-5">
+      <div className="rounded-xl border border-slate-200/70 bg-white shadow-sm p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-medium text-slate-700">
             Commandes récentes
@@ -305,19 +309,25 @@ function KpiCard({
   valeur,
   sousTitre,
   couleur,
+  icone,
   petit,
 }: {
   label: string;
   valeur: string;
   sousTitre: string;
   couleur: string;
+  icone: string;
   petit?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className="mb-2 flex items-center justify-between">
         <p className="text-sm text-slate-500">{label}</p>
-        <span className={`h-8 w-8 rounded-full ${couleur}`} />
+        <span
+          className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${couleur}`}
+        >
+          {icone}
+        </span>
       </div>
       <p
         className={`font-bold text-navy ${

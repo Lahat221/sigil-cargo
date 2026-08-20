@@ -35,7 +35,7 @@ export default async function PipelinePage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold text-slate-900">
+        <h1 className="text-xl font-bold text-navy">
           Pipeline de préparation
         </h1>
         <Link

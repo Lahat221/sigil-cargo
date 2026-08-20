@@ -52,7 +52,7 @@ export default async function ModifierCommandePage({
       >
         ← Retour à la commande
       </Link>
-      <h1 className="mb-4 text-lg font-semibold text-slate-900">
+      <h1 className="mb-4 text-xl font-bold text-navy">
         Modifier la commande
       </h1>
 

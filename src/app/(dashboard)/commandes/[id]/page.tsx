@@ -91,7 +91,7 @@ export default async function CommandeDetailPage({
 
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">
+          <h1 className="text-2xl font-bold text-navy">
             Commande #{commande.numero}
           </h1>
           <p className="text-sm text-slate-500">
@@ -133,12 +133,12 @@ export default async function CommandeDetailPage({
         />
       </div>
 
-      <div className="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+      <div className="mb-6 rounded-xl border border-slate-200/70 bg-white shadow-sm p-4">
         <h2 className="mb-3 text-sm font-medium text-slate-700">Pipeline</h2>
         <StatutStepper commandeId={commande.id} statut={commande.statut} />
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-4 rounded-lg border border-slate-200 bg-white p-4 text-sm sm:grid-cols-3">
+      <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-slate-200/70 bg-white shadow-sm p-4 text-sm sm:grid-cols-3">
         <div>
           <p className="text-slate-500">Projet</p>
           <p className="font-medium text-slate-900">
@@ -197,7 +197,7 @@ export default async function CommandeDetailPage({
       </div>
 
       {(photoUrls.length > 0 || videoUrl) && (
-        <div className="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="mb-6 rounded-xl border border-slate-200/70 bg-white shadow-sm p-4">
           <h2 className="mb-3 text-sm font-medium text-slate-700">Médias</h2>
           <div className="flex flex-wrap gap-3">
             {photoUrls.map((url) => (
@@ -217,7 +217,7 @@ export default async function CommandeDetailPage({
       )}
 
       {historique && historique.length > 0 && (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-slate-200/70 bg-white shadow-sm p-4">
           <h2 className="mb-3 text-sm font-medium text-slate-700">
             Historique
           </h2>

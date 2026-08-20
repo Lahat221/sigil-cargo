@@ -25,7 +25,7 @@ export default async function EtiquetteCommandePage({
   return (
     <div className="mx-auto max-w-md p-8">
       <div className="mb-6 flex items-center justify-between print:hidden">
-        <h1 className="text-lg font-semibold text-slate-900">
+        <h1 className="text-xl font-bold text-navy">
           Étiquette — Commande #{commande.numero}
         </h1>
         <Suspense fallback={null}>

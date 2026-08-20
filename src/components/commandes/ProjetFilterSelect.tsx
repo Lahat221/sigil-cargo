@@ -23,7 +23,7 @@ export function ProjetFilterSelect({
         }
         router.push(`${pathname}?${params.toString()}`);
       }}
-      className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+      className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
     >
       <option value="">Tous les projets</option>
       {projets.map((p) => (

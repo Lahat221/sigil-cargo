@@ -51,13 +51,13 @@ export function FiltresBar({
         placeholder="Rechercher un client ou un n° de commande..."
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none sm:max-w-xs"
+        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none sm:max-w-xs"
       />
 
       <select
         value={searchParams.get("statut") ?? ""}
         onChange={(e) => setParam("statut", e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
       >
         <option value="">Tous les statuts</option>
         {STATUTS.map((s) => (
@@ -70,7 +70,7 @@ export function FiltresBar({
       <select
         value={searchParams.get("projet") ?? ""}
         onChange={(e) => setParam("projet", e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
       >
         <option value="">Tous les projets</option>
         {projets.map((p) => (

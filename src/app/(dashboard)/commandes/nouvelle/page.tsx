@@ -23,7 +23,7 @@ export default async function NouvelleCommandePage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">
+        <h1 className="text-xl font-bold text-navy">
           Nouvelle commande
         </h1>
         <Link

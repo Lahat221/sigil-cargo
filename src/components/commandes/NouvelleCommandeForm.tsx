@@ -154,7 +154,7 @@ export function NouvelleCommandeForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-2xl space-y-5 rounded-lg border border-slate-200 bg-white p-6"
+      className="max-w-2xl space-y-5 rounded-xl border border-slate-200/70 bg-white shadow-sm p-6"
     >
       <ClientField onChange={setClientSelection} />
 
@@ -167,7 +167,7 @@ export function NouvelleCommandeForm({
             value={projetId}
             onChange={(e) => setProjetId(e.target.value)}
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
           >
             {projets.length === 0 && <option value="">Aucun projet actif</option>}
             {projets.map((p) => (
@@ -186,7 +186,7 @@ export function NouvelleCommandeForm({
             value={produitId}
             onChange={(e) => handleProduitChange(e.target.value)}
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
           >
             {produits.length === 0 && <option value="">Aucun produit actif</option>}
             {produits.map((p) => (
@@ -208,7 +208,7 @@ export function NouvelleCommandeForm({
             required
             value={poidsKg}
             onChange={(e) => setPoidsKg(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
           />
         </div>
 
@@ -223,7 +223,7 @@ export function NouvelleCommandeForm({
             required
             value={prixParKg}
             onChange={(e) => setPrixParKg(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
           />
         </div>
 
@@ -236,7 +236,7 @@ export function NouvelleCommandeForm({
             min="1"
             value={nombrePaquets}
             onChange={(e) => setNombrePaquets(Number(e.target.value))}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
           />
         </div>
       </div>
@@ -266,7 +266,7 @@ export function NouvelleCommandeForm({
           type="text"
           value={adresseLivraison}
           onChange={(e) => setAdresseLivraison(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
         />
       </div>
 
@@ -278,7 +278,7 @@ export function NouvelleCommandeForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
         />
       </div>
 
@@ -290,7 +290,7 @@ export function NouvelleCommandeForm({
           value={remarqueInterne}
           onChange={(e) => setRemarqueInterne(e.target.value)}
           rows={2}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
         />
       </div>
 
@@ -329,7 +329,7 @@ export function NouvelleCommandeForm({
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-md bg-navy px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-2 disabled:opacity-50"
+        className="w-full rounded-lg bg-gold-gradient px-4 py-2.5 text-sm font-semibold text-navy shadow-sm transition-all hover:shadow-md hover:brightness-105 disabled:opacity-50"
       >
         {submitting ? "Création en cours..." : "Créer la commande"}
       </button>
