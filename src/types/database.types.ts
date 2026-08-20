@@ -19,9 +19,31 @@ export type StatutCommande =
   | "livree"
   | "annulee";
 
+export type RoleUtilisateur = "admin" | "agent";
+
 export interface Database {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          nom: string;
+          email: string;
+          role: RoleUtilisateur;
+          modules_autorises: string[];
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          nom: string;
+          email: string;
+          role?: RoleUtilisateur;
+          modules_autorises?: string[];
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+        Relationships: [];
+      };
       clients: {
         Row: {
           id: string;

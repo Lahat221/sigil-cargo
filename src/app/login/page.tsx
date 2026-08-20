@@ -1,4 +1,5 @@
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { EmailSignInForm } from "@/components/auth/EmailSignInForm";
 import { Logo } from "@/components/layout/Logo";
 
 export default function LoginPage({
@@ -23,6 +24,14 @@ export default function LoginPage({
         )}
 
         <GoogleSignInButton next={searchParams.next ?? "/tableau-de-bord"} />
+
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-line" />
+          <span className="text-xs uppercase tracking-wide text-muted2">ou</span>
+          <div className="h-px flex-1 bg-line" />
+        </div>
+
+        <EmailSignInForm next={searchParams.next ?? "/tableau-de-bord"} />
       </div>
     </div>
   );

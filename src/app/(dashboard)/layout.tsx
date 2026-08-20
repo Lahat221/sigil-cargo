@@ -14,10 +14,22 @@ export default async function DashboardLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  let modulesAutorises: string[] | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, modules_autorises")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile && profile.role !== "admin") {
+      modulesAutorises = profile.modules_autorises;
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-navy-gradient">
       <div className="print:hidden">
-        <Sidebar />
+        <Sidebar modulesAutorises={modulesAutorises} />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">

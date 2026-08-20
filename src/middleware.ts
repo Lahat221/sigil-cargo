@@ -3,8 +3,12 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const PUBLIC_PATHS = ["/login", "/auth/callback"];
 
+function moduleSlug(pathname: string) {
+  return pathname.split("/")[1] || null;
+}
+
 export async function middleware(request: NextRequest) {
-  const { supabaseResponse, user } = await updateSession(request);
+  const { supabaseResponse, user, profile } = await updateSession(request);
   const { pathname } = request.nextUrl;
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
 
@@ -20,6 +24,18 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/tableau-de-bord";
     url.search = "";
     return NextResponse.redirect(url);
+  }
+
+  // Comptes non-admin : accès restreint aux modules listés dans leur profil.
+  if (user && profile && profile.role !== "admin" && !isPublicPath) {
+    const slug = moduleSlug(pathname);
+    const autorise = slug === null || profile.modules_autorises.includes(slug);
+    if (!autorise) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${profile.modules_autorises[0] ?? "commandes"}`;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

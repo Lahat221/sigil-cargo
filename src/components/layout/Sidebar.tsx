@@ -58,27 +58,71 @@ function NavLink({
   );
 }
 
-const MODULES_AVANT_CLIENTS = [
-  { slug: "publicites", label: "Publicités", icon: <IconMegaphone size={17} /> },
+type SousItem = { href: string; label: string; icon: React.ReactNode };
+type NavItem = {
+  slug: string;
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  tabIcon?: React.ReactNode;
+  sousItems?: SousItem[];
+};
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    slug: "commandes",
+    href: "/commandes",
+    label: "Commandes",
+    icon: <IconStore size={17} />,
+    tabIcon: <IconStore size={20} />,
+    sousItems: [
+      { href: "/commandes/nouvelle", label: "Nouvelle commande", icon: <IconPlus size={15} /> },
+      { href: "/commandes/pipeline", label: "Pipeline", icon: <IconGrid size={15} /> },
+    ],
+  },
+  {
+    slug: "projets",
+    href: "/projets",
+    label: "Projets Fret Aérien",
+    icon: <IconFolder size={17} />,
+    tabIcon: <IconFolder size={20} />,
+  },
+  { slug: "publicites", href: "/publicites", label: "Publicités", icon: <IconMegaphone size={17} /> },
+  {
+    slug: "clients",
+    href: "/clients",
+    label: "Clients",
+    icon: <IconUsers size={17} />,
+    tabIcon: <IconUsers size={20} />,
+  },
+  {
+    slug: "charges-depenses",
+    href: "/charges-depenses",
+    label: "Charges & Dépenses",
+    icon: <IconInvoice size={17} />,
+  },
+  {
+    slug: "notifications-whatsapp",
+    href: "/notifications-whatsapp",
+    label: "Notifications WhatsApp",
+    icon: <IconSend size={17} />,
+    tabIcon: <IconSend size={20} />,
+  },
+  { slug: "chat", href: "/chat", label: "Chat", icon: <IconChat size={17} /> },
+  { slug: "parametres", href: "/parametres", label: "Paramètres", icon: <IconSettings size={17} /> },
 ];
 
-const MODULES_APRES_CLIENTS = [
-  { slug: "chat", label: "Chat", icon: <IconChat size={17} /> },
-  { slug: "parametres", label: "Paramètres", icon: <IconSettings size={17} /> },
-];
-
-const TABS_PRINCIPAUX = [
-  { href: "/tableau-de-bord", label: "Accueil", icon: <IconDashboard size={20} />, exact: true },
-  { href: "/commandes", label: "Commandes", icon: <IconStore size={20} />, exact: false },
-  { href: "/projets", label: "Projets", icon: <IconFolder size={20} />, exact: false },
-  { href: "/clients", label: "Clients", icon: <IconUsers size={20} />, exact: false },
-];
+function estAutorise(slug: string, modulesAutorises: string[] | null) {
+  return modulesAutorises === null || modulesAutorises.includes(slug);
+}
 
 function MobileTabBar({
+  tabs,
   pathname,
   onMoreClick,
   moreActive,
 }: {
+  tabs: { href: string; label: string; icon: React.ReactNode }[];
   pathname: string;
   onMoreClick: () => void;
   moreActive: boolean;
@@ -88,8 +132,8 @@ function MobileTabBar({
       className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-line bg-navy-2/95 shadow-[0_-4px_16px_rgba(0,0,0,0.25)] backdrop-blur md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      {TABS_PRINCIPAUX.map((tab) => {
-        const active = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
+      {tabs.map((tab) => {
+        const active = pathname.startsWith(tab.href);
         return (
           <Link
             key={tab.href}
@@ -118,22 +162,41 @@ function MobileTabBar({
   );
 }
 
-const ROUTES_TABS_PRINCIPAUX = ["/tableau-de-bord", "/commandes", "/projets", "/clients"];
-
-export function Sidebar() {
+export function Sidebar({
+  modulesAutorises = null,
+}: {
+  /** Modules accessibles pour l'utilisateur courant. `null` = admin, accès total. */
+  modulesAutorises?: string[] | null;
+}) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Referme le tiroir automatiquement après une navigation sur mobile.
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  const dansTabsPrincipaux = ROUTES_TABS_PRINCIPAUX.some((r) => pathname.startsWith(r));
+  const tableauAutorise = estAutorise("tableau-de-bord", modulesAutorises);
+  const itemsAutorises = NAV_ITEMS.filter((item) => estAutorise(item.slug, modulesAutorises));
+
+  const accueilHref = tableauAutorise
+    ? "/tableau-de-bord"
+    : itemsAutorises[0]?.href ?? "/commandes";
+
+  const tabsPrincipaux = [
+    ...(tableauAutorise
+      ? [{ href: "/tableau-de-bord", label: "Accueil", icon: <IconDashboard size={20} /> }]
+      : []),
+    ...itemsAutorises
+      .filter((item) => item.tabIcon)
+      .map((item) => ({ href: item.href, label: item.label.split(" ")[0], icon: item.tabIcon })),
+  ].slice(0, 4) as { href: string; label: string; icon: React.ReactNode }[];
+
+  const dansTabsPrincipaux = tabsPrincipaux.some((t) => pathname.startsWith(t.href));
 
   return (
     <>
       <MobileTabBar
+        tabs={tabsPrincipaux}
         pathname={pathname}
         onMoreClick={() => setMobileOpen(true)}
         moreActive={mobileOpen || !dansTabsPrincipaux}
@@ -152,10 +215,7 @@ export function Sidebar() {
         }`}
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-6">
-          <Link
-            href="/tableau-de-bord"
-            className="transition-opacity hover:opacity-80"
-          >
+          <Link href={accueilHref} className="transition-opacity hover:opacity-80">
             <Logo tagline />
           </Link>
           <button
@@ -169,91 +229,44 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 space-y-6 px-3 py-5">
-          <div>
-            <NavLink
-              href="/tableau-de-bord"
-              active={pathname === "/tableau-de-bord"}
-              icon={<IconDashboard size={17} />}
-            >
-              Tableau de bord
-            </NavLink>
-          </div>
+          {tableauAutorise && (
+            <div>
+              <NavLink
+                href="/tableau-de-bord"
+                active={pathname === "/tableau-de-bord"}
+                icon={<IconDashboard size={17} />}
+              >
+                Tableau de bord
+              </NavLink>
+            </div>
+          )}
 
           <div>
             <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted2">
               Gestion commerciale
             </p>
             <div className="space-y-1">
-              <NavLink
-                href="/commandes"
-                active={pathname.startsWith("/commandes")}
-                icon={<IconStore size={17} />}
-              >
-                Commandes
-              </NavLink>
-              <NavLink
-                href="/commandes/nouvelle"
-                active={pathname === "/commandes/nouvelle"}
-                indent
-                icon={<IconPlus size={15} />}
-              >
-                Nouvelle commande
-              </NavLink>
-              <NavLink
-                href="/commandes/pipeline"
-                active={pathname === "/commandes/pipeline"}
-                indent
-                icon={<IconGrid size={15} />}
-              >
-                Pipeline
-              </NavLink>
-              <NavLink
-                href="/projets"
-                active={pathname.startsWith("/projets")}
-                icon={<IconFolder size={17} />}
-              >
-                Projets Fret Aérien
-              </NavLink>
-              {MODULES_AVANT_CLIENTS.map((m) => (
-                <NavLink
-                  key={m.slug}
-                  href={`/${m.slug}`}
-                  active={pathname === `/${m.slug}`}
-                  icon={m.icon}
-                >
-                  {m.label}
-                </NavLink>
-              ))}
-              <NavLink
-                href="/clients"
-                active={pathname.startsWith("/clients")}
-                icon={<IconUsers size={17} />}
-              >
-                Clients
-              </NavLink>
-              <NavLink
-                href="/charges-depenses"
-                active={pathname.startsWith("/charges-depenses")}
-                icon={<IconInvoice size={17} />}
-              >
-                Charges & Dépenses
-              </NavLink>
-              <NavLink
-                href="/notifications-whatsapp"
-                active={pathname.startsWith("/notifications-whatsapp")}
-                icon={<IconSend size={17} />}
-              >
-                Notifications WhatsApp
-              </NavLink>
-              {MODULES_APRES_CLIENTS.map((m) => (
-                <NavLink
-                  key={m.slug}
-                  href={`/${m.slug}`}
-                  active={pathname === `/${m.slug}`}
-                  icon={m.icon}
-                >
-                  {m.label}
-                </NavLink>
+              {itemsAutorises.map((item) => (
+                <div key={item.slug}>
+                  <NavLink
+                    href={item.href}
+                    active={pathname.startsWith(item.href)}
+                    icon={item.icon}
+                  >
+                    {item.label}
+                  </NavLink>
+                  {item.sousItems?.map((sous) => (
+                    <NavLink
+                      key={sous.href}
+                      href={sous.href}
+                      active={pathname === sous.href}
+                      indent
+                      icon={sous.icon}
+                    >
+                      {sous.label}
+                    </NavLink>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
