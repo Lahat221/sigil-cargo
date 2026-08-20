@@ -6,8 +6,20 @@ import { Logo } from "./Logo";
 import {
   IconDashboard,
   IconBox,
+  IconStore,
   IconPlus,
   IconGrid,
+  IconPackage,
+  IconFolder,
+  IconCalendar,
+  IconMegaphone,
+  IconUsers,
+  IconDocument,
+  IconExchange,
+  IconInvoice,
+  IconSend,
+  IconChat,
+  IconSettings,
 } from "@/components/ui/Icons";
 
 function NavLink({
@@ -48,43 +60,44 @@ function NavLink({
   );
 }
 
-function NavLinkBientot({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-white/30">
-      <span>{children}</span>
-      <span className="rounded bg-white/5 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-white/30">
-        Bientôt
-      </span>
-    </div>
-  );
-}
-
-const MODULES_A_VENIR = [
-  "Produits",
-  "Projets GP",
-  "Réservations",
-  "Publicités",
-  "Clients",
-  "Dettes (ce que je dois)",
-  "Créances (ce que l'on me doit)",
-  "Charges & Dépenses",
-  "Notifications WhatsApp",
-  "Chat",
-  "Paramètres",
+const MODULES_A_VENIR: { slug: string; label: string; icon: React.ReactNode }[] = [
+  { slug: "produits", label: "Produits", icon: <IconPackage size={17} /> },
+  { slug: "projets-gp", label: "Projets GP", icon: <IconFolder size={17} /> },
+  { slug: "reservations", label: "Réservations", icon: <IconCalendar size={17} /> },
+  { slug: "publicites", label: "Publicités", icon: <IconMegaphone size={17} /> },
+  { slug: "clients", label: "Clients", icon: <IconUsers size={17} /> },
+  { slug: "dettes", label: "Dettes (ce que je dois)", icon: <IconDocument size={17} /> },
+  {
+    slug: "creances",
+    label: "Créances (ce que l'on me doit)",
+    icon: <IconExchange size={17} />,
+  },
+  {
+    slug: "charges-depenses",
+    label: "Charges & Dépenses",
+    icon: <IconInvoice size={17} />,
+  },
+  {
+    slug: "notifications-whatsapp",
+    label: "Notifications WhatsApp",
+    icon: <IconSend size={17} />,
+  },
+  { slug: "chat", label: "Chat", icon: <IconChat size={17} /> },
+  { slug: "parametres", label: "Paramètres", icon: <IconSettings size={17} /> },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-64 flex-shrink-0 flex-col bg-navy-gradient">
+    <aside className="flex h-screen w-64 flex-shrink-0 flex-col overflow-y-auto bg-navy-gradient">
       <div className="border-b border-line px-5 py-6">
         <Link href="/tableau-de-bord" className="transition-opacity hover:opacity-80">
           <Logo tagline />
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+      <nav className="flex-1 space-y-6 px-3 py-5">
         <div>
           <NavLink
             href="/tableau-de-bord"
@@ -101,9 +114,16 @@ export function Sidebar() {
           </p>
           <div className="space-y-1">
             <NavLink
+              href="/produits"
+              active={pathname === "/produits"}
+              icon={<IconBox size={17} />}
+            >
+              Produits
+            </NavLink>
+            <NavLink
               href="/commandes"
               active={pathname.startsWith("/commandes")}
-              icon={<IconBox size={17} />}
+              icon={<IconStore size={17} />}
             >
               Commandes
             </NavLink>
@@ -124,7 +144,14 @@ export function Sidebar() {
               Pipeline
             </NavLink>
             {MODULES_A_VENIR.map((m) => (
-              <NavLinkBientot key={m}>{m}</NavLinkBientot>
+              <NavLink
+                key={m.slug}
+                href={`/${m.slug}`}
+                active={pathname === `/${m.slug}`}
+                icon={m.icon}
+              >
+                {m.label}
+              </NavLink>
             ))}
           </div>
         </div>
