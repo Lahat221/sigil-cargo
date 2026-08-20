@@ -34,6 +34,7 @@ type CommandeDetail = {
   code_barre_colis: string | null;
   photo_urls: string[] | null;
   video_url: string | null;
+  note_vocale_url: string | null;
   date_livraison_reelle: string | null;
   created_at: string;
   clients: {
@@ -56,7 +57,7 @@ export default async function CommandeDetailPage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, prix_par_kg, enveloppe, nombre_paquets, montant_total, adresse_livraison, description, remarque_interne, code_barre_colis, photo_urls, video_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
+      "id, numero, statut, poids_kg, prix_par_kg, enveloppe, nombre_paquets, montant_total, adresse_livraison, description, remarque_interne, code_barre_colis, photo_urls, video_url, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
     )
     .eq("id", params.id)
     .maybeSingle<CommandeDetail>();
@@ -84,6 +85,13 @@ export default async function CommandeDetailPage({
       .from("commandes-media")
       .createSignedUrl(commande.video_url, 3600);
     videoUrl = data?.signedUrl ?? null;
+  }
+  let noteVocaleUrl: string | null = null;
+  if (commande.note_vocale_url) {
+    const { data } = await supabase.storage
+      .from("commandes-media")
+      .createSignedUrl(commande.note_vocale_url, 3600);
+    noteVocaleUrl = data?.signedUrl ?? null;
   }
 
   return (
@@ -213,10 +221,10 @@ export default async function CommandeDetailPage({
         )}
       </div>
 
-      {(photoUrls.length > 0 || videoUrl) && (
+      {(photoUrls.length > 0 || videoUrl || noteVocaleUrl) && (
         <div className="mb-6 rounded-xl border border-slate-200/70 bg-white shadow-sm p-4">
           <h2 className="mb-3 text-sm font-medium text-slate-700">Médias</h2>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {photoUrls.map((url) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -230,6 +238,12 @@ export default async function CommandeDetailPage({
               <video src={videoUrl} controls className="h-24 rounded-md" />
             )}
           </div>
+          {noteVocaleUrl && (
+            <div className="mt-3">
+              <p className="mb-1 text-xs text-slate-500">Note vocale</p>
+              <audio src={noteVocaleUrl} controls className="h-9 w-full max-w-xs" />
+            </div>
+          )}
         </div>
       )}
 

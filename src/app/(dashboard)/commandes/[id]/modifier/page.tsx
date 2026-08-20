@@ -15,7 +15,7 @@ export default async function ModifierCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, projet_id, produit_id, poids_kg, prix_par_kg, enveloppe, nombre_paquets, adresse_livraison, description, remarque_interne, photo_urls, video_url, clients(id, nom, telephone, adresse)"
+      "id, projet_id, produit_id, poids_kg, prix_par_kg, enveloppe, nombre_paquets, adresse_livraison, description, remarque_interne, photo_urls, video_url, note_vocale_url, clients(id, nom, telephone, adresse)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -42,6 +42,14 @@ export default async function ModifierCommandePage({
       .from("commandes-media")
       .createSignedUrl(commande.video_url, 3600);
     if (data) existingVideo = { path: commande.video_url, url: data.signedUrl };
+  }
+  let existingVoiceNote = null;
+  if (commande.note_vocale_url) {
+    const { data } = await supabase.storage
+      .from("commandes-media")
+      .createSignedUrl(commande.note_vocale_url, 3600);
+    if (data)
+      existingVoiceNote = { path: commande.note_vocale_url, url: data.signedUrl };
   }
 
   return (
@@ -70,6 +78,7 @@ export default async function ModifierCommandePage({
         initialRemarqueInterne={commande.remarque_interne ?? ""}
         existingPhotos={existingPhotos}
         existingVideo={existingVideo}
+        existingVoiceNote={existingVoiceNote}
         produits={produits ?? []}
         projets={projets ?? []}
       />

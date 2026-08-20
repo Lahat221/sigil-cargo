@@ -269,6 +269,16 @@ export function IconX({ className, size = 20 }: IconProps) {
   );
 }
 
+export function IconMic({ className, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <rect x="9" y="2" width="6" height="12" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0" />
+      <path d="M12 18v4M8 22h8" />
+    </svg>
+  );
+}
+
 export function IconLogout({ className, size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { updateCommande } from "@/app/(dashboard)/commandes/actions";
 import { ClientField, type ClientSelection } from "./ClientField";
 import type { ClientMatch } from "@/app/(dashboard)/commandes/nouvelle/actions";
+import { VoiceRecorder } from "./VoiceRecorder";
 
 const MAX_PHOTOS = 5;
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
@@ -31,6 +32,7 @@ export function EditCommandeForm({
   initialRemarqueInterne,
   existingPhotos,
   existingVideo,
+  existingVoiceNote,
   produits,
   projets,
 }: {
@@ -47,6 +49,7 @@ export function EditCommandeForm({
   initialRemarqueInterne: string;
   existingPhotos: ExistingMedia[];
   existingVideo: ExistingMedia | null;
+  existingVoiceNote: ExistingMedia | null;
   produits: Produit[];
   projets: Projet[];
 }) {
@@ -73,6 +76,8 @@ export function EditCommandeForm({
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [keepVideo, setKeepVideo] = useState(existingVideo !== null);
   const [newVideo, setNewVideo] = useState<File | null>(null);
+  const [keepVoiceNote, setKeepVoiceNote] = useState(existingVoiceNote !== null);
+  const [newVoiceNote, setNewVoiceNote] = useState<Blob | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,6 +150,19 @@ export function EditCommandeForm({
         videoPath = path;
       }
 
+      let noteVocalePath: string | null =
+        keepVoiceNote && existingVoiceNote ? existingVoiceNote.path : null;
+      if (newVoiceNote) {
+        const path = `${commandeId}/note-vocale-${Date.now()}.webm`;
+        const { error: uploadError } = await supabase.storage
+          .from("commandes-media")
+          .upload(path, newVoiceNote, {
+            contentType: newVoiceNote.type || "audio/webm",
+          });
+        if (uploadError) throw new Error(uploadError.message);
+        noteVocalePath = path;
+      }
+
       const result = await updateCommande(commandeId, {
         clientId: clientSelection.clientId,
         nouveauClient: clientSelection.nouveauClient,
@@ -159,6 +177,7 @@ export function EditCommandeForm({
         remarqueInterne,
         photoPaths,
         videoPath,
+        noteVocalePath,
       });
 
       if ("error" in result) {
@@ -380,6 +399,17 @@ export function EditCommandeForm({
             />
           )}
         </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Note vocale
+        </label>
+        <VoiceRecorder
+          onChange={setNewVoiceNote}
+          existingUrl={keepVoiceNote ? existingVoiceNote?.url ?? null : null}
+          onRemoveExisting={() => setKeepVoiceNote(false)}
+        />
       </div>
 
       {error && (

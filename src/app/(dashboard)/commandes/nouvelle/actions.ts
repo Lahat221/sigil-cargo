@@ -45,6 +45,7 @@ type CreateCommandeInput = {
   remarqueInterne: string;
   photoPaths: string[];
   videoPath: string | null;
+  noteVocalePath: string | null;
 };
 
 export async function createCommande(
@@ -85,6 +86,7 @@ export async function createCommande(
     code_barre_colis: codeBarreColis,
     photo_urls: input.photoPaths.length > 0 ? input.photoPaths : null,
     video_url: input.videoPath,
+    note_vocale_url: input.noteVocalePath,
   });
 
   if (insertError) {
