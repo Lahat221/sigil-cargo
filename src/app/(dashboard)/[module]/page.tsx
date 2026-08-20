@@ -3,12 +3,8 @@ import Link from "next/link";
 import { IconArrowRight } from "@/components/ui/Icons";
 
 const MODULES: Record<string, string> = {
-  produits: "Produits",
   "projets-gp": "Projets GP",
-  reservations: "Réservations",
   publicites: "Publicités",
-  dettes: "Dettes (ce que je dois)",
-  creances: "Créances (ce que l'on me doit)",
   "charges-depenses": "Charges & Dépenses",
   "notifications-whatsapp": "Notifications WhatsApp",
   chat: "Chat",

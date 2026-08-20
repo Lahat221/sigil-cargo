@@ -5,17 +5,12 @@ import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
 import {
   IconDashboard,
-  IconBox,
   IconStore,
   IconPlus,
   IconGrid,
-  IconPackage,
   IconFolder,
-  IconCalendar,
   IconMegaphone,
   IconUsers,
-  IconDocument,
-  IconExchange,
   IconInvoice,
   IconSend,
   IconChat,
@@ -60,17 +55,12 @@ function NavLink({
   );
 }
 
-const MODULES_A_VENIR: { slug: string; label: string; icon: React.ReactNode }[] = [
-  { slug: "produits", label: "Produits", icon: <IconPackage size={17} /> },
+const MODULES_AVANT_CLIENTS = [
   { slug: "projets-gp", label: "Projets GP", icon: <IconFolder size={17} /> },
-  { slug: "reservations", label: "Réservations", icon: <IconCalendar size={17} /> },
   { slug: "publicites", label: "Publicités", icon: <IconMegaphone size={17} /> },
-  { slug: "dettes", label: "Dettes (ce que je dois)", icon: <IconDocument size={17} /> },
-  {
-    slug: "creances",
-    label: "Créances (ce que l'on me doit)",
-    icon: <IconExchange size={17} />,
-  },
+];
+
+const MODULES_APRES_CLIENTS = [
   {
     slug: "charges-depenses",
     label: "Charges & Dépenses",
@@ -113,13 +103,6 @@ export function Sidebar() {
           </p>
           <div className="space-y-1">
             <NavLink
-              href="/produits"
-              active={pathname === "/produits"}
-              icon={<IconBox size={17} />}
-            >
-              Produits
-            </NavLink>
-            <NavLink
               href="/commandes"
               active={pathname.startsWith("/commandes")}
               icon={<IconStore size={17} />}
@@ -142,7 +125,7 @@ export function Sidebar() {
             >
               Pipeline
             </NavLink>
-            {MODULES_A_VENIR.slice(0, 4).map((m) => (
+            {MODULES_AVANT_CLIENTS.map((m) => (
               <NavLink
                 key={m.slug}
                 href={`/${m.slug}`}
@@ -159,7 +142,7 @@ export function Sidebar() {
             >
               Clients
             </NavLink>
-            {MODULES_A_VENIR.slice(4).map((m) => (
+            {MODULES_APRES_CLIENTS.map((m) => (
               <NavLink
                 key={m.slug}
                 href={`/${m.slug}`}
