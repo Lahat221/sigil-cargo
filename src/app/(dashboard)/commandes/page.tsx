@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FiltresBar } from "@/components/commandes/FiltresBar";
 import { CommandesListe } from "@/components/commandes/CommandesListe";
+import { ExportCommandesButton } from "@/components/commandes/ExportCommandesButton";
 import type { CommandeListItem } from "@/components/commandes/types";
 import type { StatutCommande } from "@/types/database.types";
 
@@ -18,6 +20,9 @@ export default async function CommandesPage({
     .select("id, nom")
     .order("created_at", { ascending: false });
 
+  let commandes: CommandeListItem[] = [];
+  let loadError: string | null = null;
+
   let query = supabase
     .from("commandes")
     .select(
@@ -33,49 +38,70 @@ export default async function CommandesPage({
   }
 
   const q = searchParams.q?.trim();
+
   if (q) {
     const numero = Number(q);
-    const { data: matchingClients } = await supabase
-      .from("clients")
-      .select("id")
-      .or(`nom.ilike.%${q}%,telephone.ilike.%${q}%`);
+    const [{ data: matchingClients }, { data: matchingProduits }] =
+      await Promise.all([
+        supabase
+          .from("clients")
+          .select("id")
+          .or(`nom.ilike.%${q}%,telephone.ilike.%${q}%`),
+        supabase.from("produits").select("id").ilike("nom", `%${q}%`),
+      ]);
 
     const clientIds = (matchingClients ?? []).map((c) => c.id);
-    const orParts = [];
+    const produitIds = (matchingProduits ?? []).map((p) => p.id);
+
+    const orParts: string[] = [`description.ilike.%${q}%`];
     if (!Number.isNaN(numero)) orParts.push(`numero.eq.${numero}`);
     if (clientIds.length > 0)
       orParts.push(`client_id.in.(${clientIds.join(",")})`);
+    if (produitIds.length > 0)
+      orParts.push(`produit_id.in.(${produitIds.join(",")})`);
 
-    if (orParts.length === 0) {
-      // Aucun client ni numéro ne correspond à la recherche.
-      return (
-        <div>
-          <h1 className="mb-4 text-lg font-semibold text-slate-900">
-            Commandes
-          </h1>
-          <FiltresBar projets={projets ?? []} />
-          <CommandesListe commandes={[]} />
-        </div>
-      );
-    }
     query = query.or(orParts.join(","));
   }
 
-  const { data: commandes, error } = await query.returns<CommandeListItem[]>();
-
-  if (error) {
-    return (
-      <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-        Erreur lors du chargement des commandes : {error.message}
-      </p>
-    );
+  {
+    const { data, error } = await query.returns<CommandeListItem[]>();
+    if (error) {
+      loadError = error.message;
+    } else {
+      commandes = data ?? [];
+    }
   }
 
   return (
     <div>
-      <h1 className="mb-4 text-lg font-semibold text-slate-900">Commandes</h1>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-lg font-semibold text-slate-900">Commandes</h1>
+        <div className="flex gap-2">
+          <Link
+            href="/commandes/pipeline"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          >
+            Pipeline
+          </Link>
+          <ExportCommandesButton commandes={commandes} />
+          <Link
+            href="/commandes/nouvelle"
+            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+          >
+            + Nouvelle commande
+          </Link>
+        </div>
+      </div>
+
       <FiltresBar projets={projets ?? []} />
-      <CommandesListe commandes={commandes ?? []} />
+
+      {loadError ? (
+        <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Erreur lors du chargement des commandes : {loadError}
+        </p>
+      ) : (
+        <CommandesListe commandes={commandes} />
+      )}
     </div>
   );
 }

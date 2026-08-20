@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StatutBadge } from "./StatutBadge";
+import { SupprimerCommandeButton } from "./SupprimerCommandeButton";
 import type { CommandeListItem } from "./types";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
@@ -69,6 +70,7 @@ export function CommandesListe({
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3 font-medium">Poids</th>
                 <th className="px-4 py-3 font-medium">Montant</th>
+                <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -97,6 +99,20 @@ export function CommandesListe({
                   <td className="px-4 py-3 font-medium text-slate-900">
                     {montantFormatter.format(c.montant_total)}
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/commandes/${c.id}/modifier`}
+                        className="text-sm text-slate-600 hover:underline"
+                      >
+                        Modifier
+                      </Link>
+                      <SupprimerCommandeButton
+                        commandeId={c.id}
+                        numero={c.numero}
+                      />
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -105,30 +121,42 @@ export function CommandesListe({
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {commandes.map((c) => (
-            <Link
+            <div
               key={c.id}
-              href={`/commandes/${c.id}`}
               className="rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm"
             >
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-semibold text-slate-900">
-                  #{c.numero}
-                </span>
-                <StatutBadge statut={c.statut} />
+              <Link href={`/commandes/${c.id}`}>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="font-semibold text-slate-900">
+                    #{c.numero}
+                  </span>
+                  <StatutBadge statut={c.statut} />
+                </div>
+                <p className="text-sm text-slate-700">
+                  {c.clients?.nom ?? "—"}
+                </p>
+                <p className="mb-3 text-xs text-slate-500">
+                  {c.projets?.nom ?? "—"}
+                </p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">
+                    {formatPoids(c.poids_kg)}
+                  </span>
+                  <span className="font-medium text-slate-900">
+                    {montantFormatter.format(c.montant_total)}
+                  </span>
+                </div>
+              </Link>
+              <div className="mt-3 flex items-center gap-3 border-t border-slate-100 pt-2">
+                <Link
+                  href={`/commandes/${c.id}/modifier`}
+                  className="text-sm text-slate-600 hover:underline"
+                >
+                  Modifier
+                </Link>
+                <SupprimerCommandeButton commandeId={c.id} numero={c.numero} />
               </div>
-              <p className="text-sm text-slate-700">
-                {c.clients?.nom ?? "—"}
-              </p>
-              <p className="mb-3 text-xs text-slate-500">
-                {c.projets?.nom ?? "—"}
-              </p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">{formatPoids(c.poids_kg)}</span>
-                <span className="font-medium text-slate-900">
-                  {montantFormatter.format(c.montant_total)}
-                </span>
-              </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

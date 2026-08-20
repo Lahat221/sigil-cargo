@@ -55,7 +55,7 @@ export function FiltresBar({
       />
 
       <select
-        defaultValue={searchParams.get("statut") ?? ""}
+        value={searchParams.get("statut") ?? ""}
         onChange={(e) => setParam("statut", e.target.value)}
         className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
       >
@@ -68,7 +68,7 @@ export function FiltresBar({
       </select>
 
       <select
-        defaultValue={searchParams.get("projet") ?? ""}
+        value={searchParams.get("projet") ?? ""}
         onChange={(e) => setParam("projet", e.target.value)}
         className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
       >
