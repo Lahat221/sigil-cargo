@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { StatutBadge, STATUT_LABELS } from "@/components/commandes/StatutBadge";
+import { DashboardFiltres } from "@/components/dashboard/DashboardFiltres";
 import type { StatutCommande } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -19,23 +20,76 @@ const STATUTS_PIPELINE: StatutCommande[] = [
   "livree",
 ];
 
-export default async function TableauDeBordPage() {
+function calculerPeriode(
+  periode: string | undefined,
+  debut: string | undefined,
+  fin: string | undefined
+): { debut: string | null; fin: string | null } {
+  const maintenant = new Date();
+
+  if (periode === "jour") {
+    const d = new Date(maintenant);
+    d.setHours(0, 0, 0, 0);
+    return { debut: d.toISOString(), fin: null };
+  }
+  if (periode === "semaine") {
+    const d = new Date(maintenant);
+    const jour = d.getDay() === 0 ? 7 : d.getDay();
+    d.setDate(d.getDate() - jour + 1);
+    d.setHours(0, 0, 0, 0);
+    return { debut: d.toISOString(), fin: null };
+  }
+  if (periode === "mois") {
+    const d = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
+    return { debut: d.toISOString(), fin: null };
+  }
+  if (periode === "personnalise") {
+    return {
+      debut: debut ? new Date(debut).toISOString() : null,
+      fin: fin ? new Date(fin + "T23:59:59").toISOString() : null,
+    };
+  }
+  return { debut: null, fin: null };
+}
+
+export default async function TableauDeBordPage({
+  searchParams,
+}: {
+  searchParams: { projet?: string; periode?: string; debut?: string; fin?: string };
+}) {
   const supabase = createClient();
 
-  const [{ data: commandes }, { count: nombreClients }] = await Promise.all([
-    supabase
-      .from("commandes")
-      .select(
-        "id, numero, statut, montant_total, created_at, clients(nom), projets(nom)"
-      )
-      .order("created_at", { ascending: false }),
-    supabase.from("clients").select("id", { count: "exact", head: true }),
-  ]);
+  const { data: projets } = await supabase
+    .from("projets")
+    .select("id, nom")
+    .order("created_at", { ascending: false });
+
+  const { debut, fin } = calculerPeriode(
+    searchParams.periode,
+    searchParams.debut,
+    searchParams.fin
+  );
+
+  let query = supabase
+    .from("commandes")
+    .select(
+      "id, numero, statut, poids_kg, montant_total, created_at, clients(nom), projets(nom), produits(nom)"
+    )
+    .order("created_at", { ascending: false });
+
+  if (searchParams.projet) query = query.eq("projet_id", searchParams.projet);
+  if (debut) query = query.gte("created_at", debut);
+  if (fin) query = query.lte("created_at", fin);
+
+  const { data: commandes } = await query;
+  const { count: nombreClients } = await supabase
+    .from("clients")
+    .select("id", { count: "exact", head: true });
 
   const toutes = commandes ?? [];
   const actives = toutes.filter((c) => c.statut !== "annulee");
 
-  const montantTotal = actives.reduce((sum, c) => sum + c.montant_total, 0);
+  const chiffreAffaires = actives.reduce((sum, c) => sum + c.montant_total, 0);
   const compteParStatut = STATUTS_PIPELINE.reduce<Record<string, number>>(
     (acc, s) => {
       acc[s] = toutes.filter((c) => c.statut === s).length;
@@ -43,49 +97,47 @@ export default async function TableauDeBordPage() {
     },
     {}
   );
+
+  const poidsParProduit = new Map<string, number>();
+  for (const c of actives) {
+    const nom = c.produits?.nom ?? "—";
+    poidsParProduit.set(nom, (poidsParProduit.get(nom) ?? 0) + c.poids_kg);
+  }
+  const meilleurProduit =
+    Array.from(poidsParProduit.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ??
+    "—";
+
   const recentes = toutes.slice(0, 8);
 
   return (
     <div>
-      <h1 className="mb-6 text-lg font-semibold text-slate-900">
-        Tableau de bord
-      </h1>
+      <h1 className="text-2xl font-bold text-navy">Tableau de bord</h1>
+      <p className="mb-6 text-sm text-slate-500">
+        SIGIL CARGO · Vue d&apos;ensemble
+      </p>
 
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Commandes actives
-          </p>
-          <p className="mt-1 text-2xl font-bold text-navy">
-            {actives.length}
-          </p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Montant total
-          </p>
-          <p className="mt-1 text-2xl font-bold text-navy">
-            {montantFormatter.format(montantTotal)}
-          </p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Clients
-          </p>
-          <p className="mt-1 text-2xl font-bold text-navy">
-            {nombreClients ?? 0}
-          </p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            À traiter
-          </p>
-          <p className="mt-1 text-2xl font-bold text-navy">
-            {compteParStatut.recue +
-              compteParStatut.a_preparer +
-              compteParStatut.en_preparation}
-          </p>
-        </div>
+      <DashboardFiltres projets={projets ?? []} />
+
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <KpiCard
+          label="Chiffre d'affaires"
+          valeur={montantFormatter.format(chiffreAffaires)}
+          sousTitre={`${actives.length} commande(s)`}
+          couleur="bg-green-50 text-green-600"
+        />
+        <KpiCard
+          label="Commandes"
+          valeur={toutes.length.toString()}
+          sousTitre={`${nombreClients ?? 0} client(s) au total`}
+          couleur="bg-blue-50 text-blue-600"
+        />
+        <KpiCard
+          label="Meilleur produit"
+          valeur={meilleurProduit}
+          sousTitre="par poids expédié"
+          couleur="bg-amber-50 text-amber-600"
+          petit
+        />
       </div>
 
       <div className="mb-8 rounded-lg border border-slate-200 bg-white p-5">
@@ -153,6 +205,38 @@ export default async function TableauDeBordPage() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function KpiCard({
+  label,
+  valeur,
+  sousTitre,
+  couleur,
+  petit,
+}: {
+  label: string;
+  valeur: string;
+  sousTitre: string;
+  couleur: string;
+  petit?: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-sm text-slate-500">{label}</p>
+        <span className={`h-8 w-8 rounded-full ${couleur}`} />
+      </div>
+      <p
+        className={`font-bold text-navy ${
+          petit ? "truncate text-lg" : "text-2xl"
+        }`}
+        title={valeur}
+      >
+        {valeur}
+      </p>
+      <p className="mt-1 text-xs text-slate-400">{sousTitre}</p>
     </div>
   );
 }
