@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 
@@ -11,6 +11,19 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "SIGIL CARGO — Commandes",
   description: "Gestion des commandes de fret aérien Dakar → France",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "SIGIL CARGO",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0A1A33",
+  viewportFit: "cover",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

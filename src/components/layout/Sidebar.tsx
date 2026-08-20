@@ -67,6 +67,59 @@ const MODULES_APRES_CLIENTS = [
   { slug: "parametres", label: "Paramètres", icon: <IconSettings size={17} /> },
 ];
 
+const TABS_PRINCIPAUX = [
+  { href: "/tableau-de-bord", label: "Accueil", icon: <IconDashboard size={20} />, exact: true },
+  { href: "/commandes", label: "Commandes", icon: <IconStore size={20} />, exact: false },
+  { href: "/projets", label: "Projets", icon: <IconFolder size={20} />, exact: false },
+  { href: "/clients", label: "Clients", icon: <IconUsers size={20} />, exact: false },
+];
+
+function MobileTabBar({
+  pathname,
+  onMoreClick,
+  moreActive,
+}: {
+  pathname: string;
+  onMoreClick: () => void;
+  moreActive: boolean;
+}) {
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-line bg-navy-2/95 shadow-[0_-4px_16px_rgba(0,0,0,0.25)] backdrop-blur md:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      {TABS_PRINCIPAUX.map((tab) => {
+        const active = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
+        return (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
+              active ? "text-gold-1" : "text-white/55 active:text-white"
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </Link>
+        );
+      })}
+      <button
+        type="button"
+        onClick={onMoreClick}
+        aria-label="Plus de modules"
+        className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
+          moreActive ? "text-gold-1" : "text-white/55 active:text-white"
+        }`}
+      >
+        <IconMenu size={20} />
+        Plus
+      </button>
+    </nav>
+  );
+}
+
+const ROUTES_TABS_PRINCIPAUX = ["/tableau-de-bord", "/commandes", "/projets", "/clients"];
+
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -76,18 +129,15 @@ export function Sidebar() {
     setMobileOpen(false);
   }, [pathname]);
 
+  const dansTabsPrincipaux = ROUTES_TABS_PRINCIPAUX.some((r) => pathname.startsWith(r));
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setMobileOpen(true)}
-        aria-label="Ouvrir le menu"
-        className={`fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-md bg-navy text-white shadow-md md:hidden ${
-          mobileOpen ? "hidden" : ""
-        }`}
-      >
-        <IconMenu size={20} />
-      </button>
+      <MobileTabBar
+        pathname={pathname}
+        onMoreClick={() => setMobileOpen(true)}
+        moreActive={mobileOpen || !dansTabsPrincipaux}
+      />
 
       {mobileOpen && (
         <div

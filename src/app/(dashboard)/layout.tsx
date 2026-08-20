@@ -41,7 +41,7 @@ export default async function DashboardLayout({
             </div>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 print:bg-white">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:px-6 md:pb-6 print:bg-white">
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
