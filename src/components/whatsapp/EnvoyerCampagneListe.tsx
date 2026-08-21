@@ -2,12 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { marquerEnvoye } from "@/app/(dashboard)/notifications-whatsapp/actions";
+import {
+  envoyerMessageWhatsApp,
+  marquerEnvoye,
+} from "@/app/(dashboard)/notifications-whatsapp/actions";
 import { IconWhatsApp } from "@/components/ui/Icons";
 
 type Destinataire = {
   id: string;
   envoyee: boolean;
+  erreur?: string | null;
   clients: { nom: string; telephone: string | null; telephone_pays: string | null } | null;
 };
 
@@ -30,8 +34,9 @@ export function EnvoyerCampagneListe({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [erreurs, setErreurs] = useState<Record<string, string>>({});
 
-  function envoyer(d: Destinataire) {
+  function envoyerManuellement(d: Destinataire) {
     if (!d.clients?.telephone) return;
     const numeroWa = formatNumeroWhatsApp(
       d.clients.telephone,
@@ -50,21 +55,51 @@ export function EnvoyerCampagneListe({
     });
   }
 
+  function envoyer(d: Destinataire) {
+    if (!d.clients?.telephone) return;
+    setErreurs((prev) => {
+      const next = { ...prev };
+      delete next[d.id];
+      return next;
+    });
+    setPendingId(d.id);
+    startTransition(async () => {
+      const result = await envoyerMessageWhatsApp(d.id);
+      if ("error" in result) {
+        if (result.error.includes("n'est pas configuré")) {
+          // Twilio pas encore prêt : on retombe sur l'ouverture manuelle de WhatsApp.
+          envoyerManuellement(d);
+          return;
+        }
+        setErreurs((prev) => ({ ...prev, [d.id]: result.error }));
+        setPendingId(null);
+        return;
+      }
+      router.refresh();
+      setPendingId(null);
+    });
+  }
+
   return (
     <div className="divide-y divide-slate-100">
       {destinataires.map((d) => (
         <div
           key={d.id}
-          className="flex items-center justify-between py-2.5 text-sm"
+          className="flex items-center justify-between gap-3 py-2.5 text-sm"
         >
-          <div>
+          <div className="min-w-0">
             <p className="font-medium text-slate-900">
               {d.clients?.nom ?? "—"}
             </p>
             <p className="text-slate-500">{d.clients?.telephone ?? "—"}</p>
+            {(erreurs[d.id] ?? d.erreur) && (
+              <p className="mt-0.5 truncate text-xs text-red-600">
+                {erreurs[d.id] ?? d.erreur}
+              </p>
+            )}
           </div>
           {d.envoyee ? (
-            <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+            <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
               Envoyé
             </span>
           ) : (
@@ -72,7 +107,7 @@ export function EnvoyerCampagneListe({
               type="button"
               disabled={isPending || !d.clients?.telephone}
               onClick={() => envoyer(d)}
-              className="flex items-center gap-1.5 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1.5 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
             >
               <IconWhatsApp size={13} />
               {isPending && pendingId === d.id ? "..." : "Envoyer"}

@@ -16,11 +16,17 @@ export default async function CampagnePage({
 
   const { data: campagne } = await supabase
     .from("campagnes_whatsapp")
-    .select("id, nom, message, image_url")
+    .select("id, nom, message, image_url, content_sid")
     .eq("id", params.id)
     .maybeSingle();
 
   if (!campagne) notFound();
+
+  const twilioConfigure = Boolean(
+    process.env.TWILIO_ACCOUNT_SID &&
+      process.env.TWILIO_AUTH_TOKEN &&
+      process.env.TWILIO_WHATSAPP_FROM
+  );
 
   let imageUrlSigned: string | null = null;
   if (campagne.image_url) {
@@ -32,7 +38,7 @@ export default async function CampagnePage({
 
   const { data: destinataires } = await supabase
     .from("campagnes_whatsapp_destinataires")
-    .select("id, envoyee, clients(nom, telephone, telephone_pays)")
+    .select("id, envoyee, erreur, clients(nom, telephone, telephone_pays)")
     .eq("campagne_id", campagne.id)
     .order("created_at");
 
@@ -58,6 +64,13 @@ export default async function CampagnePage({
         <SupprimerCampagneButton campagneId={campagne.id} nom={campagne.nom} />
       </div>
 
+      {!twilioConfigure && (
+        <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Envoi automatique Twilio non configuré — les messages s&apos;ouvrent
+          pour l&apos;instant dans WhatsApp pour un envoi manuel.
+        </p>
+      )}
+
       <div className="mb-4 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
         <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
           Message
@@ -65,6 +78,11 @@ export default async function CampagnePage({
         <p className="whitespace-pre-wrap text-sm text-slate-900">
           {campagne.message}
         </p>
+        {campagne.content_sid && (
+          <p className="mt-2 text-xs text-slate-400">
+            Modèle approuvé : <span className="font-mono">{campagne.content_sid}</span>
+          </p>
+        )}
       </div>
 
       {imageUrlSigned && (

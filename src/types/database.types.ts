@@ -291,6 +291,7 @@ export interface Database {
           nom: string;
           message: string;
           image_url: string | null;
+          content_sid: string | null;
           created_at: string;
         };
         Insert: {
@@ -298,6 +299,7 @@ export interface Database {
           nom: string;
           message: string;
           image_url?: string | null;
+          content_sid?: string | null;
           created_at?: string;
         };
         Update: Partial<
@@ -312,6 +314,7 @@ export interface Database {
           client_id: string;
           envoyee: boolean;
           envoyee_at: string | null;
+          erreur: string | null;
           created_at: string;
         };
         Insert: {
@@ -320,6 +323,7 @@ export interface Database {
           client_id: string;
           envoyee?: boolean;
           envoyee_at?: string | null;
+          erreur?: string | null;
           created_at?: string;
         };
         Update: Partial<

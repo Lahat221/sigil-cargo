@@ -14,6 +14,7 @@ export function CampagneForm({ clients }: { clients: Client[] }) {
     "Bonjour {nom}, "
   );
   const [affiche, setAffiche] = useState<File | null>(null);
+  const [contentSid, setContentSid] = useState("");
   const [recherche, setRecherche] = useState("");
   const [selectionnes, setSelectionnes] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
@@ -74,7 +75,8 @@ export function CampagneForm({ clients }: { clients: Client[] }) {
         nom,
         message,
         Array.from(selectionnes),
-        imageUrl
+        imageUrl,
+        contentSid || null
       );
 
       if ("error" in result) {
@@ -125,6 +127,25 @@ export function CampagneForm({ clients }: { clients: Client[] }) {
         <p className="mt-1 text-xs text-slate-400">
           Utilise <code className="font-mono">{"{nom}"}</code> pour insérer le
           nom du client automatiquement.
+        </p>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Modèle approuvé Twilio (optionnel)
+        </label>
+        <input
+          type="text"
+          placeholder="HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          value={contentSid}
+          onChange={(e) => setContentSid(e.target.value)}
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-mono focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy/20"
+        />
+        <p className="mt-1 text-xs text-slate-400">
+          Content SID d&apos;un modèle WhatsApp approuvé par Meta (Twilio
+          Content Template Builder). Nécessaire pour contacter un client qui
+          ne t&apos;a pas écrit depuis plus de 24h — sinon l&apos;envoi via
+          l&apos;API échouera et se rabattra sur l&apos;envoi manuel.
         </p>
       </div>
 
