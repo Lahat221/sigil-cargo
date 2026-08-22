@@ -23,7 +23,7 @@ export default async function NotificationsWhatsAppPage() {
         .select("campagne_id, envoyee"),
       supabase
         .from("whatsapp_messages")
-        .select("id, telephone, body, created_at, clients(nom)")
+        .select("id, telephone, body, media_type, created_at, clients(nom)")
         .eq("direction", "in")
         .order("created_at", { ascending: false })
         .limit(20),
@@ -84,7 +84,19 @@ export default async function NotificationsWhatsAppPage() {
                     {dateFormatter.format(new Date(m.created_at))}
                   </p>
                 </div>
-                {m.body && <p className="text-slate-600">{m.body}</p>}
+                {m.body ? (
+                  <p className="text-slate-600">{m.body}</p>
+                ) : m.media_type ? (
+                  <p className="text-slate-400">
+                    {m.media_type.startsWith("image/")
+                      ? "📷 Photo"
+                      : m.media_type.startsWith("video/")
+                      ? "🎥 Vidéo"
+                      : m.media_type.startsWith("audio/")
+                      ? "🎙️ Note vocale"
+                      : "📎 Média"}
+                  </p>
+                ) : null}
               </Link>
             ))}
           </div>

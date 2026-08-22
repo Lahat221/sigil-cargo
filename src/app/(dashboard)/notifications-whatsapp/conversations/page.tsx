@@ -14,7 +14,7 @@ export default async function ConversationsPage() {
 
   const { data: messages } = await supabase
     .from("whatsapp_messages")
-    .select("telephone, body, direction, created_at, clients(nom)")
+    .select("telephone, body, media_type, direction, created_at, clients(nom)")
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -24,6 +24,7 @@ export default async function ConversationsPage() {
       telephone: string;
       nom: string | null;
       dernierMessage: string | null;
+      mediaType: string | null;
       direction: "in" | "out";
       date: string;
     }
@@ -35,9 +36,17 @@ export default async function ConversationsPage() {
       telephone: m.telephone,
       nom: (m.clients as unknown as { nom: string } | null)?.nom ?? null,
       dernierMessage: m.body,
+      mediaType: m.media_type,
       direction: m.direction,
       date: m.created_at,
     });
+  }
+
+  function apercuMedia(type: string) {
+    if (type.startsWith("image/")) return "📷 Photo";
+    if (type.startsWith("video/")) return "🎥 Vidéo";
+    if (type.startsWith("audio/")) return "🎙️ Note vocale";
+    return "📎 Média";
   }
 
   const liste = Array.from(conversations.values());
@@ -79,7 +88,8 @@ export default async function ConversationsPage() {
                 </div>
                 <p className="truncate text-sm text-slate-500">
                   {c.direction === "out" ? "Vous : " : ""}
-                  {c.dernierMessage ?? "(média)"}
+                  {c.dernierMessage ??
+                    (c.mediaType ? apercuMedia(c.mediaType) : "(média)")}
                 </p>
               </Link>
             ))}
