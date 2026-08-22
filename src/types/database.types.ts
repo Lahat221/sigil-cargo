@@ -377,6 +377,22 @@ export interface Database {
           }
         ];
       };
+      whatsapp_relay_state: {
+        Row: {
+          id: number;
+          client_telephone: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          client_telephone?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["whatsapp_relay_state"]["Insert"]
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
