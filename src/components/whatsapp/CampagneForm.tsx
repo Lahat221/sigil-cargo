@@ -160,9 +160,10 @@ export function CampagneForm({ clients }: { clients: Client[] }) {
           className="w-full text-sm"
         />
         <p className="mt-1 text-xs text-slate-400">
-          WhatsApp ne permet pas de joindre automatiquement une image via un
-          lien — tu pourras la télécharger depuis la campagne et l&apos;attacher
-          toi-même dans chaque conversation.
+          L&apos;image sera jointe automatiquement aux envois via Twilio. Si
+          l&apos;envoi bascule en mode manuel (WhatsApp non configuré), tu
+          devras la télécharger depuis la campagne et l&apos;attacher
+          toi-même.
         </p>
       </div>
 

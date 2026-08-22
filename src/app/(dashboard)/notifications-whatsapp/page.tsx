@@ -54,13 +54,27 @@ export default async function NotificationsWhatsAppPage() {
 
       {messagesRecus && messagesRecus.length > 0 && (
         <div className="mb-4 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
-          <h2 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-slate-700">
-            <IconWhatsApp size={15} />
-            Messages reçus récemment
-          </h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+              <IconWhatsApp size={15} />
+              Messages reçus récemment
+            </h2>
+            <Link
+              href="/notifications-whatsapp/conversations"
+              className="text-xs font-medium text-navy hover:underline"
+            >
+              Voir les conversations →
+            </Link>
+          </div>
           <div className="divide-y divide-slate-100">
             {messagesRecus.map((m) => (
-              <div key={m.id} className="py-2.5 text-sm">
+              <Link
+                key={m.id}
+                href={`/notifications-whatsapp/conversations/${encodeURIComponent(
+                  m.telephone
+                )}`}
+                className="block py-2.5 text-sm hover:bg-slate-50"
+              >
                 <div className="flex items-center justify-between">
                   <p className="font-medium text-slate-900">
                     {(m.clients as unknown as { nom: string } | null)?.nom ??
@@ -71,7 +85,7 @@ export default async function NotificationsWhatsAppPage() {
                   </p>
                 </div>
                 {m.body && <p className="text-slate-600">{m.body}</p>}
-              </div>
+              </Link>
             ))}
           </div>
         </div>

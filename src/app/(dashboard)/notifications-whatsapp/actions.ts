@@ -71,7 +71,7 @@ export async function envoyerMessageWhatsApp(
   const { data: destinataire, error: fetchError } = await supabase
     .from("campagnes_whatsapp_destinataires")
     .select(
-      "id, clients(nom, telephone, telephone_pays), campagnes_whatsapp(message, content_sid)"
+      "id, clients(nom, telephone, telephone_pays), campagnes_whatsapp(message, content_sid, image_url)"
     )
     .eq("id", destinataireId)
     .single();
@@ -88,6 +88,7 @@ export async function envoyerMessageWhatsApp(
   const campagne = destinataire.campagnes_whatsapp as unknown as {
     message: string;
     content_sid: string | null;
+    image_url: string | null;
   } | null;
 
   if (!client?.telephone) {
@@ -107,6 +108,14 @@ export async function envoyerMessageWhatsApp(
 
   const numero = formatNumeroE164(client.telephone, client.telephone_pays);
 
+  let mediaUrl: string | undefined;
+  if (campagne.image_url) {
+    const { data: signed } = await supabase.storage
+      .from("campagnes-media")
+      .createSignedUrl(campagne.image_url, 3600);
+    mediaUrl = signed?.signedUrl;
+  }
+
   try {
     const twilioClient = getTwilioClient();
 
@@ -124,6 +133,7 @@ export async function envoyerMessageWhatsApp(
         from: whatsappAddress(from),
         to: whatsappAddress(numero),
         body: campagne.message.replace(/\{nom\}/gi, client.nom),
+        ...(mediaUrl ? { mediaUrl: [mediaUrl] } : {}),
       });
     }
 
@@ -146,6 +156,53 @@ export async function envoyerMessageWhatsApp(
       .eq("id", destinataireId);
     revalidatePath("/notifications-whatsapp");
     return { error: message };
+  }
+}
+
+export async function envoyerReponseWhatsApp(
+  telephone: string,
+  clientId: string | null,
+  body: string
+): Promise<{ error: string } | { success: true }> {
+  if (!body.trim()) {
+    return { error: "Le message est vide." };
+  }
+
+  const from = process.env.TWILIO_WHATSAPP_FROM;
+  if (!from) {
+    return {
+      error:
+        "TWILIO_WHATSAPP_FROM n'est pas configuré (numéro WhatsApp Twilio manquant).",
+    };
+  }
+
+  const supabase = createClient();
+
+  try {
+    const twilioClient = getTwilioClient();
+    const message = await twilioClient.messages.create({
+      from: whatsappAddress(from),
+      to: whatsappAddress(telephone),
+      body: body.trim(),
+    });
+
+    await supabase.from("whatsapp_messages").insert({
+      client_id: clientId,
+      telephone,
+      direction: "out",
+      body: body.trim(),
+      message_sid: message.sid,
+    });
+
+    revalidatePath(
+      `/notifications-whatsapp/conversations/${encodeURIComponent(telephone)}`
+    );
+    revalidatePath("/notifications-whatsapp");
+    return { success: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Erreur inconnue.",
+    };
   }
 }
 

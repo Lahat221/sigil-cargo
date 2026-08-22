@@ -109,7 +109,8 @@ export default async function CampagnePage({
                 Télécharger
               </a>
               <p className="mt-1 text-xs text-slate-400">
-                À joindre manuellement dans WhatsApp avant l&apos;envoi.
+                Jointe automatiquement lors de l&apos;envoi via Twilio (sauf
+                si un modèle approuvé est utilisé, ou en mode manuel).
               </p>
             </div>
           </div>
