@@ -5,7 +5,13 @@ import { StatutBadge, STATUT_LABELS } from "@/components/commandes/StatutBadge";
 import { StatutStepper } from "@/components/commandes/StatutStepper";
 import { SupprimerCommandeButton } from "@/components/commandes/SupprimerCommandeButton";
 import { NotifButtons } from "@/components/commandes/NotifButtons";
-import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
+import { PartagerWhatsAppButton } from "@/components/commandes/PartagerMediaButton";
+import {
+  IconPencil,
+  IconFileText,
+  IconPrinter,
+  IconDownload,
+} from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -152,6 +158,21 @@ export default async function CommandeDetailPage({
           montantTotal={commande.montant_total}
           description={commande.description}
         />
+        <PartagerWhatsAppButton
+          label="Partager la commande (WhatsApp perso)"
+          clientTelephone={commande.clients?.telephone ?? null}
+          clientTelephonePays={commande.clients?.telephone_pays ?? null}
+          texte={[
+            `Commande #${commande.numero} chez SIGIL CARGO`,
+            commande.projets?.nom ? `Projet : ${commande.projets.nom}` : null,
+            `Poids : ${commande.poids_kg} kg`,
+            `Montant : ${montantFormatter.format(commande.montant_total)}`,
+            `Statut : ${STATUT_LABELS[commande.statut]}`,
+            commande.description ? `Contenu : ${commande.description}` : null,
+          ]
+            .filter(Boolean)
+            .join("\n")}
+        />
         <SupprimerCommandeButton
           commandeId={commande.id}
           numero={commande.numero}
@@ -224,21 +245,61 @@ export default async function CommandeDetailPage({
 
       {(photoUrls.length > 0 || videoUrl || noteVocaleUrl) && (
         <div className="mb-6 rounded-xl border border-slate-200/70 bg-white shadow-sm p-4">
-          <h2 className="mb-3 text-sm font-medium text-slate-700">Médias</h2>
-          <div className="flex flex-wrap items-center gap-3">
-            {photoUrls.map((url) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={url}
-                src={url}
-                alt="Photo commande"
-                className="h-24 w-24 rounded-md object-cover"
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-medium text-slate-700">Médias</h2>
+            {(photoUrls.length > 0 || videoUrl) && (
+              <PartagerWhatsAppButton
+                label="Partager avec le client (WhatsApp perso)"
+                clientTelephone={commande.clients?.telephone ?? null}
+                clientTelephonePays={commande.clients?.telephone_pays ?? null}
+                texte={`Bonjour ${commande.clients?.nom ?? ""}, voici les photos/vidéo de votre colis (commande #${commande.numero}).`}
               />
-            ))}
-            {videoUrl && (
-              <video src={videoUrl} controls className="h-24 rounded-md" />
             )}
           </div>
+          <div className="flex flex-wrap items-start gap-3">
+            {photoUrls.map((url) => (
+              <div key={url} className="flex flex-col items-center gap-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt="Photo commande"
+                  className="h-24 w-24 rounded-md object-cover"
+                />
+                <a
+                  href={url}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 text-xs text-navy hover:underline"
+                >
+                  <IconDownload size={12} />
+                  Télécharger
+                </a>
+              </div>
+            ))}
+            {videoUrl && (
+              <div className="flex flex-col items-center gap-1">
+                <video src={videoUrl} controls className="h-24 rounded-md" />
+                <a
+                  href={videoUrl}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 text-xs text-navy hover:underline"
+                >
+                  <IconDownload size={12} />
+                  Télécharger
+                </a>
+              </div>
+            )}
+          </div>
+          {(photoUrls.length > 0 || videoUrl) && (
+            <p className="mt-2 text-xs text-slate-400">
+              Télécharge le fichier puis joins-le manuellement dans la
+              conversation WhatsApp qui s&apos;ouvre — WhatsApp ne permet pas
+              d&apos;envoyer une pièce jointe automatiquement via un lien.
+            </p>
+          )}
           {noteVocaleUrl && (
             <div className="mt-3">
               <p className="mb-1 text-xs text-slate-500">Note vocale</p>
