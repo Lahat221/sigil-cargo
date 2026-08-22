@@ -83,8 +83,8 @@ async function envoyerVersOwner(
   supabase: AdminClient
 ) {
   const twilioClient = getTwilioClient();
-  const label = clientNom ?? from;
-  const texte = `📩 ${label} :\n${body ?? ""}`.trim();
+  const entete = clientNom ? `📩 ${clientNom}\n${from}` : `📩 ${from}`;
+  const texte = `${entete}\n${body ?? ""}`.trim();
   const mediaUrl = await signedMediaUrl(mediaPath, supabase);
 
   try {
