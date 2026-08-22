@@ -352,6 +352,8 @@ export interface Database {
           direction: "in" | "out";
           body: string | null;
           message_sid: string | null;
+          media_url: string | null;
+          media_type: string | null;
           created_at: string;
         };
         Insert: {
@@ -361,6 +363,8 @@ export interface Database {
           direction: "in" | "out";
           body?: string | null;
           message_sid?: string | null;
+          media_url?: string | null;
+          media_type?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["whatsapp_messages"]["Insert"]>;

@@ -162,9 +162,12 @@ export async function envoyerMessageWhatsApp(
 export async function envoyerReponseWhatsApp(
   telephone: string,
   clientId: string | null,
-  body: string
+  body: string,
+  mediaPath?: string | null,
+  mediaType?: string | null
 ): Promise<{ error: string } | { success: true }> {
-  if (!body.trim()) {
+  const texte = body.trim();
+  if (!texte && !mediaPath) {
     return { error: "Le message est vide." };
   }
 
@@ -178,20 +181,31 @@ export async function envoyerReponseWhatsApp(
 
   const supabase = createClient();
 
+  let mediaUrl: string | undefined;
+  if (mediaPath) {
+    const { data: signed } = await supabase.storage
+      .from("campagnes-media")
+      .createSignedUrl(mediaPath, 3600);
+    mediaUrl = signed?.signedUrl;
+  }
+
   try {
     const twilioClient = getTwilioClient();
     const message = await twilioClient.messages.create({
       from: whatsappAddress(from),
       to: whatsappAddress(telephone),
-      body: body.trim(),
+      ...(texte ? { body: texte } : {}),
+      ...(mediaUrl ? { mediaUrl: [mediaUrl] } : {}),
     });
 
     await supabase.from("whatsapp_messages").insert({
       client_id: clientId,
       telephone,
       direction: "out",
-      body: body.trim(),
+      body: texte || null,
       message_sid: message.sid,
+      media_url: mediaPath || null,
+      media_type: mediaType || null,
     });
 
     revalidatePath(

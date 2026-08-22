@@ -20,7 +20,9 @@ export default async function ConversationPage({
 
   const { data: messages } = await supabase
     .from("whatsapp_messages")
-    .select("id, body, direction, created_at, client_id, clients(nom)")
+    .select(
+      "id, body, direction, created_at, client_id, media_url, media_type, clients(nom)"
+    )
     .eq("telephone", telephone)
     .order("created_at", { ascending: true });
 
@@ -30,6 +32,16 @@ export default async function ConversationPage({
   const clientId = avecClient?.client_id ?? null;
   const nom =
     (avecClient?.clients as unknown as { nom: string } | null)?.nom ?? null;
+
+  const messagesAvecMedia = await Promise.all(
+    messages.map(async (m) => {
+      if (!m.media_url) return { ...m, mediaSignedUrl: null };
+      const { data } = await supabase.storage
+        .from("campagnes-media")
+        .createSignedUrl(m.media_url, 3600);
+      return { ...m, mediaSignedUrl: data?.signedUrl ?? null };
+    })
+  );
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
@@ -46,7 +58,7 @@ export default async function ConversationPage({
 
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm">
         <div className="flex-1 space-y-2 overflow-y-auto p-4">
-          {messages.map((m) => (
+          {messagesAvecMedia.map((m) => (
             <div
               key={m.id}
               className={`flex ${
@@ -60,7 +72,31 @@ export default async function ConversationPage({
                     : "bg-slate-100 text-slate-900"
                 }`}
               >
-                <p className="whitespace-pre-wrap">{m.body ?? "(média)"}</p>
+                {m.mediaSignedUrl &&
+                  (m.media_type?.startsWith("image/") ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={m.mediaSignedUrl}
+                      alt="Pièce jointe"
+                      className="mb-1.5 max-h-64 rounded-md object-cover"
+                    />
+                  ) : m.media_type?.startsWith("video/") ? (
+                    <video
+                      src={m.mediaSignedUrl}
+                      controls
+                      className="mb-1.5 max-h-64 rounded-md"
+                    />
+                  ) : (
+                    <audio
+                      src={m.mediaSignedUrl}
+                      controls
+                      className="mb-1.5 h-9 max-w-[240px]"
+                    />
+                  ))}
+                {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
+                {!m.body && !m.mediaSignedUrl && (
+                  <p className="whitespace-pre-wrap opacity-70">(média)</p>
+                )}
                 <p
                   className={`mt-1 text-[10px] ${
                     m.direction === "out" ? "text-white/70" : "text-slate-400"

@@ -279,6 +279,14 @@ export function IconMic({ className, size = 16 }: IconProps) {
   );
 }
 
+export function IconPaperclip({ className, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M20.5 12.5 12 21a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10 19a2 2 0 0 1-3-3l7.5-7.5" />
+    </svg>
+  );
+}
+
 export function IconLogout({ className, size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>

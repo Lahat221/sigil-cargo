@@ -151,19 +151,19 @@ export function CampagneForm({ clients }: { clients: Client[] }) {
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">
-          Affiche / visuel (optionnel)
+          Photo / vidéo (optionnel)
         </label>
         <input
           type="file"
-          accept="image/*,application/pdf"
+          accept="image/*,video/*,application/pdf"
           onChange={(e) => setAffiche(e.target.files?.[0] ?? null)}
           className="w-full text-sm"
         />
         <p className="mt-1 text-xs text-slate-400">
-          L&apos;image sera jointe automatiquement aux envois via Twilio. Si
-          l&apos;envoi bascule en mode manuel (WhatsApp non configuré), tu
-          devras la télécharger depuis la campagne et l&apos;attacher
-          toi-même.
+          La photo ou vidéo sera jointe automatiquement aux envois via
+          Twilio. Si l&apos;envoi bascule en mode manuel (WhatsApp non
+          configuré), tu devras la télécharger depuis la campagne et
+          l&apos;attacher toi-même.
         </p>
       </div>
 
