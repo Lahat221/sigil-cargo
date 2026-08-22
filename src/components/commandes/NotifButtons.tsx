@@ -1,7 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
-import { queuerNotification } from "@/app/(dashboard)/commandes/actions";
+import { useState, useTransition } from "react";
+import { envoyerNotificationCommande } from "@/app/(dashboard)/commandes/actions";
 import { IconWhatsApp } from "@/components/ui/Icons";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
@@ -36,19 +36,37 @@ export function NotifButtons({
   montantTotal: number;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  function envoyerManuellement(message: string) {
+    if (!clientTelephone) return;
+    const numeroWa = formatNumeroWhatsApp(clientTelephone, clientTelephonePays);
+    window.open(
+      `https://wa.me/${numeroWa}?text=${encodeURIComponent(message)}`,
+      "_blank"
+    );
+  }
 
   function envoyer(statut: "recue" | "prete", message: string) {
     if (!clientTelephone) {
       alert("Ce client n'a pas de numéro de téléphone enregistré.");
       return;
     }
-    const numeroWa = formatNumeroWhatsApp(clientTelephone, clientTelephonePays);
-    window.open(
-      `https://wa.me/${numeroWa}?text=${encodeURIComponent(message)}`,
-      "_blank"
-    );
+    setErreur(null);
     startTransition(async () => {
-      await queuerNotification(commandeId, statut);
+      const result = await envoyerNotificationCommande(
+        commandeId,
+        statut,
+        message
+      );
+      if ("error" in result) {
+        // Twilio pas configuré ou envoi impossible (ex: hors fenêtre 24h) :
+        // on retombe sur l'ouverture manuelle de WhatsApp.
+        if (!result.error.includes("n'est pas configuré")) {
+          setErreur(result.error);
+        }
+        envoyerManuellement(message);
+      }
     });
   }
 
@@ -66,7 +84,7 @@ export function NotifButtons({
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50"
       >
         <IconWhatsApp size={14} />
-        Notif commande
+        {isPending ? "..." : "Notif commande"}
       </button>
       <button
         type="button"
@@ -80,8 +98,13 @@ export function NotifButtons({
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50"
       >
         <IconWhatsApp size={14} />
-        Notif retrait
+        {isPending ? "..." : "Notif retrait"}
       </button>
+      {erreur && (
+        <p className="w-full text-xs text-amber-600">
+          Envoi auto échoué ({erreur}) — ouverture manuelle de WhatsApp.
+        </p>
+      )}
     </>
   );
 }

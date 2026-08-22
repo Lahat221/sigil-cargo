@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { resolveClientId } from "@/lib/commandes/resolveClient";
+import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import type { StatutCommande } from "@/types/database.types";
 
 export async function changerStatut(
@@ -86,15 +87,16 @@ export async function updateCommande(
   return { success: true };
 }
 
-export async function queuerNotification(
+export async function envoyerNotificationCommande(
   commandeId: string,
-  statutCommande: StatutCommande
+  statutCommande: StatutCommande,
+  message: string
 ): Promise<{ error: string } | { success: true }> {
   const supabase = createClient();
 
   const { data: commande, error: commandeError } = await supabase
     .from("commandes")
-    .select("client_id, clients(telephone, telephone_pays)")
+    .select("client_id, clients(id, telephone, telephone_pays)")
     .eq("id", commandeId)
     .single();
 
@@ -103,30 +105,59 @@ export async function queuerNotification(
   }
 
   const client = commande.clients as unknown as {
+    id: string;
     telephone: string | null;
     telephone_pays: string | null;
   } | null;
 
-  let destinataire: string | null = null;
-  if (client?.telephone) {
-    const chiffres = client.telephone.replace(/\D/g, "");
-    const indicatif = (client.telephone_pays ?? "+33").replace(/\D/g, "");
-    destinataire = chiffres.startsWith(indicatif)
-      ? chiffres
-      : indicatif + chiffres;
+  if (!client?.telephone) {
+    return { error: "Ce client n'a pas de numéro de téléphone enregistré." };
   }
 
-  const { error } = await supabase.from("notifications_a_envoyer").insert({
-    commande_id: commandeId,
-    statut_commande: statutCommande,
-    destinataire_telephone: destinataire,
-    envoyee: true,
-    envoyee_at: new Date().toISOString(),
-  });
+  const chiffres = client.telephone.replace(/\D/g, "");
+  const indicatif = (client.telephone_pays ?? "+33").replace(/\D/g, "");
+  const digits = chiffres.startsWith(indicatif) ? chiffres : indicatif + chiffres;
+  const numero = `+${digits}`;
 
-  if (error) return { error: error.message };
+  const from = process.env.TWILIO_WHATSAPP_FROM;
+  if (!from) {
+    return {
+      error:
+        "TWILIO_WHATSAPP_FROM n'est pas configuré (numéro WhatsApp Twilio manquant).",
+    };
+  }
 
-  return { success: true };
+  try {
+    const twilioClient = getTwilioClient();
+    const twilioMessage = await twilioClient.messages.create({
+      from: whatsappAddress(from),
+      to: whatsappAddress(numero),
+      body: message,
+    });
+
+    await supabase.from("whatsapp_messages").insert({
+      client_id: client.id,
+      telephone: numero,
+      direction: "out",
+      body: message,
+      message_sid: twilioMessage.sid,
+    });
+
+    await supabase.from("notifications_a_envoyer").insert({
+      commande_id: commandeId,
+      statut_commande: statutCommande,
+      destinataire_telephone: digits,
+      envoyee: true,
+      envoyee_at: new Date().toISOString(),
+    });
+
+    revalidatePath("/notifications-whatsapp");
+    return { success: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Erreur inconnue.",
+    };
+  }
 }
 
 export async function recalculerPrix(): Promise<
