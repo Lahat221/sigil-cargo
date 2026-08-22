@@ -6,7 +6,7 @@ import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 
 // Modèle "sigil_cargo_notification" approuvé par Meta (Twilio Content Template
 // Builder) — sert de repli pour joindre le propriétaire hors fenêtre de 24h.
-const RELAY_TEMPLATE_SID = "HX511cb99de9d1d8932fcd9f4360600aab";
+const RELAY_TEMPLATE_SID = "HX2395b8157b45fff54b34fc1454d93d4c";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
