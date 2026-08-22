@@ -89,7 +89,7 @@ export async function updateCommande(
 
 // Modèles approuvés par Meta (Twilio Content Template Builder) pour les
 // notifications de commande — permettent l'envoi même hors fenêtre de 24h.
-const TEMPLATE_COMMANDE_RECUE_SID = "HXf3f70419e560619ac068a11d959bc79a";
+const TEMPLATE_COMMANDE_RECUE_SID = "HXdae5b92c8994c3dd488142f08518de28";
 const TEMPLATE_COMMANDE_PRETE_SID = "HX1c2dc12ebe5ffa069883940e2ab6f52f";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
@@ -107,7 +107,7 @@ export async function envoyerNotificationCommande(
   const { data: commande, error: commandeError } = await supabase
     .from("commandes")
     .select(
-      "numero, poids_kg, montant_total, client_id, clients(id, nom, telephone, telephone_pays)"
+      "numero, poids_kg, montant_total, description, client_id, clients(id, nom, telephone, telephone_pays)"
     )
     .eq("id", commandeId)
     .single();
@@ -154,6 +154,9 @@ export async function envoyerNotificationCommande(
           "2": String(commande.numero),
           "3": String(commande.poids_kg),
           "4": montantFormatter.format(commande.montant_total),
+          "5": commande.description?.trim()
+            ? `Contenu : ${commande.description.trim()}.`
+            : "Bien noté.",
         }
       : { "1": client.nom, "2": String(commande.numero) };
 

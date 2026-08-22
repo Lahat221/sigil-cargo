@@ -26,6 +26,7 @@ export function NotifButtons({
   clientTelephonePays,
   poidsKg,
   montantTotal,
+  description,
 }: {
   commandeId: string;
   numero: number;
@@ -34,6 +35,7 @@ export function NotifButtons({
   clientTelephonePays: string | null;
   poidsKg: number;
   montantTotal: number;
+  description?: string | null;
 }) {
   const [isPending, startTransition] = useTransition();
   const [erreur, setErreur] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export function NotifButtons({
         onClick={() =>
           envoyer(
             "recue",
-            `Bonjour ${clientNom}, nous avons bien reçu votre commande #${numero} chez SIGIL CARGO (${poidsKg} kg, ${montantFormatter.format(montantTotal)}). Merci !`
+            `Bonjour ${clientNom}, nous avons bien reçu votre commande #${numero} chez SIGIL CARGO (${poidsKg} kg, ${montantFormatter.format(montantTotal)})${description?.trim() ? ` : ${description.trim()}` : ""}. Merci !`
           )
         }
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50"

@@ -150,6 +150,7 @@ export default async function CommandeDetailPage({
           clientTelephonePays={commande.clients?.telephone_pays ?? null}
           poidsKg={commande.poids_kg}
           montantTotal={commande.montant_total}
+          description={commande.description}
         />
         <SupprimerCommandeButton
           commandeId={commande.id}

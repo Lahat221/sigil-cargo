@@ -130,6 +130,7 @@ export function CommandesListe({
                         clientTelephonePays={c.clients?.telephone_pays ?? null}
                         poidsKg={c.poids_kg}
                         montantTotal={c.montant_total}
+                        description={c.description}
                       />
                       <SupprimerCommandeButton
                         commandeId={c.id}
@@ -200,6 +201,7 @@ export function CommandesListe({
                         clientTelephonePays={c.clients?.telephone_pays ?? null}
                         poidsKg={c.poids_kg}
                         montantTotal={c.montant_total}
+                        description={c.description}
                       />
                 <SupprimerCommandeButton commandeId={c.id} numero={c.numero} />
               </div>
