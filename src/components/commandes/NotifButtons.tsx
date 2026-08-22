@@ -52,6 +52,9 @@ export function NotifButtons({
       alert("Ce client n'a pas de numéro de téléphone enregistré.");
       return;
     }
+    if (!confirm(`Envoyer ce message WhatsApp à ${clientNom} ?\n\n${message}`)) {
+      return;
+    }
     setErreur(null);
     startTransition(async () => {
       const result = await envoyerNotificationCommande(

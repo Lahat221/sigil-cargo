@@ -218,7 +218,7 @@ export function NouvelleCommandeForm({
           </label>
           <input
             type="number"
-            step="0.1"
+            step="0.001"
             min="0"
             required
             value={poidsKg}

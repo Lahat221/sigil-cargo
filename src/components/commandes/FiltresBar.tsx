@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { STATUT_LABELS } from "./StatutBadge";
+import { IconX } from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
 
 const STATUTS = Object.keys(STATUT_LABELS) as StatutCommande[];
+
+const STORAGE_KEY = "commandes-filtres";
 
 export function FiltresBar({
   projets,
@@ -26,12 +29,24 @@ export function FiltresBar({
       } else {
         params.delete(key);
       }
+      sessionStorage.setItem(STORAGE_KEY, params.toString());
       startTransition(() => {
         router.push(`${pathname}?${params.toString()}`);
       });
     },
     [pathname, router, searchParams]
   );
+
+  // Réapplique les filtres mémorisés si on arrive sur la page sans eux
+  // (ex: lien "Commandes" du menu, qui pointe vers l'URL nue).
+  useEffect(() => {
+    if (searchParams.toString()) return;
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      router.replace(`${pathname}?${saved}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Debounce la recherche texte pour ne pas requêter à chaque frappe.
   useEffect(() => {
@@ -43,6 +58,19 @@ export function FiltresBar({
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
+
+  function effacerFiltres() {
+    setQ("");
+    sessionStorage.removeItem(STORAGE_KEY);
+    startTransition(() => {
+      router.push(pathname);
+    });
+  }
+
+  const aDesFiltres =
+    !!searchParams.get("q") ||
+    !!searchParams.get("statut") ||
+    !!searchParams.get("projet");
 
   return (
     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -79,6 +107,17 @@ export function FiltresBar({
           </option>
         ))}
       </select>
+
+      {aDesFiltres && (
+        <button
+          type="button"
+          onClick={effacerFiltres}
+          className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
+        >
+          <IconX size={14} />
+          Effacer les filtres
+        </button>
+      )}
 
       {isPending && (
         <span className="text-xs text-slate-400">Actualisation...</span>
