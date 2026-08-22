@@ -115,7 +115,9 @@ export async function envoyerMessageWhatsApp(
         from: whatsappAddress(from),
         to: whatsappAddress(numero),
         contentSid: campagne.content_sid,
-        contentVariables: JSON.stringify({ "1": client.nom }),
+        contentVariables: JSON.stringify({
+          "1": campagne.message.replace(/\{nom\}/gi, client.nom),
+        }),
       });
     } else {
       await twilioClient.messages.create({
