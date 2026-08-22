@@ -344,6 +344,35 @@ export interface Database {
           }
         ];
       };
+      whatsapp_messages: {
+        Row: {
+          id: string;
+          client_id: string | null;
+          telephone: string;
+          direction: "in" | "out";
+          body: string | null;
+          message_sid: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          client_id?: string | null;
+          telephone: string;
+          direction: "in" | "out";
+          body?: string | null;
+          message_sid?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["whatsapp_messages"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_client_id_fkey";
+            columns: ["client_id"];
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

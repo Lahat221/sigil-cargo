@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { IconPlus, IconSend } from "@/components/ui/Icons";
+import { IconPlus, IconSend, IconWhatsApp } from "@/components/ui/Icons";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
 export default async function NotificationsWhatsAppPage() {
   const supabase = createClient();
 
-  const [{ data: campagnes, error }, { data: destinataires }] =
+  const [{ data: campagnes, error }, { data: destinataires }, { data: messagesRecus }] =
     await Promise.all([
       supabase
         .from("campagnes_whatsapp")
@@ -21,6 +21,12 @@ export default async function NotificationsWhatsAppPage() {
       supabase
         .from("campagnes_whatsapp_destinataires")
         .select("campagne_id, envoyee"),
+      supabase
+        .from("whatsapp_messages")
+        .select("id, telephone, body, created_at, clients(nom)")
+        .eq("direction", "in")
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
 
   const statsParCampagne = new Map<string, { total: number; envoyes: number }>();
@@ -45,6 +51,31 @@ export default async function NotificationsWhatsAppPage() {
           Nouvelle campagne
         </Link>
       </div>
+
+      {messagesRecus && messagesRecus.length > 0 && (
+        <div className="mb-4 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
+          <h2 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-slate-700">
+            <IconWhatsApp size={15} />
+            Messages reçus récemment
+          </h2>
+          <div className="divide-y divide-slate-100">
+            {messagesRecus.map((m) => (
+              <div key={m.id} className="py-2.5 text-sm">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-slate-900">
+                    {(m.clients as unknown as { nom: string } | null)?.nom ??
+                      m.telephone}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {dateFormatter.format(new Date(m.created_at))}
+                  </p>
+                </div>
+                {m.body && <p className="text-slate-600">{m.body}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
         {error ? (

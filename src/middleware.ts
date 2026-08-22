@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest"];
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest", "/api/twilio"];
 
 function moduleSlug(pathname: string) {
   return pathname.split("/")[1] || null;
