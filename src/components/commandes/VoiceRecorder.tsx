@@ -3,6 +3,32 @@
 import { useRef, useState } from "react";
 import { IconMic } from "@/components/ui/Icons";
 
+// Safari/iOS ne supporte pas audio/webm : on négocie un format que le
+// navigateur sait vraiment encoder plutôt que de laisser le défaut
+// implicite (qui peut être vide sur certains WebView Android/iOS).
+const MIME_CANDIDATES = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/mp4",
+  "audio/aac",
+  "audio/mpeg",
+];
+
+function pickSupportedMimeType(): string | undefined {
+  if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) {
+    return undefined;
+  }
+  return MIME_CANDIDATES.find((type) => MediaRecorder.isTypeSupported(type));
+}
+
+export function extensionForMimeType(mimeType: string): string {
+  if (mimeType.includes("mp4")) return "m4a";
+  if (mimeType.includes("aac")) return "aac";
+  if (mimeType.includes("mpeg")) return "mp3";
+  if (mimeType.includes("ogg")) return "ogg";
+  return "webm";
+}
+
 export function VoiceRecorder({
   onChange,
   existingUrl,
@@ -22,15 +48,27 @@ export function VoiceRecorder({
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const mimeType = pickSupportedMimeType();
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       chunksRef.current = [];
 
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
+      recorder.onerror = () => {
+        setError("Erreur pendant l'enregistrement. Réessaie.");
+        setRecording(false);
+        stream.getTracks().forEach((t) => t.stop());
+      };
       recorder.onstop = () => {
+        if (chunksRef.current.length === 0) {
+          setError("Aucun son n'a été capté. Réessaie.");
+          return;
+        }
         const blob = new Blob(chunksRef.current, {
-          type: recorder.mimeType || "audio/webm",
+          type: recorder.mimeType || mimeType || "audio/webm",
         });
         setPreviewUrl(URL.createObjectURL(blob));
         onChange(blob);
@@ -40,8 +78,12 @@ export function VoiceRecorder({
       recorder.start();
       mediaRecorderRef.current = recorder;
       setRecording(true);
-    } catch {
-      setError("Impossible d'accéder au micro.");
+    } catch (err) {
+      setError(
+        err instanceof Error && err.name === "NotAllowedError"
+          ? "Accès au micro refusé. Autorise le micro dans les réglages de ton navigateur."
+          : "Impossible d'accéder au micro."
+      );
     }
   }
 

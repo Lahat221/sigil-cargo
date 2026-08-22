@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { updateCommande } from "@/app/(dashboard)/commandes/actions";
 import { ClientField, type ClientSelection } from "./ClientField";
 import type { ClientMatch } from "@/app/(dashboard)/commandes/nouvelle/actions";
-import { VoiceRecorder } from "./VoiceRecorder";
+import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 
 const MAX_PHOTOS = 5;
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
@@ -153,12 +153,11 @@ export function EditCommandeForm({
       let noteVocalePath: string | null =
         keepVoiceNote && existingVoiceNote ? existingVoiceNote.path : null;
       if (newVoiceNote) {
-        const path = `${commandeId}/note-vocale-${Date.now()}.webm`;
+        const contentType = newVoiceNote.type || "audio/webm";
+        const path = `${commandeId}/note-vocale-${Date.now()}.${extensionForMimeType(contentType)}`;
         const { error: uploadError } = await supabase.storage
           .from("commandes-media")
-          .upload(path, newVoiceNote, {
-            contentType: newVoiceNote.type || "audio/webm",
-          });
+          .upload(path, newVoiceNote, { contentType });
         if (uploadError) throw new Error(uploadError.message);
         noteVocalePath = path;
       }

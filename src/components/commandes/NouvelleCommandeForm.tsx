@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createCommande } from "@/app/(dashboard)/commandes/nouvelle/actions";
 import { ClientField, type ClientSelection } from "./ClientField";
-import { VoiceRecorder } from "./VoiceRecorder";
+import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 
 const MAX_PHOTOS = 5;
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
@@ -124,12 +124,11 @@ export function NouvelleCommandeForm({
 
       let noteVocalePath: string | null = null;
       if (voiceNote) {
-        const path = `${commandeId}/note-vocale-${Date.now()}.webm`;
+        const contentType = voiceNote.type || "audio/webm";
+        const path = `${commandeId}/note-vocale-${Date.now()}.${extensionForMimeType(contentType)}`;
         const { error: uploadError } = await supabase.storage
           .from("commandes-media")
-          .upload(path, voiceNote, {
-            contentType: voiceNote.type || "audio/webm",
-          });
+          .upload(path, voiceNote, { contentType });
         if (uploadError) throw new Error(uploadError.message);
         noteVocalePath = path;
       }

@@ -4,7 +4,7 @@ import { useRef, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { envoyerReponseWhatsApp } from "@/app/(dashboard)/notifications-whatsapp/actions";
-import { VoiceRecorder } from "@/components/commandes/VoiceRecorder";
+import { VoiceRecorder, extensionForMimeType } from "@/components/commandes/VoiceRecorder";
 import { IconPaperclip, IconSend, IconX } from "@/components/ui/Icons";
 
 type Piece = { blob: Blob; type: string; nom: string; previewUrl: string };
@@ -40,10 +40,11 @@ export function ReplyForm({
       setPiece(null);
       return;
     }
+    const type = blob.type || "audio/webm";
     setPiece({
       blob,
-      type: blob.type || "audio/webm",
-      nom: "note-vocale.webm",
+      type,
+      nom: `note-vocale.${extensionForMimeType(type)}`,
       previewUrl: URL.createObjectURL(blob),
     });
   }
