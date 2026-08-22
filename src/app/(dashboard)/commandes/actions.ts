@@ -87,6 +87,16 @@ export async function updateCommande(
   return { success: true };
 }
 
+// Modèles approuvés par Meta (Twilio Content Template Builder) pour les
+// notifications de commande — permettent l'envoi même hors fenêtre de 24h.
+const TEMPLATE_COMMANDE_RECUE_SID = "HXf3f70419e560619ac068a11d959bc79a";
+const TEMPLATE_COMMANDE_PRETE_SID = "HX1c2dc12ebe5ffa069883940e2ab6f52f";
+
+const montantFormatter = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+});
+
 export async function envoyerNotificationCommande(
   commandeId: string,
   statutCommande: StatutCommande,
@@ -96,7 +106,9 @@ export async function envoyerNotificationCommande(
 
   const { data: commande, error: commandeError } = await supabase
     .from("commandes")
-    .select("client_id, clients(id, telephone, telephone_pays)")
+    .select(
+      "numero, poids_kg, montant_total, client_id, clients(id, nom, telephone, telephone_pays)"
+    )
     .eq("id", commandeId)
     .single();
 
@@ -106,6 +118,7 @@ export async function envoyerNotificationCommande(
 
   const client = commande.clients as unknown as {
     id: string;
+    nom: string;
     telephone: string | null;
     telephone_pays: string | null;
   } | null;
@@ -127,37 +140,73 @@ export async function envoyerNotificationCommande(
     };
   }
 
-  try {
-    const twilioClient = getTwilioClient();
-    const twilioMessage = await twilioClient.messages.create({
-      from: whatsappAddress(from),
-      to: whatsappAddress(numero),
-      body: message,
-    });
+  const contentSid =
+    statutCommande === "recue"
+      ? TEMPLATE_COMMANDE_RECUE_SID
+      : statutCommande === "prete"
+      ? TEMPLATE_COMMANDE_PRETE_SID
+      : null;
 
-    await supabase.from("whatsapp_messages").insert({
-      client_id: client.id,
-      telephone: numero,
-      direction: "out",
-      body: message,
-      message_sid: twilioMessage.sid,
-    });
+  const contentVariables =
+    statutCommande === "recue"
+      ? {
+          "1": client.nom,
+          "2": String(commande.numero),
+          "3": String(commande.poids_kg),
+          "4": montantFormatter.format(commande.montant_total),
+        }
+      : { "1": client.nom, "2": String(commande.numero) };
 
-    await supabase.from("notifications_a_envoyer").insert({
-      commande_id: commandeId,
-      statut_commande: statutCommande,
-      destinataire_telephone: digits,
-      envoyee: true,
-      envoyee_at: new Date().toISOString(),
-    });
+  const twilioClient = getTwilioClient();
+  let sid: string | null = null;
 
-    revalidatePath("/notifications-whatsapp");
-    return { success: true };
-  } catch (err) {
-    return {
-      error: err instanceof Error ? err.message : "Erreur inconnue.",
-    };
+  if (contentSid) {
+    try {
+      const twilioMessage = await twilioClient.messages.create({
+        from: whatsappAddress(from),
+        to: whatsappAddress(numero),
+        contentSid,
+        contentVariables: JSON.stringify(contentVariables),
+      });
+      sid = twilioMessage.sid;
+    } catch {
+      // Modèle pas encore approuvé ou refusé : on retombe sur l'envoi libre.
+    }
   }
+
+  if (!sid) {
+    try {
+      const twilioMessage = await twilioClient.messages.create({
+        from: whatsappAddress(from),
+        to: whatsappAddress(numero),
+        body: message,
+      });
+      sid = twilioMessage.sid;
+    } catch (err) {
+      return {
+        error: err instanceof Error ? err.message : "Erreur inconnue.",
+      };
+    }
+  }
+
+  await supabase.from("whatsapp_messages").insert({
+    client_id: client.id,
+    telephone: numero,
+    direction: "out",
+    body: message,
+    message_sid: sid,
+  });
+
+  await supabase.from("notifications_a_envoyer").insert({
+    commande_id: commandeId,
+    statut_commande: statutCommande,
+    destinataire_telephone: digits,
+    envoyee: true,
+    envoyee_at: new Date().toISOString(),
+  });
+
+  revalidatePath("/notifications-whatsapp");
+  return { success: true };
 }
 
 export async function recalculerPrix(): Promise<
