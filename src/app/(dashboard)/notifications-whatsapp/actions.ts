@@ -208,9 +208,8 @@ export async function envoyerReponseWhatsApp(
       media_type: mediaType || null,
     });
 
-    revalidatePath(
-      `/notifications-whatsapp/conversations/${encodeURIComponent(telephone)}`
-    );
+    revalidatePath(`/chat/${encodeURIComponent(telephone)}`);
+    revalidatePath("/chat");
     revalidatePath("/notifications-whatsapp");
     return { success: true };
   } catch (err) {

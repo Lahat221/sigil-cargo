@@ -46,7 +46,7 @@ export default async function ConversationPage({
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
       <Link
-        href="/notifications-whatsapp/conversations"
+        href="/chat"
         className="mb-4 inline-block text-sm text-white/60 hover:text-white"
       >
         ← Retour aux conversations

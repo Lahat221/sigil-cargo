@@ -1,5 +1,92 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { IconWhatsApp } from "@/components/ui/Icons";
 
-export default function ChatPage() {
-  redirect("/notifications-whatsapp/conversations");
+export const dynamic = "force-dynamic";
+
+const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+export default async function ChatPage() {
+  const supabase = createClient();
+
+  const { data: messages } = await supabase
+    .from("whatsapp_messages")
+    .select("telephone, body, media_type, direction, created_at, clients(nom)")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  const conversations = new Map<
+    string,
+    {
+      telephone: string;
+      nom: string | null;
+      dernierMessage: string | null;
+      mediaType: string | null;
+      direction: "in" | "out";
+      date: string;
+    }
+  >();
+
+  for (const m of messages ?? []) {
+    if (conversations.has(m.telephone)) continue;
+    conversations.set(m.telephone, {
+      telephone: m.telephone,
+      nom: (m.clients as unknown as { nom: string } | null)?.nom ?? null,
+      dernierMessage: m.body,
+      mediaType: m.media_type,
+      direction: m.direction,
+      date: m.created_at,
+    });
+  }
+
+  function apercuMedia(type: string) {
+    if (type.startsWith("image/")) return "📷 Photo";
+    if (type.startsWith("video/")) return "🎥 Vidéo";
+    if (type.startsWith("audio/")) return "🎙️ Note vocale";
+    return "📎 Média";
+  }
+
+  const liste = Array.from(conversations.values());
+
+  return (
+    <div>
+      <h1 className="mb-4 text-xl font-bold text-white">Chat</h1>
+
+      <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
+        {liste.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-10 text-center text-slate-400">
+            <IconWhatsApp size={28} />
+            <p className="text-sm">Aucune conversation pour l&apos;instant.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {liste.map((c) => (
+              <Link
+                key={c.telephone}
+                href={`/chat/${encodeURIComponent(c.telephone)}`}
+                className="block py-3 hover:bg-slate-50"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-slate-900">
+                    {c.nom ?? c.telephone}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {dateFormatter.format(new Date(c.date))}
+                  </p>
+                </div>
+                <p className="truncate text-sm text-slate-500">
+                  {c.direction === "out" ? "Vous : " : ""}
+                  {c.dernierMessage ??
+                    (c.mediaType ? apercuMedia(c.mediaType) : "(média)")}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

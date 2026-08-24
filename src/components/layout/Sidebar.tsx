@@ -14,7 +14,6 @@ import {
   IconUsers,
   IconInvoice,
   IconSend,
-  IconWhatsApp,
   IconChat,
   IconSettings,
   IconMenu,
@@ -105,15 +104,14 @@ const NAV_ITEMS: NavItem[] = [
   {
     slug: "notifications-whatsapp",
     href: "/notifications-whatsapp",
-    label: "Notifications WhatsApp",
+    label: "Campagne de Communication",
     icon: <IconSend size={17} />,
     tabIcon: <IconSend size={20} />,
     sousItems: [
       { href: "/notifications-whatsapp/nouvelle", label: "Nouvelle campagne", icon: <IconPlus size={15} /> },
-      { href: "/notifications-whatsapp/conversations", label: "Conversations", icon: <IconWhatsApp size={15} /> },
     ],
   },
-  { slug: "chat", href: "/chat", label: "Chat", icon: <IconChat size={17} /> },
+  { slug: "chat", href: "/chat", label: "Chat", icon: <IconChat size={17} />, tabIcon: <IconChat size={20} /> },
   { slug: "parametres", href: "/parametres", label: "Paramètres", icon: <IconSettings size={17} /> },
 ];
 

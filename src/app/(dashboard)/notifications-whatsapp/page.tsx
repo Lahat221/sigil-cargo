@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { IconPlus, IconSend, IconWhatsApp } from "@/components/ui/Icons";
+import { IconPlus, IconSend } from "@/components/ui/Icons";
 
 export const dynamic = "force-dynamic";
 
@@ -12,22 +12,15 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
 export default async function NotificationsWhatsAppPage() {
   const supabase = createClient();
 
-  const [{ data: campagnes, error }, { data: destinataires }, { data: messagesRecus }] =
-    await Promise.all([
-      supabase
-        .from("campagnes_whatsapp")
-        .select("id, nom, message, created_at")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("campagnes_whatsapp_destinataires")
-        .select("campagne_id, envoyee"),
-      supabase
-        .from("whatsapp_messages")
-        .select("id, telephone, body, media_type, created_at, clients(nom)")
-        .eq("direction", "in")
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
+  const [{ data: campagnes, error }, { data: destinataires }] = await Promise.all([
+    supabase
+      .from("campagnes_whatsapp")
+      .select("id, nom, message, created_at")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("campagnes_whatsapp_destinataires")
+      .select("campagne_id, envoyee"),
+  ]);
 
   const statsParCampagne = new Map<string, { total: number; envoyes: number }>();
   for (const d of destinataires ?? []) {
@@ -41,7 +34,7 @@ export default async function NotificationsWhatsAppPage() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-white">
-          Notifications WhatsApp
+          Campagne de Communication
         </h1>
         <Link
           href="/notifications-whatsapp/nouvelle"
@@ -51,57 +44,6 @@ export default async function NotificationsWhatsAppPage() {
           Nouvelle campagne
         </Link>
       </div>
-
-      {messagesRecus && messagesRecus.length > 0 && (
-        <div className="mb-4 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-              <IconWhatsApp size={15} />
-              Messages reçus récemment
-            </h2>
-            <Link
-              href="/notifications-whatsapp/conversations"
-              className="text-xs font-medium text-navy hover:underline"
-            >
-              Voir les conversations →
-            </Link>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {messagesRecus.map((m) => (
-              <Link
-                key={m.id}
-                href={`/notifications-whatsapp/conversations/${encodeURIComponent(
-                  m.telephone
-                )}`}
-                className="block py-2.5 text-sm hover:bg-slate-50"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-slate-900">
-                    {(m.clients as unknown as { nom: string } | null)?.nom ??
-                      m.telephone}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {dateFormatter.format(new Date(m.created_at))}
-                  </p>
-                </div>
-                {m.body ? (
-                  <p className="text-slate-600">{m.body}</p>
-                ) : m.media_type ? (
-                  <p className="text-slate-400">
-                    {m.media_type.startsWith("image/")
-                      ? "📷 Photo"
-                      : m.media_type.startsWith("video/")
-                      ? "🎥 Vidéo"
-                      : m.media_type.startsWith("audio/")
-                      ? "🎙️ Note vocale"
-                      : "📎 Média"}
-                  </p>
-                ) : null}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
         {error ? (
