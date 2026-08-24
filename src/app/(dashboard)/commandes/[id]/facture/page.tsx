@@ -48,14 +48,25 @@ export default async function FactureCommandePage({
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-lg print:border-0 print:shadow-none">
-        <h2 className="mb-6 text-xl font-bold text-slate-900">COLLE AGRO</h2>
-
-        <div className="mb-6 text-sm text-slate-700">
-          <p>Exportateur : {EXPORTATEUR_NOM}</p>
-          <p>Adresse : {EXPORTATEUR_ADRESSE}</p>
-          <p>NINEA : {EXPORTATEUR_NINEA}</p>
-          <p>REX : {EXPORTATEUR_REX}</p>
-          <p>Email : {EXPORTATEUR_EMAIL}</p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="mb-4 text-xl font-bold text-slate-900">
+              COLLE AGRO
+            </h2>
+            <div className="text-sm text-slate-700">
+              <p>Exportateur : {EXPORTATEUR_NOM}</p>
+              <p>Adresse : {EXPORTATEUR_ADRESSE}</p>
+              <p>NINEA : {EXPORTATEUR_NINEA}</p>
+              <p>REX : {EXPORTATEUR_REX}</p>
+              <p>Email : {EXPORTATEUR_EMAIL}</p>
+            </div>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/colle-agro-logo.jpg"
+            alt="COLLE AGRO"
+            className="h-20 w-auto shrink-0 object-contain"
+          />
         </div>
 
         <p className="mb-6 text-right text-lg font-bold tracking-wide text-slate-900">
@@ -111,6 +122,15 @@ export default async function FactureCommandePage({
           Commande N° {numeroFacture} — Date :{" "}
           {dateFormatter.format(new Date(commande.created_at))}
         </p>
+
+        <div className="mt-16 flex justify-center print:mt-24">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/colle-agro-cachet.jpg"
+            alt="Cachet COLLE AGRO"
+            className="h-24 w-auto object-contain"
+          />
+        </div>
       </div>
     </div>
   );
