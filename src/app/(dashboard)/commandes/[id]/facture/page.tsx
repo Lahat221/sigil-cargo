@@ -5,11 +5,17 @@ import { PrintButton } from "@/components/commandes/PrintButton";
 
 export const dynamic = "force-dynamic";
 
-const montantFormatter = new Intl.NumberFormat("fr-FR", {
-  style: "currency",
-  currency: "EUR",
-});
+function formatMontant(valeur: number): string {
+  return valeur.toFixed(2);
+}
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
+
+// Informations légales de l'exportateur (identiques sur toutes les factures).
+const EXPORTATEUR_NOM = "AMINATA MBAYE";
+const EXPORTATEUR_ADRESSE = "Djidah Thiaroye Kao, Dakar, Sénégal";
+const EXPORTATEUR_NINEA = "SN005845493";
+const EXPORTATEUR_REX = "SNREX1356ASX";
+const EXPORTATEUR_EMAIL = "Binet1801@gmail.com";
 
 export default async function FactureCommandePage({
   params,
@@ -21,12 +27,14 @@ export default async function FactureCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "numero, poids_kg, prix_par_kg, enveloppe, nombre_paquets, montant_total, code_barre_colis, created_at, clients(nom, telephone), projets(nom), produits(nom)"
+      "numero, poids_kg, prix_par_kg, montant_total, created_at, clients(nom, telephone, adresse), projets(nom)"
     )
     .eq("id", params.id)
     .maybeSingle();
 
   if (!commande) notFound();
+
+  const numeroFacture = String(commande.numero).padStart(4, "0");
 
   return (
     <div className="mx-auto max-w-2xl p-8">
@@ -40,77 +48,69 @@ export default async function FactureCommandePage({
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-lg print:border-0 print:shadow-none">
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">SIGIL CARGO</h2>
-            <p className="text-sm text-slate-500">Fret aérien Dakar → France</p>
-          </div>
-          <div className="text-right text-sm">
-            <p className="font-medium text-slate-900">
-              Facture n° {commande.numero}
-            </p>
-            <p className="text-slate-500">
-              {dateFormatter.format(new Date(commande.created_at))}
-            </p>
-          </div>
+        <h2 className="mb-6 text-xl font-bold text-slate-900">COLLE AGRO</h2>
+
+        <div className="mb-6 text-sm text-slate-700">
+          <p>Exportateur : {EXPORTATEUR_NOM}</p>
+          <p>Adresse : {EXPORTATEUR_ADRESSE}</p>
+          <p>NINEA : {EXPORTATEUR_NINEA}</p>
+          <p>REX : {EXPORTATEUR_REX}</p>
+          <p>Email : {EXPORTATEUR_EMAIL}</p>
         </div>
 
-        <div className="mb-6 text-sm">
-          <p className="font-medium text-slate-700">Client</p>
-          <p className="text-slate-900">{commande.clients?.nom ?? "—"}</p>
-          {commande.clients?.telephone && (
-            <p className="text-slate-500">{commande.clients.telephone}</p>
-          )}
+        <p className="mb-6 text-right text-lg font-bold tracking-wide text-slate-900">
+          FACTURE
+        </p>
+
+        <div className="mb-6 text-sm text-slate-700">
+          <p>Client : {commande.clients?.nom ?? "—"}</p>
+          <div className="flex items-baseline justify-between">
+            <p>Adresse : {commande.clients?.adresse ?? "—"}</p>
+            <p className="shrink-0 font-medium text-slate-900">
+              N° {numeroFacture}
+            </p>
+          </div>
+          <p>Tél : {commande.clients?.telephone ?? "—"}</p>
+          <p>Type de fret : {commande.projets?.nom ?? "—"}</p>
         </div>
 
-        <table className="mb-6 w-full text-sm">
+        <table className="mb-4 w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-300 text-left text-xs uppercase text-slate-500">
-              <th className="py-2">Produit</th>
-              <th className="py-2 text-right">Poids</th>
-              <th className="py-2 text-right">Prix/kg</th>
-              <th className="py-2 text-right">Total</th>
+            <tr className="border-b border-slate-300 text-left text-xs text-slate-500">
+              <th className="py-2 font-normal">Produit</th>
+              <th className="py-2 text-right font-normal">Poids (kg)</th>
+              <th className="py-2 text-right font-normal">
+                Valeur unitaire en Euro
+              </th>
+              <th className="py-2 text-right font-normal">
+                Valeur totale en Euro
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr className="border-b border-slate-100">
-              <td className="py-2 text-slate-900">
-                {commande.produits?.nom ?? "—"}
-                {commande.enveloppe && (
-                  <span className="block text-xs text-slate-500">
-                    + option enveloppe
-                  </span>
-                )}
+              <td className="py-2 text-slate-900">Fret aérien SIGIL</td>
+              <td className="py-2 text-right text-slate-700">
+                {commande.poids_kg}
               </td>
               <td className="py-2 text-right text-slate-700">
-                {commande.poids_kg} kg
-              </td>
-              <td className="py-2 text-right text-slate-700">
-                {montantFormatter.format(commande.prix_par_kg)}
+                {formatMontant(commande.prix_par_kg)}
               </td>
               <td className="py-2 text-right font-medium text-slate-900">
-                {montantFormatter.format(commande.montant_total)}
+                {formatMontant(commande.montant_total)}
               </td>
             </tr>
           </tbody>
         </table>
 
-        <div className="mb-6 flex justify-end">
-          <div className="text-right">
-            <p className="text-sm text-slate-500">Total</p>
-            <p className="text-xl font-bold text-slate-900">
-              {montantFormatter.format(commande.montant_total)}
-            </p>
-          </div>
-        </div>
+        <p className="mb-6 text-right text-sm font-bold text-slate-900">
+          TOTAL FACTURE : {formatMontant(commande.montant_total)} EUR
+        </p>
 
-        <div className="border-t border-slate-200 pt-4 text-xs text-slate-500">
-          <p>Projet : {commande.projets?.nom ?? "—"}</p>
-          <p>Paquets : {commande.nombre_paquets}</p>
-          {commande.code_barre_colis && (
-            <p className="font-mono">Code colis : {commande.code_barre_colis}</p>
-          )}
-        </div>
+        <p className="border-t border-slate-200 pt-4 text-xs text-slate-500">
+          Commande N° {numeroFacture} — Date :{" "}
+          {dateFormatter.format(new Date(commande.created_at))}
+        </p>
       </div>
     </div>
   );
