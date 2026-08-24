@@ -12,7 +12,7 @@ export function RecalculerPrixButton() {
   function handleClick() {
     if (
       !confirm(
-        "Recalculer le prix/kg des commandes non livrées et non annulées à partir du tarif actuel du produit ?"
+        "Recalculer le prix/kg des colis non livrés et non annulés à partir du tarif actuel du produit ?"
       )
     )
       return;
@@ -25,7 +25,7 @@ export function RecalculerPrixButton() {
       alert(
         result.nbMisAJour === 0
           ? "Tous les prix étaient déjà à jour."
-          : `${result.nbMisAJour} commande(s) mise(s) à jour.`
+          : `${result.nbMisAJour} colis mis à jour.`
       );
       router.refresh();
     });

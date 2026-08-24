@@ -20,7 +20,7 @@ export function SupprimerCommandeButton({
   const [isPending, startTransition] = useTransition();
 
   function handleClick() {
-    if (!confirm(`Supprimer définitivement la commande #${numero} ?`)) return;
+    if (!confirm(`Supprimer définitivement le colis #${numero} ?`)) return;
     startTransition(async () => {
       const result = await supprimerCommande(commandeId);
       if ("error" in result) {

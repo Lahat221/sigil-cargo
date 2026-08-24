@@ -360,7 +360,7 @@ export function NouvelleCommandeForm({
         disabled={submitting}
         className="w-full rounded-lg bg-gold-gradient px-4 py-2.5 text-sm font-semibold text-navy shadow-sm transition-all hover:shadow-md hover:brightness-105 disabled:opacity-50"
       >
-        {submitting ? "Création en cours..." : "Créer la commande"}
+        {submitting ? "Création en cours..." : "Créer le colis"}
       </button>
     </form>
   );

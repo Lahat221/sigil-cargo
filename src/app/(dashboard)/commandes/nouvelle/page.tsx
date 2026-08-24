@@ -24,7 +24,7 @@ export default async function NouvelleCommandePage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-white">
-          Nouvelle commande
+          Nouveau colis
         </h1>
         <Link
           href="/commandes"
@@ -36,8 +36,8 @@ export default async function NouvelleCommandePage() {
 
       {(!produits || produits.length === 0 || !projets || projets.length === 0) && (
         <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Il faut au moins un produit actif et un projet actif pour créer une
-          commande.
+          Il faut au moins un produit actif et un projet actif pour créer un
+          colis.
         </p>
       )}
 

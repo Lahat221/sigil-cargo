@@ -207,12 +207,12 @@ export default async function TableauDeBordPage({
         <KpiCard
           label="Poids total"
           valeur={`${poidsTotal.toLocaleString("fr-FR")} kg`}
-          sousTitre="commandes actives"
+          sousTitre="colis actifs"
           couleur="bg-purple-50 text-purple-600"
           icone="kg"
         />
         <KpiCard
-          label="Commandes"
+          label="Colis"
           valeur={toutes.length.toString()}
           sousTitre={`${nombreClients ?? 0} client(s) au total`}
           couleur="bg-blue-50 text-blue-600"
@@ -263,7 +263,7 @@ export default async function TableauDeBordPage({
 
       <div className="mb-8 rounded-xl border border-slate-200/70 bg-white shadow-sm p-5">
         <h2 className="mb-4 text-sm font-medium text-slate-700">
-          Pipeline de préparation
+          Suivi de colis
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {STATUTS_PIPELINE.map((s) => (
@@ -286,7 +286,7 @@ export default async function TableauDeBordPage({
       <div className="rounded-xl border border-slate-200/70 bg-white shadow-sm p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-medium text-slate-700">
-            Commandes récentes
+            Colis récents
           </h2>
           <Link
             href="/commandes"
@@ -297,7 +297,7 @@ export default async function TableauDeBordPage({
         </div>
         <div className="divide-y divide-slate-100">
           {recentes.length === 0 && (
-            <p className="py-4 text-sm text-slate-400">Aucune commande.</p>
+            <p className="py-4 text-sm text-slate-400">Aucun colis.</p>
           )}
           {recentes.map((c) => (
             <Link

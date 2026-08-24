@@ -76,7 +76,7 @@ export function FiltresBar({
     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
       <input
         type="text"
-        placeholder="Rechercher un client ou un n° de commande..."
+        placeholder="Rechercher un client ou un n° de colis..."
         value={q}
         onChange={(e) => setQ(e.target.value)}
         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none sm:max-w-xs"

@@ -78,7 +78,7 @@ export default async function CommandesPage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-white">Commandes</h1>
+        <h1 className="text-xl font-bold text-white">Colis</h1>
         <div className="flex flex-wrap gap-2">
           <ActualiserButton />
           <Link
@@ -86,7 +86,7 @@ export default async function CommandesPage({
             className="flex items-center gap-1.5 rounded-md border border-white/25 px-3 py-1.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10"
           >
             <IconGrid size={15} />
-            Pipeline
+            Suivi de colis
           </Link>
           <RecalculerPrixButton />
           <ExportCommandesButton commandes={commandes} />
@@ -95,7 +95,7 @@ export default async function CommandesPage({
             className="flex items-center gap-1.5 rounded-lg bg-gold-gradient px-4 py-1.5 text-sm font-semibold text-navy shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:brightness-105"
           >
             <IconPlus size={15} />
-            Nouvelle commande
+            Nouveau colis
           </Link>
         </div>
       </div>

@@ -83,13 +83,13 @@ export function NotifButtons({
         onClick={() =>
           envoyer(
             "recue",
-            `Bonjour ${clientNom}, nous avons bien reçu votre commande #${numero} chez SIGIL CARGO (${poidsKg} kg, ${montantFormatter.format(montantTotal)})${description?.trim() ? ` : ${description.trim()}` : ""}. Merci !`
+            `Bonjour ${clientNom}, nous avons bien reçu votre colis #${numero} chez SIGIL CARGO (${poidsKg} kg, ${montantFormatter.format(montantTotal)})${description?.trim() ? ` : ${description.trim()}` : ""}. Merci !`
           )
         }
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50"
       >
         <IconWhatsApp size={14} />
-        {isPending ? "..." : "Notif commande"}
+        {isPending ? "..." : "Notif colis"}
       </button>
       <button
         type="button"
@@ -97,7 +97,7 @@ export function NotifButtons({
         onClick={() =>
           envoyer(
             "prete",
-            `Bonjour ${clientNom}, votre commande #${numero} est prête pour le retrait chez SIGIL CARGO. À bientôt !`
+            `Bonjour ${clientNom}, votre colis #${numero} est prêt pour le retrait chez SIGIL CARGO. À bientôt !`
           )
         }
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50"

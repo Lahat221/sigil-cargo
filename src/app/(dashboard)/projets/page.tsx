@@ -94,7 +94,7 @@ export default async function ProjetsPage() {
                   <th className="px-3 py-2 font-medium">Nom</th>
                   <th className="px-3 py-2 font-medium">Statut</th>
                   <th className="px-3 py-2 font-medium">Départ</th>
-                  <th className="px-3 py-2 font-medium">Commandes</th>
+                  <th className="px-3 py-2 font-medium">Colis</th>
                   <th className="px-3 py-2 font-medium">CA</th>
                   <th className="px-3 py-2 font-medium">Dépenses</th>
                   <th className="px-3 py-2 font-medium">Bénéfice</th>

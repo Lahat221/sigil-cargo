@@ -44,7 +44,7 @@ export function StatutStepper({
     return (
       <div>
         <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
-          Commande annulée
+          Colis annulé
         </span>
       </div>
     );
@@ -92,7 +92,7 @@ export function StatutStepper({
           onClick={() => goTo("annulee")}
           className="text-sm text-red-600 hover:underline disabled:opacity-50"
         >
-          Annuler la commande
+          Annuler le colis
         </button>
       </div>
 

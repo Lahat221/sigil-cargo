@@ -36,7 +36,7 @@ export default async function PipelinePage({
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-white">
-          Pipeline de préparation
+          Suivi de colis
         </h1>
         <Link
           href="/commandes"

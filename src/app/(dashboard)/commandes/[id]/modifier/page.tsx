@@ -60,10 +60,10 @@ export default async function ModifierCommandePage({
         href={`/commandes/${commande.id}`}
         className="mb-4 inline-block text-sm text-white/60 hover:text-white"
       >
-        ← Retour à la commande
+        ← Retour au colis
       </Link>
       <h1 className="mb-4 text-xl font-bold text-white">
-        Modifier la commande
+        Modifier le colis
       </h1>
 
       <EditCommandeForm

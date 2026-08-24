@@ -72,12 +72,12 @@ const NAV_ITEMS: NavItem[] = [
   {
     slug: "commandes",
     href: "/commandes",
-    label: "Commandes",
+    label: "Colis",
     icon: <IconStore size={17} />,
     tabIcon: <IconStore size={20} />,
     sousItems: [
-      { href: "/commandes/nouvelle", label: "Nouvelle commande", icon: <IconPlus size={15} /> },
-      { href: "/commandes/pipeline", label: "Pipeline", icon: <IconGrid size={15} /> },
+      { href: "/commandes/nouvelle", label: "Nouveau colis", icon: <IconPlus size={15} /> },
+      { href: "/commandes/pipeline", label: "Suivi de colis", icon: <IconGrid size={15} /> },
     ],
   },
   {

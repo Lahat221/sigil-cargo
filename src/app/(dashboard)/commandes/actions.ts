@@ -113,7 +113,7 @@ export async function envoyerNotificationCommande(
     .single();
 
   if (commandeError || !commande) {
-    return { error: "Commande introuvable." };
+    return { error: "Colis introuvable." };
   }
 
   const client = commande.clients as unknown as {

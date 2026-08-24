@@ -44,7 +44,7 @@ export default async function FactureCommandePage({
     <div className="mx-auto max-w-2xl p-8">
       <div className="mb-6 flex items-center justify-between print:hidden">
         <h1 className="text-xl font-bold text-white">
-          Facture — Commande #{commande.numero}
+          Facture — Colis #{commande.numero}
         </h1>
         <Suspense fallback={null}>
           <PrintButton />

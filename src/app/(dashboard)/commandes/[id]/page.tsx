@@ -110,7 +110,7 @@ export default async function CommandeDetailPage({
       <div className="mb-4 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            Commande #{commande.numero}
+            Colis #{commande.numero}
           </h1>
           <p className="text-sm text-white/60">
             {commande.clients?.nom ?? "—"}
@@ -161,7 +161,7 @@ export default async function CommandeDetailPage({
           clientTelephone={commande.clients?.telephone ?? null}
           clientTelephonePays={commande.clients?.telephone_pays ?? null}
           texte={[
-            `Commande #${commande.numero} chez SIGIL CARGO`,
+            `Colis #${commande.numero} chez SIGIL CARGO`,
             commande.projets?.nom ? `Projet : ${commande.projets.nom}` : null,
             `Poids : ${commande.poids_kg} kg`,
             `Montant : ${montantFormatter.format(commande.montant_total)}`,
@@ -179,7 +179,7 @@ export default async function CommandeDetailPage({
       </div>
 
       <div className="mb-6 rounded-xl border border-slate-200/70 bg-white shadow-sm p-4">
-        <h2 className="mb-3 text-sm font-medium text-slate-700">Pipeline</h2>
+        <h2 className="mb-3 text-sm font-medium text-slate-700">Suivi de colis</h2>
         <StatutStepper commandeId={commande.id} statut={commande.statut} />
       </div>
 
@@ -250,7 +250,7 @@ export default async function CommandeDetailPage({
                 label="Partager avec le client (WhatsApp perso)"
                 clientTelephone={commande.clients?.telephone ?? null}
                 clientTelephonePays={commande.clients?.telephone_pays ?? null}
-                texte={`Bonjour ${commande.clients?.nom ?? ""}, voici les photos/vidéo de votre colis (commande #${commande.numero}).`}
+                texte={`Bonjour ${commande.clients?.nom ?? ""}, voici les photos/vidéo de votre colis (colis #${commande.numero}).`}
               />
             )}
           </div>

@@ -9,8 +9,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "SIGIL CARGO — Commandes",
-  description: "Gestion des commandes de fret aérien Dakar → France",
+  title: "SIGIL CARGO — Colis",
+  description: "Gestion des colis de fret aérien Dakar → France",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
