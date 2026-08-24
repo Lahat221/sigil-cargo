@@ -634,6 +634,33 @@ export interface Database {
           }
         ];
       };
+      douane_declaration_valeurs: {
+        Row: {
+          id: string;
+          projet_id: string;
+          section: string;
+          montant_fcfa: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          projet_id: string;
+          section: string;
+          montant_fcfa?: number | null;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["douane_declaration_valeurs"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "douane_declaration_valeurs_projet_id_fkey";
+            columns: ["projet_id"];
+            referencedRelation: "projets";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

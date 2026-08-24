@@ -385,3 +385,20 @@ insert into douane_produits_referentiel (nom_local, nom_normalise, type_produit,
   ('Netétou', 'netetou', 'Épice / Condiment', 'Condiment fermenté à base de néré (netetou)', array['netetou','netétou','neteetou']),
   ('Kéthiakh', 'kethiakh', 'Produit alimentaire', 'Poisson séché/fumé (kéthiakh)', array['kethiakh','kéthiakh','ketiakh']),
   ('Yété', 'yete', 'Produit alimentaire', 'Produit alimentaire traditionnel séché — à préciser', array['yete','yété']);
+
+-- ============================================================
+-- VALEURS ESTIMÉES PAR SECTION DE LA DÉCLARATION DOUANIÈRE
+-- Additif pur, aucune table existante modifiée.
+-- ============================================================
+
+create table douane_declaration_valeurs (
+  id uuid primary key default gen_random_uuid(),
+  projet_id uuid not null references projets(id) on delete cascade,
+  section text not null,
+  montant_fcfa numeric(12,0),
+  updated_at timestamptz not null default now(),
+  unique (projet_id, section)
+);
+
+alter table douane_declaration_valeurs enable row level security;
+create policy "authenticated_all" on douane_declaration_valeurs for all using (auth.role() = 'authenticated');

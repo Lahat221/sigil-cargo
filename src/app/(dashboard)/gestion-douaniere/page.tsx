@@ -4,10 +4,9 @@ import { DouaneFiltreDepart } from "@/components/douane/DouaneFiltreDepart";
 import { DouaneStatsCards } from "@/components/douane/DouaneStatsCards";
 import { TraiterDepartButton } from "@/components/douane/TraiterDepartButton";
 import { ExportDouaneButton } from "@/components/douane/ExportDouaneButton";
-import { DeclarationXlsxButton } from "@/components/douane/DeclarationXlsxButton";
 import { STATUT_DOUANE_LABELS, STATUT_DOUANE_STYLES } from "@/components/douane/statutLabels";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
-import { IconGrid } from "@/components/ui/Icons";
+import { IconGrid, IconFileText } from "@/components/ui/Icons";
 import type { StatutExtractionDouane } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -110,7 +109,15 @@ export default async function GestionDouanierePage({
             </Link>
           )}
           <ExportDouaneButton lignes={lignesExport} />
-          {projetId && <DeclarationXlsxButton projetId={projetId} />}
+          {projetId && (
+            <Link
+              href={`/gestion-douaniere/declaration?projet=${projetId}`}
+              className="flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+            >
+              <IconFileText size={15} />
+              Déclaration
+            </Link>
+          )}
           <DouaneFiltreDepart projets={projets ?? []} />
         </div>
       </div>

@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import type { LigneVueEnsemble } from "./vueEnsemble";
+import { SECTIONS_DECLARATION, regrouperParSection } from "./sections";
 
 // Coordonnées fixes de l'expéditeur (Sénégal) et du destinataire (France) —
 // identiques sur chaque départ, reprises du modèle de déclaration fourni
@@ -18,40 +19,29 @@ const DESTINATAIRE_EMAIL = "lahat221@gmail.com";
 const NOTE_BAS_DE_PAGE =
   "NB : Concernant les vêtements et autres produits, ceux-ci ne disposent pas de facture car la plupart sont déjà utilisés ou de type traditionnel. Un inventaire chiffré a donc été établi afin d'en estimer la valeur.";
 
-// Regroupement en grandes sections — la valeur estimée (FCFA) est saisie une
-// seule fois par section par l'utilisateur, pas ligne par ligne. Toute
-// catégorie non listée explicitement tombe dans la dernière section
-// ("Divers"), donc l'ajout d'une nouvelle catégorie ne casse rien.
-const SECTIONS: { nom: string; types: string[] }[] = [
-  {
-    nom: "Alimentaire, plantes & épices",
-    types: ["Produit alimentaire", "Épice / Condiment", "Plante séchée"],
-  },
-  { nom: "Vêtements & textile", types: ["Vêtement", "Textile"] },
-  { nom: "Divers", types: [] },
-];
+// Couleurs de la marque SIGIL CARGO (navy + or), reprises du reste de
+// l'application plutôt que d'un jaune Excel générique.
+const NAVY = "FF0A1A33";
+const GOLD = "FFD3A238";
+const GOLD_LIGHT = "FFF3CE63";
+const WHITE = "FFFFFFFF";
 
-const HEADER_FILL: ExcelJS.Fill = {
+const FOND_NAVY: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
+const FOND_OR: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: GOLD } };
+const FOND_OR_CLAIR: ExcelJS.Fill = {
   type: "pattern",
   pattern: "solid",
-  fgColor: { argb: "FFFFFF00" },
+  fgColor: { argb: GOLD_LIGHT },
 };
 
-const THIN_BOTTOM_BORDER: Partial<ExcelJS.Borders> = {
-  bottom: { style: "thin" },
-};
+const BORDURE_BASSE: Partial<ExcelJS.Borders> = { bottom: { style: "thin" } };
 
-function sectionIndexPour(typeProduit: string): number {
-  for (let i = 0; i < SECTIONS.length - 1; i++) {
-    if (SECTIONS[i].types.includes(typeProduit)) return i;
-  }
-  return SECTIONS.length - 1;
-}
+export type ValeursParSection = Record<string, number | null | undefined>;
 
 export async function genererDeclarationBuffer(
   lignes: LigneVueEnsemble[],
-  nomDepart: string,
-  dateDepart: string | null
+  dateDepart: string | null,
+  valeursParSection: ValeursParSection = {}
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const ws = workbook.addWorksheet("Déclaration", {
@@ -66,7 +56,7 @@ export async function genererDeclarationBuffer(
     { width: 7.7 },
     { width: 7.4 },
     { width: 8.1 },
-    { width: 12.4 },
+    { width: 14 },
   ];
 
   const dateAffichee = dateDepart
@@ -75,10 +65,11 @@ export async function genererDeclarationBuffer(
 
   ws.mergeCells("A1:H1");
   const titre = ws.getCell("A1");
-  titre.value = "DECLARATION DE MARCHANDISE";
-  titre.font = { bold: true, size: 16 };
-  titre.alignment = { horizontal: "center" };
-  titre.border = THIN_BOTTOM_BORDER;
+  titre.value = "SIGIL CARGO — DÉCLARATION DE MARCHANDISE";
+  titre.font = { bold: true, size: 16, color: { argb: WHITE } };
+  titre.alignment = { horizontal: "center", vertical: "middle" };
+  titre.fill = FOND_NAVY;
+  ws.getRow(1).height = 26;
 
   ws.mergeCells("A2:D2");
   ws.getCell("A2").value = `Expéditeur : ${EXPEDITEUR_NOM}`;
@@ -104,7 +95,8 @@ export async function genererDeclarationBuffer(
 
   for (let r = 2; r <= 10; r++) {
     ws.getRow(r).eachCell((cell) => {
-      cell.border = THIN_BOTTOM_BORDER;
+      cell.border = BORDURE_BASSE;
+      cell.font = { bold: r === 2 || r === 5, color: { argb: "FF0A1A33" } };
     });
   }
 
@@ -123,27 +115,20 @@ export async function genererDeclarationBuffer(
   headers.forEach((label, i) => {
     const cell = headerRow.getCell(i + 1);
     cell.value = label;
-    cell.font = { bold: true };
-    cell.fill = HEADER_FILL;
+    cell.font = { bold: true, color: { argb: WHITE } };
+    cell.fill = FOND_NAVY;
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    cell.border = THIN_BOTTOM_BORDER;
+    cell.border = BORDURE_BASSE;
   });
 
-  // Une déclaration ne concerne que les colis pour lesquels des produits ont
-  // été détectés — un colis non traité n'a rien à déclarer.
-  const lignesAvecProduit = lignes.filter((l) => l.typeProduit !== null);
-
-  const parSection: LigneVueEnsemble[][] = SECTIONS.map(() => []);
-  for (const l of lignesAvecProduit) {
-    parSection[sectionIndexPour(l.typeProduit!)].push(l);
-  }
+  const sections = regrouperParSection(lignes);
 
   let ligneCourante = 12;
   const poidsAAfficherDejaFait = new Set<string>();
   const valeurCellRefs: string[] = [];
   const poidsCellRefs: string[] = [];
 
-  parSection.forEach((sectionLignes, idx) => {
+  sections.forEach(({ section, lignes: sectionLignes }, idx) => {
     if (sectionLignes.length === 0) return;
 
     const debutSection = ligneCourante;
@@ -169,7 +154,7 @@ export async function genererDeclarationBuffer(
       }
 
       row.eachCell((cell) => {
-        cell.border = THIN_BOTTOM_BORDER;
+        cell.border = BORDURE_BASSE;
         cell.alignment = { vertical: "middle", wrapText: true };
       });
 
@@ -179,52 +164,56 @@ export async function genererDeclarationBuffer(
     const finSection = ligneCourante - 1;
     ws.mergeCells(`H${debutSection}:H${finSection}`);
     const celluleValeur = ws.getCell(`H${debutSection}`);
-    celluleValeur.font = { bold: true };
+    const valeur = valeursParSection[section.cle];
+    if (valeur != null) celluleValeur.value = valeur;
+    celluleValeur.font = { bold: true, color: { argb: "FF0A1A33" } };
+    celluleValeur.fill = FOND_OR_CLAIR;
     celluleValeur.alignment = { horizontal: "center", vertical: "middle" };
     celluleValeur.numFmt = '#,##0" FCFA"';
-    celluleValeur.border = THIN_BOTTOM_BORDER;
+    celluleValeur.border = BORDURE_BASSE;
     valeurCellRefs.push(`H${debutSection}`);
 
     // Ligne vide de séparation entre sections (sauf après la dernière).
-    if (idx < parSection.length - 1 && parSection.slice(idx + 1).some((s) => s.length > 0)) {
+    if (idx < sections.length - 1 && sections.slice(idx + 1).some((s) => s.lignes.length > 0)) {
       ligneCourante += 1;
     }
   });
 
   const ligneTotal = ligneCourante;
   ws.getCell(`G${ligneTotal}`).value = " TOTAL";
-  ws.getCell(`G${ligneTotal}`).font = { bold: true, size: 12 };
-  ws.getCell(`G${ligneTotal}`).fill = HEADER_FILL;
+  ws.getCell(`G${ligneTotal}`).font = { bold: true, size: 12, color: { argb: WHITE } };
+  ws.getCell(`G${ligneTotal}`).fill = FOND_NAVY;
   ws.getCell(`G${ligneTotal}`).alignment = { horizontal: "center" };
   const celluleTotal = ws.getCell(`H${ligneTotal}`);
-  celluleTotal.value =
-    valeurCellRefs.length > 0 ? { formula: valeurCellRefs.join("+") } : 0;
-  celluleTotal.font = { bold: true, size: 12 };
-  celluleTotal.fill = HEADER_FILL;
+  celluleTotal.value = valeurCellRefs.length > 0 ? { formula: valeurCellRefs.join("+") } : 0;
+  celluleTotal.font = { bold: true, size: 12, color: { argb: WHITE } };
+  celluleTotal.fill = FOND_NAVY;
   celluleTotal.alignment = { horizontal: "center" };
   celluleTotal.numFmt = '#,##0" FCFA"';
 
   const lignePoidsTotal = ligneTotal + 1;
   ws.getCell(`G${lignePoidsTotal}`).value = "POIDS TOTAL";
-  ws.getCell(`G${lignePoidsTotal}`).font = { bold: true, size: 12 };
-  ws.getCell(`G${lignePoidsTotal}`).fill = HEADER_FILL;
+  ws.getCell(`G${lignePoidsTotal}`).font = { bold: true, size: 12, color: { argb: "FF0A1A33" } };
+  ws.getCell(`G${lignePoidsTotal}`).fill = FOND_OR;
   ws.getCell(`G${lignePoidsTotal}`).alignment = { horizontal: "center" };
-  ws.getCell(`G${lignePoidsTotal}`).border = THIN_BOTTOM_BORDER;
+  ws.getCell(`G${lignePoidsTotal}`).border = BORDURE_BASSE;
   const cellulePoidsTotal = ws.getCell(`H${lignePoidsTotal}`);
-  cellulePoidsTotal.value =
-    poidsCellRefs.length > 0 ? { formula: poidsCellRefs.join("+") } : 0;
-  cellulePoidsTotal.font = { bold: true, size: 12 };
-  cellulePoidsTotal.fill = HEADER_FILL;
+  cellulePoidsTotal.value = poidsCellRefs.length > 0 ? { formula: poidsCellRefs.join("+") } : 0;
+  cellulePoidsTotal.font = { bold: true, size: 12, color: { argb: "FF0A1A33" } };
+  cellulePoidsTotal.fill = FOND_OR;
   cellulePoidsTotal.alignment = { horizontal: "center" };
   cellulePoidsTotal.numFmt = '0.00" KG"';
-  cellulePoidsTotal.border = THIN_BOTTOM_BORDER;
+  cellulePoidsTotal.border = BORDURE_BASSE;
 
   const ligneNote = lignePoidsTotal + 2;
   ws.mergeCells(`A${ligneNote}:H${ligneNote + 2}`);
   const celluleNote = ws.getCell(`A${ligneNote}`);
   celluleNote.value = NOTE_BAS_DE_PAGE;
+  celluleNote.font = { italic: true, size: 9, color: { argb: "FF5B6B85" } };
   celluleNote.alignment = { horizontal: "left", vertical: "top", wrapText: true };
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
 }
+
+export { SECTIONS_DECLARATION };

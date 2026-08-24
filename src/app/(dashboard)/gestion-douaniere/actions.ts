@@ -133,13 +133,44 @@ export async function genererDeclarationXlsx(
     return { error: "Aucun produit traité pour ce départ — traitez d'abord les colis." };
   }
 
-  const buffer = await genererDeclarationBuffer(lignes, projet.nom, projet.date_depart);
+  const { data: valeursRows } = await supabase
+    .from("douane_declaration_valeurs")
+    .select("section, montant_fcfa")
+    .eq("projet_id", projetId);
+
+  const valeursParSection: Record<string, number | null> = {};
+  for (const v of valeursRows ?? []) {
+    valeursParSection[v.section] = v.montant_fcfa;
+  }
+
+  const buffer = await genererDeclarationBuffer(lignes, projet.date_depart, valeursParSection);
   const date = projet.date_depart ?? new Date().toISOString().slice(0, 10);
 
   return {
     base64: buffer.toString("base64"),
     filename: `declaration-${date}.xlsx`,
   };
+}
+
+export async function enregistrerValeurSection(
+  projetId: string,
+  section: string,
+  montant: number | null
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+  const { error } = await supabase.from("douane_declaration_valeurs").upsert(
+    {
+      projet_id: projetId,
+      section,
+      montant_fcfa: montant,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "projet_id,section" }
+  );
+
+  if (error) return { error: error.message };
+  revalidatePath("/gestion-douaniere/declaration");
+  return { success: true };
 }
 
 type ChampsProduit = {
