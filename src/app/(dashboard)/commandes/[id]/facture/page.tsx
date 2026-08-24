@@ -17,6 +17,10 @@ const EXPORTATEUR_NINEA = "SN005845493";
 const EXPORTATEUR_REX = "SNREX1356ASX";
 const EXPORTATEUR_EMAIL = "Binet1801@gmail.com";
 
+// Couleurs de la marque COLLE AGRO, extraites du logo.
+const VERT = "#3C6E32";
+const TERRE = "#96461E";
+
 export default async function FactureCommandePage({
   params,
 }: {
@@ -47,89 +51,115 @@ export default async function FactureCommandePage({
         </Suspense>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-lg print:border-0 print:shadow-none">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="mb-4 text-xl font-bold text-slate-900">
-              COLLE AGRO
-            </h2>
-            <div className="text-sm text-slate-700">
-              <p>Exportateur : {EXPORTATEUR_NOM}</p>
-              <p>Adresse : {EXPORTATEUR_ADRESSE}</p>
-              <p>NINEA : {EXPORTATEUR_NINEA}</p>
-              <p>REX : {EXPORTATEUR_REX}</p>
-              <p>Email : {EXPORTATEUR_EMAIL}</p>
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg print:border-0 print:shadow-none">
+        <div
+          className="h-2 w-full print:h-1.5"
+          style={{
+            background: `linear-gradient(90deg, ${VERT}, ${TERRE})`,
+          }}
+        />
+
+        <div className="p-8">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h2
+                className="mb-4 text-xl font-bold"
+                style={{ color: VERT }}
+              >
+                COLLE AGRO
+              </h2>
+              <div className="text-sm text-slate-700">
+                <p>Exportateur : {EXPORTATEUR_NOM}</p>
+                <p>Adresse : {EXPORTATEUR_ADRESSE}</p>
+                <p>NINEA : {EXPORTATEUR_NINEA}</p>
+                <p>REX : {EXPORTATEUR_REX}</p>
+                <p>Email : {EXPORTATEUR_EMAIL}</p>
+              </div>
             </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/colle-agro-logo.jpg"
+              alt="COLLE AGRO"
+              className="h-20 w-auto shrink-0 object-contain"
+            />
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/colle-agro-logo.jpg"
-            alt="COLLE AGRO"
-            className="h-20 w-auto shrink-0 object-contain"
-          />
-        </div>
 
-        <p className="mb-6 text-right text-lg font-bold tracking-wide text-slate-900">
-          FACTURE
-        </p>
+          <p
+            className="mb-6 text-right text-lg font-bold tracking-wide"
+            style={{ color: TERRE }}
+          >
+            FACTURE
+          </p>
 
-        <div className="mb-6 text-sm text-slate-700">
-          <p>Client : {commande.clients?.nom ?? "—"}</p>
-          <div className="flex items-baseline justify-between">
-            <p>Adresse : {commande.clients?.adresse ?? "—"}</p>
-            <p className="shrink-0 font-medium text-slate-900">
-              N° {numeroFacture}
+          <div className="mb-6 text-sm text-slate-700">
+            <p>Client : {commande.clients?.nom ?? "—"}</p>
+            <div className="flex items-baseline justify-between">
+              <p>Adresse : {commande.clients?.adresse ?? "—"}</p>
+              <p className="shrink-0 font-medium text-slate-900">
+                N° {numeroFacture}
+              </p>
+            </div>
+            <p>Tél : {commande.clients?.telephone ?? "—"}</p>
+            <p>Type de fret : {commande.projets?.nom ?? "—"}</p>
+          </div>
+
+          <table className="mb-4 w-full text-sm">
+            <thead>
+              <tr
+                className="border-b text-left text-xs"
+                style={{ borderColor: `${VERT}4D`, color: VERT }}
+              >
+                <th className="py-2 font-semibold">Produit</th>
+                <th className="py-2 text-right font-semibold">Poids (kg)</th>
+                <th className="py-2 text-right font-semibold">
+                  Valeur unitaire en Euro
+                </th>
+                <th className="py-2 text-right font-semibold">
+                  Valeur totale en Euro
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-slate-100">
+                <td className="py-2 text-slate-900">Fret aérien SIGIL</td>
+                <td className="py-2 text-right text-slate-700">
+                  {commande.poids_kg}
+                </td>
+                <td className="py-2 text-right text-slate-700">
+                  {formatMontant(commande.prix_par_kg)}
+                </td>
+                <td className="py-2 text-right font-medium text-slate-900">
+                  {formatMontant(commande.montant_total)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="mb-6 flex justify-end">
+            <p
+              className="rounded-md px-4 py-2 text-sm font-bold"
+              style={{ backgroundColor: `${VERT}14`, color: VERT }}
+            >
+              TOTAL FACTURE : {formatMontant(commande.montant_total)} EUR
             </p>
           </div>
-          <p>Tél : {commande.clients?.telephone ?? "—"}</p>
-          <p>Type de fret : {commande.projets?.nom ?? "—"}</p>
-        </div>
 
-        <table className="mb-4 w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-300 text-left text-xs text-slate-500">
-              <th className="py-2 font-normal">Produit</th>
-              <th className="py-2 text-right font-normal">Poids (kg)</th>
-              <th className="py-2 text-right font-normal">
-                Valeur unitaire en Euro
-              </th>
-              <th className="py-2 text-right font-normal">
-                Valeur totale en Euro
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b border-slate-100">
-              <td className="py-2 text-slate-900">Fret aérien SIGIL</td>
-              <td className="py-2 text-right text-slate-700">
-                {commande.poids_kg}
-              </td>
-              <td className="py-2 text-right text-slate-700">
-                {formatMontant(commande.prix_par_kg)}
-              </td>
-              <td className="py-2 text-right font-medium text-slate-900">
-                {formatMontant(commande.montant_total)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <p
+            className="border-t pt-4 text-xs text-slate-500"
+            style={{ borderColor: `${VERT}33` }}
+          >
+            Commande N° {numeroFacture} — Date :{" "}
+            {dateFormatter.format(new Date(commande.created_at))}
+          </p>
 
-        <p className="mb-6 text-right text-sm font-bold text-slate-900">
-          TOTAL FACTURE : {formatMontant(commande.montant_total)} EUR
-        </p>
-
-        <p className="border-t border-slate-200 pt-4 text-xs text-slate-500">
-          Commande N° {numeroFacture} — Date :{" "}
-          {dateFormatter.format(new Date(commande.created_at))}
-        </p>
-
-        <div className="mt-16 flex justify-center print:mt-24">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/colle-agro-cachet.jpg"
-            alt="Cachet COLLE AGRO"
-            className="h-24 w-auto object-contain"
-          />
+          <div className="mt-16 flex justify-center print:mt-24">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/colle-agro-cachet.jpg"
+              alt="Cachet COLLE AGRO"
+              className="h-24 w-auto object-contain"
+            />
+          </div>
         </div>
       </div>
     </div>
