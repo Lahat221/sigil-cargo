@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { ProjetFilterSelect } from "@/components/commandes/ProjetFilterSelect";
+import { DouaneFiltreDepart } from "@/components/douane/DouaneFiltreDepart";
 import { DouaneStatsCards } from "@/components/douane/DouaneStatsCards";
 import { TraiterDepartButton } from "@/components/douane/TraiterDepartButton";
 import { ExportDouaneButton, type LigneExportDouane } from "@/components/douane/ExportDouaneButton";
@@ -146,7 +146,7 @@ export default async function GestionDouanierePage({
         <h1 className="text-xl font-bold text-white">Gestion Douanière</h1>
         <div className="flex flex-wrap items-center gap-2">
           <ExportDouaneButton lignes={lignesExport} />
-          <ProjetFilterSelect projets={projets ?? []} />
+          <DouaneFiltreDepart projets={projets ?? []} />
         </div>
       </div>
 
