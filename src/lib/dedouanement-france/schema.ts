@@ -23,6 +23,9 @@ export const LigneDeclarationSchema = z.object({
   tva_pct: z.number(),
   base_tva_eur: z.number(),
   tva_eur: z.number(),
+  // Trace optionnelle quand le HS attribué diffère du HS source du packing
+  // brut (audit douanier) — voir prompt système, section GARDE-FOUS.
+  commentaire_hs: z.string().optional(),
 });
 
 export const MetaDeclarationSchema = z.object({

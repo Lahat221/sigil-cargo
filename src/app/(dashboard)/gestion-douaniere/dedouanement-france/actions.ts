@@ -8,6 +8,9 @@ import { genererMailTransitaire } from "@/lib/dedouanement-france/mail";
 import { buildFactureCommerciale } from "@/lib/dedouanement-france/excel/facture";
 import { buildPackingList } from "@/lib/dedouanement-france/excel/packingList";
 import { buildDeclarationDouane } from "@/lib/dedouanement-france/excel/declarationDouane";
+import { DeclarationFranceSchema } from "@/lib/dedouanement-france/schema";
+import type { DeclarationFranceIA } from "@/lib/dedouanement-france/schema";
+import type { InfosExpedition } from "@/lib/dedouanement-france/excel/facture";
 
 export async function enregistrerExpeditionFrance(
   projetId: string,
@@ -78,6 +81,96 @@ export type ResultatDocumentsFrance =
     }
   | { error: string };
 
+async function construireFichiers(
+  data: DeclarationFranceIA,
+  infos: InfosExpedition
+): Promise<Omit<Extract<ResultatDocumentsFrance, { ok: true }>, "ok">> {
+  const [factureBuf, packingBuf, declarationBuf] = await Promise.all([
+    buildFactureCommerciale(data, infos),
+    buildPackingList(data, infos),
+    buildDeclarationDouane(data, infos),
+  ]);
+
+  return {
+    recap: {
+      valeurTotaleFcfa: data.meta.valeur_totale_fcfa,
+      valeurTotaleEur: data.meta.valeur_totale_eur,
+      poidsTotalKg: data.meta.poids_lta_kg,
+      nbLignesRegroupees: data.meta.nb_lignes_regroupees,
+      nbLignesBrutes: data.meta.nb_lignes_brutes,
+      economieTransitaireEur: data.meta.economie_transitaire_eur,
+      partRexPct: data.meta.part_rex_pct,
+      droitsTotauxEur: data.meta.droits_totaux_eur,
+      tvaTotaleEur: data.meta.tva_totale_eur,
+      alertes: data.alertes,
+    },
+    fichiers: {
+      facture: {
+        base64: factureBuf.toString("base64"),
+        filename: `SIGIL_Facture_Commerciale_${infos.dateVol}.xlsx`,
+      },
+      packingList: {
+        base64: packingBuf.toString("base64"),
+        filename: `SIGIL_Packing_List_${infos.dateVol}.xlsx`,
+      },
+      declarationDouane: {
+        base64: declarationBuf.toString("base64"),
+        filename: `SIGIL_Declaration_Douane_${infos.dateVol}.xlsx`,
+      },
+    },
+    mail: genererMailTransitaire(data),
+  };
+}
+
+/**
+ * Régénère les 3 fichiers + le mail à partir du dernier JSON déjà validé et
+ * persisté, sans rappeler Claude — audit et économie (§ suggestions de la
+ * revue métier : "Historique : stocker le JSON pour re-générer sans
+ * re-appeler l'IA").
+ */
+export async function regenererDepuisDernierJson(projetId: string): Promise<ResultatDocumentsFrance> {
+  const supabase = createClient();
+
+  const { data: expedition } = await supabase
+    .from("douane_expeditions_france")
+    .select("id, mawb, date_vol, poids_brut_lta_kg, nombre_colis, dimensions")
+    .eq("projet_id", projetId)
+    .maybeSingle();
+
+  if (!expedition?.mawb || !expedition.date_vol) {
+    return { error: "Aucune expédition renseignée pour ce départ." };
+  }
+
+  const { data: derniere } = await supabase
+    .from("douane_declarations_france")
+    .select("reponse_json")
+    .eq("expedition_id", expedition.id)
+    .eq("statut", "genere")
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!derniere?.reponse_json) {
+    return { error: "Aucune génération précédente à ré-utiliser pour ce départ." };
+  }
+
+  const parsed = DeclarationFranceSchema.safeParse(derniere.reponse_json);
+  if (!parsed.success) {
+    return { error: "Le JSON précédemment enregistré est corrompu — relance une génération complète." };
+  }
+
+  const infos: InfosExpedition = {
+    mawb: expedition.mawb,
+    dateVol: expedition.date_vol,
+    nombreColis: expedition.nombre_colis,
+    dimensions: expedition.dimensions ?? "",
+    poidsBrutLtaKg: expedition.poids_brut_lta_kg ?? parsed.data.meta.poids_lta_kg,
+  };
+
+  const resultat = await construireFichiers(parsed.data, infos);
+  return { ok: true, ...resultat };
+}
+
 export async function genererDocumentsFrance(projetId: string): Promise<ResultatDocumentsFrance> {
   const supabase = createClient();
 
@@ -146,7 +239,7 @@ export async function genererDocumentsFrance(projetId: string): Promise<Resultat
     cout_estime_usd: resultat.coutEstimeUsd,
   });
 
-  const infos = {
+  const infos: InfosExpedition = {
     mawb: expedition.mawb,
     dateVol: expedition.date_vol,
     nombreColis: expedition.nombre_colis,
@@ -154,39 +247,9 @@ export async function genererDocumentsFrance(projetId: string): Promise<Resultat
     poidsBrutLtaKg: expedition.poids_brut_lta_kg ?? resultat.data.meta.poids_lta_kg,
   };
 
-  const [factureBuf, packingBuf, declarationBuf] = await Promise.all([
-    buildFactureCommerciale(resultat.data, infos),
-    buildPackingList(resultat.data, infos),
-    buildDeclarationDouane(resultat.data, infos),
-  ]);
-
-  const mail = genererMailTransitaire(resultat.data);
-  const date = expedition.date_vol;
+  const fichiersEtRecap = await construireFichiers(resultat.data, infos);
 
   revalidatePath("/gestion-douaniere/dedouanement-france");
 
-  return {
-    ok: true,
-    recap: {
-      valeurTotaleFcfa: resultat.data.meta.valeur_totale_fcfa,
-      valeurTotaleEur: resultat.data.meta.valeur_totale_eur,
-      poidsTotalKg: resultat.data.meta.poids_lta_kg,
-      nbLignesRegroupees: resultat.data.meta.nb_lignes_regroupees,
-      nbLignesBrutes: resultat.data.meta.nb_lignes_brutes,
-      economieTransitaireEur: resultat.data.meta.economie_transitaire_eur,
-      partRexPct: resultat.data.meta.part_rex_pct,
-      droitsTotauxEur: resultat.data.meta.droits_totaux_eur,
-      tvaTotaleEur: resultat.data.meta.tva_totale_eur,
-      alertes: resultat.data.alertes,
-    },
-    fichiers: {
-      facture: { base64: factureBuf.toString("base64"), filename: `SIGIL_Facture_Commerciale_${date}.xlsx` },
-      packingList: { base64: packingBuf.toString("base64"), filename: `SIGIL_Packing_List_${date}.xlsx` },
-      declarationDouane: {
-        base64: declarationBuf.toString("base64"),
-        filename: `SIGIL_Declaration_Douane_${date}.xlsx`,
-      },
-    },
-    mail,
-  };
+  return { ok: true, ...fichiersEtRecap };
 }

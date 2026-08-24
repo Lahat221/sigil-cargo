@@ -142,7 +142,7 @@ export async function genererDeclarationFrance(input: {
       continue;
     }
 
-    const erreursMetier = validerDeclarationFrance(parsed.data, input.poidsBrutLtaKg);
+    const erreursMetier = validerDeclarationFrance(parsed.data, input.poidsBrutLtaKg, input.sousTotauxFcfa);
     if (erreursMetier.length > 0) {
       derniereErreur = erreursMetier.join(" / ");
       messages.push({ role: "assistant", content: texteReponse });

@@ -11,7 +11,8 @@ const HS_REGEX = /^\d{4}\.\d{2}\.\d{2}\.\d{2}$/;
  */
 export function validerDeclarationFrance(
   data: DeclarationFranceIA,
-  poidsBrutLtaKg: number | null
+  poidsBrutLtaKg: number | null,
+  sousTotauxFcfa?: { agro: number | null; vetements: number | null; divers: number | null }
 ): string[] {
   const erreurs: string[] = [];
 
@@ -22,6 +23,19 @@ export function validerDeclarationFrance(
     if (Math.abs(totalPoids - poidsBrutLtaKg) >= 0.5) {
       erreurs.push(
         `Poids total des lignes (${totalPoids.toFixed(2)} kg) ne correspond pas au poids LTA (${poidsBrutLtaKg} kg).`
+      );
+    }
+  }
+
+  // Somme des sous-totaux fournis en input ≈ valeur totale renvoyée par
+  // Claude (invariant : la répartition ne doit ni perdre ni inventer de
+  // valeur). Tolérance 1 FCFA (arrondis).
+  if (sousTotauxFcfa) {
+    const sommeAttendue =
+      (sousTotauxFcfa.agro ?? 0) + (sousTotauxFcfa.vetements ?? 0) + (sousTotauxFcfa.divers ?? 0);
+    if (sommeAttendue > 0 && Math.abs(data.meta.valeur_totale_fcfa - sommeAttendue) >= 1) {
+      erreurs.push(
+        `Valeur totale (${data.meta.valeur_totale_fcfa} FCFA) ne correspond pas à la somme des sous-totaux fournis (${sommeAttendue} FCFA).`
       );
     }
   }
@@ -43,6 +57,9 @@ export function validerDeclarationFrance(
     }
     if (chapitre === "18" && l.preference !== 100) {
       erreurs.push(`Ligne HS ${l.hs} : chocolat (chapitre 18) doit toujours être en préférence 100.`);
+    }
+    if (l.hs.startsWith("6309.") && l.preference !== 100) {
+      erreurs.push(`Ligne HS ${l.hs} : friperie (6309) doit toujours être en préférence 100.`);
     }
 
     // 5. Format HS (déjà contraint par Zod, revérifié ici pour un message clair).
