@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { traiterColis } from "@/lib/douane/extraction";
+import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
+import { genererDeclarationBuffer } from "@/lib/douane/declarationXlsx";
 import type { HsCodeSource, HsStatus } from "@/types/database.types";
 
 type ColisMinimal = {
@@ -111,6 +113,33 @@ export async function validerExtraction(
   revalidatePath("/gestion-douaniere");
   revalidatePath(`/gestion-douaniere/${commandeId}`);
   return { success: true };
+}
+
+export async function genererDeclarationXlsx(
+  projetId: string
+): Promise<{ error: string } | { base64: string; filename: string }> {
+  const supabase = createClient();
+
+  const { data: projet } = await supabase
+    .from("projets")
+    .select("nom, date_depart")
+    .eq("id", projetId)
+    .maybeSingle();
+
+  if (!projet) return { error: "Départ introuvable." };
+
+  const lignes = await chargerVueEnsemble(supabase, projetId);
+  if (lignes.every((l) => l.typeProduit === null)) {
+    return { error: "Aucun produit traité pour ce départ — traitez d'abord les colis." };
+  }
+
+  const buffer = await genererDeclarationBuffer(lignes, projet.nom, projet.date_depart);
+  const date = projet.date_depart ?? new Date().toISOString().slice(0, 10);
+
+  return {
+    base64: buffer.toString("base64"),
+    filename: `declaration-${date}.xlsx`,
+  };
 }
 
 type ChampsProduit = {

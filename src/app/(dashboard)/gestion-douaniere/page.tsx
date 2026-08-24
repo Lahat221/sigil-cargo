@@ -4,6 +4,7 @@ import { DouaneFiltreDepart } from "@/components/douane/DouaneFiltreDepart";
 import { DouaneStatsCards } from "@/components/douane/DouaneStatsCards";
 import { TraiterDepartButton } from "@/components/douane/TraiterDepartButton";
 import { ExportDouaneButton } from "@/components/douane/ExportDouaneButton";
+import { DeclarationXlsxButton } from "@/components/douane/DeclarationXlsxButton";
 import { STATUT_DOUANE_LABELS, STATUT_DOUANE_STYLES } from "@/components/douane/statutLabels";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { IconGrid } from "@/components/ui/Icons";
@@ -109,6 +110,7 @@ export default async function GestionDouanierePage({
             </Link>
           )}
           <ExportDouaneButton lignes={lignesExport} />
+          {projetId && <DeclarationXlsxButton projetId={projetId} />}
           <DouaneFiltreDepart projets={projets ?? []} />
         </div>
       </div>
