@@ -15,7 +15,7 @@ export default async function ModifierCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, projet_id, produit_id, poids_kg, prix_par_kg, enveloppe, nombre_paquets, adresse_livraison, description, remarque_interne, photo_urls, video_url, note_vocale_url, clients(id, nom, telephone, adresse)"
+      "id, projet_id, produit_id, poids_kg, prix_par_kg, enveloppe, nombre_paquets, adresse_livraison, description, remarque_interne, photo_urls, video_urls, note_vocale_url, clients(id, nom, telephone, adresse)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -36,12 +36,14 @@ export default async function ModifierCommandePage({
       if (data) existingPhotos.push({ path, url: data.signedUrl });
     }
   }
-  let existingVideo = null;
-  if (commande.video_url) {
-    const { data } = await supabase.storage
-      .from("commandes-media")
-      .createSignedUrl(commande.video_url, 3600);
-    if (data) existingVideo = { path: commande.video_url, url: data.signedUrl };
+  const existingVideos = [];
+  if (commande.video_urls) {
+    for (const path of commande.video_urls) {
+      const { data } = await supabase.storage
+        .from("commandes-media")
+        .createSignedUrl(path, 3600);
+      if (data) existingVideos.push({ path, url: data.signedUrl });
+    }
   }
   let existingVoiceNote = null;
   if (commande.note_vocale_url) {
@@ -77,7 +79,7 @@ export default async function ModifierCommandePage({
         initialDescription={commande.description ?? ""}
         initialRemarqueInterne={commande.remarque_interne ?? ""}
         existingPhotos={existingPhotos}
-        existingVideo={existingVideo}
+        existingVideos={existingVideos}
         existingVoiceNote={existingVoiceNote}
         produits={produits ?? []}
         projets={projets ?? []}

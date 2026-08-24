@@ -8,6 +8,7 @@ import { ClientField, type ClientSelection } from "./ClientField";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 
 const MAX_PHOTOS = 5;
+const MAX_VIDEOS = 4;
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
   currency: "EUR",
@@ -41,7 +42,7 @@ export function NouvelleCommandeForm({
   const [description, setDescription] = useState("");
   const [remarqueInterne, setRemarqueInterne] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
-  const [video, setVideo] = useState<File | null>(null);
+  const [videos, setVideos] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<Blob | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,11 @@ export function NouvelleCommandeForm({
   function handlePhotosChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []).slice(0, MAX_PHOTOS);
     setPhotos(files);
+  }
+
+  function handleVideosChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).slice(0, MAX_VIDEOS);
+    setVideos(files);
   }
 
   const clientPret =
@@ -112,14 +118,15 @@ export function NouvelleCommandeForm({
         photoPaths.push(path);
       }
 
-      let videoPath: string | null = null;
-      if (video) {
-        const path = `${commandeId}/video-${video.name}`;
+      const videoPaths: string[] = [];
+      for (let i = 0; i < videos.length; i++) {
+        const file = videos[i];
+        const path = `${commandeId}/video-${i}-${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("commandes-media")
-          .upload(path, video);
+          .upload(path, file);
         if (uploadError) throw new Error(uploadError.message);
-        videoPath = path;
+        videoPaths.push(path);
       }
 
       let noteVocalePath: string | null = null;
@@ -147,7 +154,7 @@ export function NouvelleCommandeForm({
         description,
         remarqueInterne,
         photoPaths,
-        videoPath,
+        videoPaths,
         noteVocalePath,
       });
 
@@ -323,12 +330,13 @@ export function NouvelleCommandeForm({
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            Vidéo (max 1)
+            Vidéos ({videos.length}/{MAX_VIDEOS})
           </label>
           <input
             type="file"
             accept="video/*"
-            onChange={(e) => setVideo(e.target.files?.[0] ?? null)}
+            multiple
+            onChange={handleVideosChange}
             className="w-full text-sm"
           />
         </div>

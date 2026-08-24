@@ -131,6 +131,7 @@ export interface Database {
           etiquette_collee: boolean;
           photo_urls: string[] | null;
           video_url: string | null;
+          video_urls: string[] | null;
           note_vocale_url: string | null;
           date_livraison_prevue: string | null;
           date_livraison_reelle: string | null;
@@ -159,6 +160,7 @@ export interface Database {
           etiquette_collee?: boolean;
           photo_urls?: string[] | null;
           video_url?: string | null;
+          video_urls?: string[] | null;
           note_vocale_url?: string | null;
           date_livraison_prevue?: string | null;
           date_livraison_reelle?: string | null;

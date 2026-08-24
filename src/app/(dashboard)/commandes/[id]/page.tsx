@@ -6,12 +6,8 @@ import { StatutStepper } from "@/components/commandes/StatutStepper";
 import { SupprimerCommandeButton } from "@/components/commandes/SupprimerCommandeButton";
 import { NotifButtons } from "@/components/commandes/NotifButtons";
 import { PartagerWhatsAppButton } from "@/components/commandes/PartagerMediaButton";
-import {
-  IconPencil,
-  IconFileText,
-  IconPrinter,
-  IconDownload,
-} from "@/components/ui/Icons";
+import { PartagerFichierButton } from "@/components/commandes/PartagerFichierButton";
+import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +35,7 @@ type CommandeDetail = {
   remarque_interne: string | null;
   code_barre_colis: string | null;
   photo_urls: string[] | null;
-  video_url: string | null;
+  video_urls: string[] | null;
   note_vocale_url: string | null;
   date_livraison_reelle: string | null;
   created_at: string;
@@ -63,7 +59,7 @@ export default async function CommandeDetailPage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, prix_par_kg, enveloppe, nombre_paquets, montant_total, adresse_livraison, description, remarque_interne, code_barre_colis, photo_urls, video_url, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
+      "id, numero, statut, poids_kg, prix_par_kg, enveloppe, nombre_paquets, montant_total, adresse_livraison, description, remarque_interne, code_barre_colis, photo_urls, video_urls, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
     )
     .eq("id", params.id)
     .maybeSingle<CommandeDetail>();
@@ -76,21 +72,23 @@ export default async function CommandeDetailPage({
     .eq("commande_id", commande.id)
     .order("created_at", { ascending: false });
 
-  const photoUrls: string[] = [];
+  const photoItems: { path: string; url: string }[] = [];
   if (commande.photo_urls) {
     for (const path of commande.photo_urls) {
       const { data } = await supabase.storage
         .from("commandes-media")
         .createSignedUrl(path, 3600);
-      if (data) photoUrls.push(data.signedUrl);
+      if (data) photoItems.push({ path, url: data.signedUrl });
     }
   }
-  let videoUrl: string | null = null;
-  if (commande.video_url) {
-    const { data } = await supabase.storage
-      .from("commandes-media")
-      .createSignedUrl(commande.video_url, 3600);
-    videoUrl = data?.signedUrl ?? null;
+  const videoItems: { path: string; url: string }[] = [];
+  if (commande.video_urls) {
+    for (const path of commande.video_urls) {
+      const { data } = await supabase.storage
+        .from("commandes-media")
+        .createSignedUrl(path, 3600);
+      if (data) videoItems.push({ path, url: data.signedUrl });
+    }
   }
   let noteVocaleUrl: string | null = null;
   if (commande.note_vocale_url) {
@@ -243,11 +241,11 @@ export default async function CommandeDetailPage({
         )}
       </div>
 
-      {(photoUrls.length > 0 || videoUrl || noteVocaleUrl) && (
+      {(photoItems.length > 0 || videoItems.length > 0 || noteVocaleUrl) && (
         <div className="mb-6 rounded-xl border border-slate-200/70 bg-white shadow-sm p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-medium text-slate-700">Médias</h2>
-            {(photoUrls.length > 0 || videoUrl) && (
+            {(photoItems.length > 0 || videoItems.length > 0) && (
               <PartagerWhatsAppButton
                 label="Partager avec le client (WhatsApp perso)"
                 clientTelephone={commande.clients?.telephone ?? null}
@@ -257,47 +255,38 @@ export default async function CommandeDetailPage({
             )}
           </div>
           <div className="flex flex-wrap items-start gap-3">
-            {photoUrls.map((url) => (
-              <div key={url} className="flex flex-col items-center gap-1">
+            {photoItems.map((item) => (
+              <div key={item.path} className="flex flex-col items-center gap-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={url}
+                  src={item.url}
                   alt="Photo commande"
                   className="h-24 w-24 rounded-md object-cover"
                 />
-                <a
-                  href={url}
-                  download
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 text-xs text-navy hover:underline"
-                >
-                  <IconDownload size={12} />
-                  Télécharger
-                </a>
+                <PartagerFichierButton
+                  url={item.url}
+                  filename={item.path.split("/").pop() ?? "photo.jpg"}
+                  mimeType="image/jpeg"
+                />
               </div>
             ))}
-            {videoUrl && (
-              <div className="flex flex-col items-center gap-1">
-                <video src={videoUrl} controls className="h-24 rounded-md" />
-                <a
-                  href={videoUrl}
-                  download
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 text-xs text-navy hover:underline"
-                >
-                  <IconDownload size={12} />
-                  Télécharger
-                </a>
+            {videoItems.map((item) => (
+              <div key={item.path} className="flex flex-col items-center gap-1">
+                <video src={item.url} controls className="h-24 rounded-md" />
+                <PartagerFichierButton
+                  url={item.url}
+                  filename={item.path.split("/").pop() ?? "video.mp4"}
+                  mimeType="video/mp4"
+                />
               </div>
-            )}
+            ))}
           </div>
-          {(photoUrls.length > 0 || videoUrl) && (
+          {(photoItems.length > 0 || videoItems.length > 0) && (
             <p className="mt-2 text-xs text-slate-400">
-              Télécharge le fichier puis joins-le manuellement dans la
-              conversation WhatsApp qui s&apos;ouvre — WhatsApp ne permet pas
-              d&apos;envoyer une pièce jointe automatiquement via un lien.
+              &quot;Partager&quot; ouvre le partage natif du téléphone (choisis
+              WhatsApp pour l&apos;envoyer directement). Si l&apos;appareil ne
+              le permet pas, le fichier s&apos;ouvre dans un nouvel onglet
+              pour un enregistrement manuel.
             </p>
           )}
           {noteVocaleUrl && (

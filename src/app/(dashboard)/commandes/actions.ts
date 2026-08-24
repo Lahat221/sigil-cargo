@@ -43,7 +43,7 @@ type UpdateCommandeInput = {
   description: string;
   remarqueInterne: string;
   photoPaths: string[];
-  videoPath: string | null;
+  videoPaths: string[];
   noteVocalePath: string | null;
 };
 
@@ -74,7 +74,7 @@ export async function updateCommande(
       description: input.description.trim() || null,
       remarque_interne: input.remarqueInterne.trim() || null,
       photo_urls: input.photoPaths.length > 0 ? input.photoPaths : null,
-      video_url: input.videoPath,
+      video_urls: input.videoPaths.length > 0 ? input.videoPaths : null,
       note_vocale_url: input.noteVocalePath,
     })
     .eq("id", commandeId);

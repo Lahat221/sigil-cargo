@@ -9,6 +9,7 @@ import type { ClientMatch } from "@/app/(dashboard)/commandes/nouvelle/actions";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 
 const MAX_PHOTOS = 5;
+const MAX_VIDEOS = 4;
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
   currency: "EUR",
@@ -31,7 +32,7 @@ export function EditCommandeForm({
   initialDescription,
   initialRemarqueInterne,
   existingPhotos,
-  existingVideo,
+  existingVideos,
   existingVoiceNote,
   produits,
   projets,
@@ -48,7 +49,7 @@ export function EditCommandeForm({
   initialDescription: string;
   initialRemarqueInterne: string;
   existingPhotos: ExistingMedia[];
-  existingVideo: ExistingMedia | null;
+  existingVideos: ExistingMedia[];
   existingVoiceNote: ExistingMedia | null;
   produits: Produit[];
   projets: Projet[];
@@ -74,8 +75,8 @@ export function EditCommandeForm({
   );
   const [keptPhotos, setKeptPhotos] = useState(existingPhotos);
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
-  const [keepVideo, setKeepVideo] = useState(existingVideo !== null);
-  const [newVideo, setNewVideo] = useState<File | null>(null);
+  const [keptVideos, setKeptVideos] = useState(existingVideos);
+  const [newVideos, setNewVideos] = useState<File[]>([]);
   const [keepVoiceNote, setKeepVoiceNote] = useState(existingVoiceNote !== null);
   const [newVoiceNote, setNewVoiceNote] = useState<Blob | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -98,6 +99,12 @@ export function EditCommandeForm({
     const remaining = MAX_PHOTOS - keptPhotos.length;
     const files = Array.from(e.target.files ?? []).slice(0, remaining);
     setNewPhotos(files);
+  }
+
+  function handleNewVideosChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const remaining = MAX_VIDEOS - keptVideos.length;
+    const files = Array.from(e.target.files ?? []).slice(0, remaining);
+    setNewVideos(files);
   }
 
   const clientPret =
@@ -139,15 +146,15 @@ export function EditCommandeForm({
         photoPaths.push(path);
       }
 
-      let videoPath: string | null =
-        keepVideo && existingVideo ? existingVideo.path : null;
-      if (newVideo) {
-        const path = `${commandeId}/video-${Date.now()}-${newVideo.name}`;
+      const videoPaths: string[] = keptVideos.map((v) => v.path);
+      for (let i = 0; i < newVideos.length; i++) {
+        const file = newVideos[i];
+        const path = `${commandeId}/video-${Date.now()}-${i}-${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("commandes-media")
-          .upload(path, newVideo);
+          .upload(path, file);
         if (uploadError) throw new Error(uploadError.message);
-        videoPath = path;
+        videoPaths.push(path);
       }
 
       let noteVocalePath: string | null =
@@ -175,7 +182,7 @@ export function EditCommandeForm({
         description,
         remarqueInterne,
         photoPaths,
-        videoPath,
+        videoPaths,
         noteVocalePath,
       });
 
@@ -376,24 +383,34 @@ export function EditCommandeForm({
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            Vidéo (max 1)
+            Vidéos ({keptVideos.length + newVideos.length}/{MAX_VIDEOS})
           </label>
-          {keepVideo && existingVideo ? (
-            <div className="mb-2 flex items-center gap-2">
-              <video src={existingVideo.url} controls className="h-16 rounded-md" />
-              <button
-                type="button"
-                onClick={() => setKeepVideo(false)}
-                className="text-xs font-medium text-red-600 hover:underline"
-              >
-                Supprimer
-              </button>
+          {keptVideos.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {keptVideos.map((videoItem) => (
+                <div key={videoItem.path} className="relative">
+                  <video src={videoItem.url} controls className="h-16 rounded-md" />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setKeptVideos((vs) =>
+                        vs.filter((v) => v.path !== videoItem.path)
+                      )
+                    }
+                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
             </div>
-          ) : (
+          )}
+          {keptVideos.length < MAX_VIDEOS && (
             <input
               type="file"
               accept="video/*"
-              onChange={(e) => setNewVideo(e.target.files?.[0] ?? null)}
+              multiple
+              onChange={handleNewVideosChange}
               className="w-full text-sm"
             />
           )}
