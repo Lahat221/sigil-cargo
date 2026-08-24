@@ -1,10 +1,11 @@
 import { confidenceThreshold } from "./openai";
 import type { ProduitExtrait } from "./schema";
 
-/** Un produit doit être vérifié par un humain si l'IA n'est pas sûre, ou si
- * elle n'a pas pu proposer de code HS (jamais présenté comme certain). */
+/** Un produit doit être vérifié par un humain si l'IA n'est pas sûre. Le
+ * code HS est toujours renseigné (jamais null — voir prompt.ts), donc seule
+ * la confiance détermine si l'estimation doit être contrôlée. */
 export function produitDoitEtreVerifie(produit: ProduitExtrait): boolean {
-  return produit.confiance < confidenceThreshold() || !produit.hs_code;
+  return produit.confiance < confidenceThreshold();
 }
 
 /** Statut global de l'extraction : dès qu'un produit doit être vérifié,

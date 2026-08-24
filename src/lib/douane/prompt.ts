@@ -1,6 +1,6 @@
 import type { ReferentielMatch } from "./referentiel";
 
-export const PROMPT_VERSION = "1.0.0";
+export const PROMPT_VERSION = "1.1.0";
 
 const CATEGORIES = [
   "Produit alimentaire",
@@ -55,14 +55,19 @@ RÈGLES ABSOLUES :
 7. Catégories ("type_produit") : utilise en priorité une des catégories suivantes, sans en inventer de
    nouvelles inutilement : ${CATEGORIES.join(", ")}.
 
-8. Code HS ("hs_code") : ne propose un code que si tu es raisonnablement confiant. Si le classement dépend
-   d'une information absente ou si le produit est ambigu, renvoie hs_code = null plutôt que d'inventer un
-   code. Un code proposé n'est jamais présenté comme juridiquement définitif — il sera vérifié par un
-   humain.
+8. Code HS ("hs_code") : OBLIGATOIRE pour chaque produit, jamais null et jamais vide — même en cas
+   d'incertitude, propose ta meilleure estimation. Un contrôle humain a lieu systématiquement à l'étape
+   suivante du traitement, donc une estimation incertaine (signalée par une confiance basse) est toujours
+   préférable à une valeur manquante. Format obligatoire : 4 chiffres, un point, 2 chiffres, un point, 2
+   chiffres, un point, 2 chiffres — exactement comme "6309.00.00.00" (jamais "6309", "6309.00" ou
+   "6309.00.00"). Si tu es sûr de la position à 6 chiffres (chapitre + position, ex: "6309.00") mais pas de
+   la sous-position nationale précise, complète avec ".00.00". Un code proposé n'est jamais présenté comme
+   juridiquement définitif — il sera vérifié par un humain.
 
 9. Confiance ("confiance", 0 à 1) : reflète ta certitude réelle sur la classification ET le code HS.
    0.95+ = très fiable, 0.85-0.94 = fiable, 0.70-0.84 = à contrôler, <0.70 = incertain. Un produit dont le
-   nom est inconnu ou ambigu doit avoir une confiance basse, pas une confiance artificiellement haute.
+   nom est inconnu ou ambigu, ou dont le code HS est une estimation peu sûre, doit avoir une confiance basse
+   — jamais une confiance artificiellement haute pour compenser l'obligation de toujours fournir un code.
 
 10. "anomalies" : liste courte (texte libre) des points que l'agent doit vérifier manuellement — produit
     non identifiable, quantité incohérente avec le poids, contradiction dans le texte, etc. Liste vide si

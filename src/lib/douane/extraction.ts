@@ -5,7 +5,7 @@ import { getOpenAIClient, douaneModel } from "./openai";
 import { buildSystemPrompt, buildUserPrompt, PROMPT_VERSION } from "./prompt";
 import { ExtractionDouaneSchema, type ProduitExtrait } from "./schema";
 import { rechercherReferentiel } from "./referentiel";
-import { statutExtractionPour } from "./confiance";
+import { produitDoitEtreVerifie, statutExtractionPour } from "./confiance";
 import { estimerCoutUsd } from "./cout";
 
 type ColisAAnalyser = {
@@ -198,7 +198,7 @@ export async function traiterColis(
           type_produit: p.type_produit,
           description_douane: p.description_douane,
           hs_code: p.hs_code,
-          hs_status: p.hs_code ? "propose" : "a_verifier",
+          hs_status: produitDoitEtreVerifie(p) ? "a_verifier" : "propose",
           hs_code_source: hsCodeSourcePour(p, referentielMatches),
           description_produit: p.description_produit,
           quantite: p.quantite,
