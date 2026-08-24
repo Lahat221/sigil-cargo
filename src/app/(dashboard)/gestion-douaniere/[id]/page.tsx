@@ -6,18 +6,10 @@ import { ValiderColisButton } from "@/components/douane/ValiderColisButton";
 import { ReanalyserButton } from "@/components/douane/ReanalyserButton";
 import { HistoriqueExtraction } from "@/components/douane/HistoriqueExtraction";
 import { TraiterDepartButton } from "@/components/douane/TraiterDepartButton";
+import { STATUT_DOUANE_LABELS } from "@/components/douane/statutLabels";
 import type { StatutExtractionDouane } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
-
-const STATUT_LABELS: Record<StatutExtractionDouane, string> = {
-  non_traite: "Non traité",
-  en_cours: "En cours",
-  traite: "Traité",
-  a_verifier: "À vérifier",
-  valide: "Validé",
-  erreur: "Erreur",
-};
 
 type ColisDetail = {
   id: string;
@@ -108,7 +100,7 @@ export default async function DetailDouanePage({ params }: { params: { id: strin
         </div>
         {extraction && (
           <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-white/80">
-            {STATUT_LABELS[extraction.statut]} · v{extraction.version}
+            {STATUT_DOUANE_LABELS[extraction.statut]} · v{extraction.version}
           </span>
         )}
       </div>
