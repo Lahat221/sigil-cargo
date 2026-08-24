@@ -15,6 +15,7 @@ import {
   IconInvoice,
   IconSend,
   IconChat,
+  IconShieldCheck,
   IconSettings,
   IconMenu,
   IconX,
@@ -112,6 +113,15 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { slug: "chat", href: "/chat", label: "Chat", icon: <IconChat size={17} />, tabIcon: <IconChat size={20} /> },
+  {
+    slug: "gestion-douaniere",
+    href: "/gestion-douaniere",
+    label: "Gestion Douanière",
+    icon: <IconShieldCheck size={17} />,
+    sousItems: [
+      { href: "/gestion-douaniere/referentiel", label: "Référentiel produits", icon: <IconFolder size={15} /> },
+    ],
+  },
   { slug: "parametres", href: "/parametres", label: "Paramètres", icon: <IconSettings size={17} /> },
 ];
 

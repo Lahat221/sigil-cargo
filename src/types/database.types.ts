@@ -21,6 +21,18 @@ export type StatutCommande =
 
 export type RoleUtilisateur = "admin" | "agent";
 
+export type StatutExtractionDouane =
+  | "non_traite"
+  | "en_cours"
+  | "traite"
+  | "a_verifier"
+  | "valide"
+  | "erreur";
+
+export type HsStatus = "confirme" | "propose" | "a_verifier";
+export type HsCodeSource = "referentiel" | "ia" | "utilisateur";
+export type StatutProduitDouane = "a_valider" | "valide";
+
 export interface Database {
   public: {
     Tables: {
@@ -394,6 +406,233 @@ export interface Database {
           Database["public"]["Tables"]["whatsapp_relay_state"]["Insert"]
         >;
         Relationships: [];
+      };
+      douane_extractions: {
+        Row: {
+          id: string;
+          commande_id: string;
+          statut: StatutExtractionDouane;
+          version: number;
+          raw_description: string;
+          poids_total: number;
+          client_nom: string | null;
+          client_telephone: string | null;
+          anomalies: Json;
+          modele: string | null;
+          prompt_version: string | null;
+          erreur: string | null;
+          valide_par: string | null;
+          valide_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          commande_id: string;
+          statut?: StatutExtractionDouane;
+          version?: number;
+          raw_description: string;
+          poids_total: number;
+          client_nom?: string | null;
+          client_telephone?: string | null;
+          anomalies?: Json;
+          modele?: string | null;
+          prompt_version?: string | null;
+          erreur?: string | null;
+          valide_par?: string | null;
+          valide_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["douane_extractions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "douane_extractions_commande_id_fkey";
+            columns: ["commande_id"];
+            referencedRelation: "commandes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      douane_produits: {
+        Row: {
+          id: string;
+          extraction_id: string;
+          type_produit: string;
+          description_douane: string;
+          hs_code: string | null;
+          hs_status: HsStatus;
+          hs_code_source: HsCodeSource;
+          description_produit: string;
+          quantite: number;
+          unite: string;
+          confiance: number | null;
+          statut: StatutProduitDouane;
+          ordre: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          extraction_id: string;
+          type_produit: string;
+          description_douane: string;
+          hs_code?: string | null;
+          hs_status?: HsStatus;
+          hs_code_source?: HsCodeSource;
+          description_produit: string;
+          quantite?: number;
+          unite?: string;
+          confiance?: number | null;
+          statut?: StatutProduitDouane;
+          ordre?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["douane_produits"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "douane_produits_extraction_id_fkey";
+            columns: ["extraction_id"];
+            referencedRelation: "douane_extractions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      douane_produits_retires: {
+        Row: {
+          id: string;
+          extraction_id: string;
+          description: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          extraction_id: string;
+          description: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["douane_produits_retires"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "douane_produits_retires_extraction_id_fkey";
+            columns: ["extraction_id"];
+            referencedRelation: "douane_extractions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      douane_historique: {
+        Row: {
+          id: string;
+          produit_id: string | null;
+          extraction_id: string;
+          champ: string;
+          ancienne_valeur: string | null;
+          nouvelle_valeur: string | null;
+          modifie_par: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          produit_id?: string | null;
+          extraction_id: string;
+          champ: string;
+          ancienne_valeur?: string | null;
+          nouvelle_valeur?: string | null;
+          modifie_par?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["douane_historique"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "douane_historique_extraction_id_fkey";
+            columns: ["extraction_id"];
+            referencedRelation: "douane_extractions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "douane_historique_produit_id_fkey";
+            columns: ["produit_id"];
+            referencedRelation: "douane_produits";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      douane_produits_referentiel: {
+        Row: {
+          id: string;
+          nom_local: string;
+          nom_normalise: string;
+          type_produit: string;
+          description_douane: string;
+          hs_code: string | null;
+          synonymes: string[];
+          actif: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          nom_local: string;
+          nom_normalise: string;
+          type_produit: string;
+          description_douane: string;
+          hs_code?: string | null;
+          synonymes?: string[];
+          actif?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["douane_produits_referentiel"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      douane_logs: {
+        Row: {
+          id: string;
+          extraction_id: string | null;
+          commande_id: string | null;
+          modele: string;
+          prompt_version: string | null;
+          duree_ms: number | null;
+          statut: string;
+          erreur: string | null;
+          tokens_entree: number | null;
+          tokens_sortie: number | null;
+          cout_estime_usd: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          extraction_id?: string | null;
+          commande_id?: string | null;
+          modele: string;
+          prompt_version?: string | null;
+          duree_ms?: number | null;
+          statut: string;
+          erreur?: string | null;
+          tokens_entree?: number | null;
+          tokens_sortie?: number | null;
+          cout_estime_usd?: number | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["douane_logs"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "douane_logs_commande_id_fkey";
+            columns: ["commande_id"];
+            referencedRelation: "commandes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "douane_logs_extraction_id_fkey";
+            columns: ["extraction_id"];
+            referencedRelation: "douane_extractions";
+            referencedColumns: ["id"];
+          }
+        ];
       };
     };
     Views: Record<string, never>;
