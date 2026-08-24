@@ -469,6 +469,8 @@ export interface Database {
           confiance: number | null;
           statut: StatutProduitDouane;
           ordre: number;
+          exclu_declaration_france: boolean;
+          raison_exclusion_france: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -486,6 +488,8 @@ export interface Database {
           confiance?: number | null;
           statut?: StatutProduitDouane;
           ordre?: number;
+          exclu_declaration_france?: boolean;
+          raison_exclusion_france?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -657,6 +661,82 @@ export interface Database {
             foreignKeyName: "douane_declaration_valeurs_projet_id_fkey";
             columns: ["projet_id"];
             referencedRelation: "projets";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      douane_expeditions_france: {
+        Row: {
+          id: string;
+          projet_id: string;
+          mawb: string | null;
+          date_vol: string | null;
+          poids_brut_lta_kg: number | null;
+          nombre_colis: number;
+          dimensions: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          projet_id: string;
+          mawb?: string | null;
+          date_vol?: string | null;
+          poids_brut_lta_kg?: number | null;
+          nombre_colis?: number;
+          dimensions?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["douane_expeditions_france"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "douane_expeditions_france_projet_id_fkey";
+            columns: ["projet_id"];
+            referencedRelation: "projets";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      douane_declarations_france: {
+        Row: {
+          id: string;
+          expedition_id: string;
+          version: number;
+          statut: "genere" | "erreur";
+          reponse_json: Json | null;
+          modele: string | null;
+          prompt_version: string | null;
+          tokens_entree: number | null;
+          tokens_sortie: number | null;
+          cout_estime_usd: number | null;
+          erreur: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          expedition_id: string;
+          version?: number;
+          statut?: "genere" | "erreur";
+          reponse_json?: Json | null;
+          modele?: string | null;
+          prompt_version?: string | null;
+          tokens_entree?: number | null;
+          tokens_sortie?: number | null;
+          cout_estime_usd?: number | null;
+          erreur?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["douane_declarations_france"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "douane_declarations_france_expedition_id_fkey";
+            columns: ["expedition_id"];
+            referencedRelation: "douane_expeditions_france";
             referencedColumns: ["id"];
           }
         ];

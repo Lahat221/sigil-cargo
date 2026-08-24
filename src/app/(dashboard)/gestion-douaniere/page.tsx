@@ -118,6 +118,15 @@ export default async function GestionDouanierePage({
               Déclaration
             </Link>
           )}
+          {projetId && (
+            <Link
+              href={`/gestion-douaniere/dedouanement-france?projet=${projetId}`}
+              className="flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+            >
+              <IconFileText size={15} />
+              Dédouanement France
+            </Link>
+          )}
           <DouaneFiltreDepart projets={projets ?? []} />
         </div>
       </div>
