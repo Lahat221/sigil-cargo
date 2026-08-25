@@ -1,16 +1,27 @@
+import type { ZodType } from "zod";
 import { getAnthropicClient, anthropicModel } from "./anthropic";
 import { SIGIL_SYSTEM_PROMPT, PROMPT_VERSION } from "./promptSysteme";
-import { DeclarationFranceSchema, type DeclarationFranceIA } from "./schema";
+import { DeclarationFranceSchema, AuditReportSchema, type DeclarationFranceIA, type AuditReport } from "./schema";
 import { validerDeclarationFrance } from "./validation";
 import { estimerCoutUsd } from "./cout";
 import type { LigneProduitFrance } from "./lignesFrance";
 
 const MAX_TENTATIVES = 3; // appel initial + 2 relances
 
-export type ResultatGeneration =
+export type InputFrance = {
+  mawb: string;
+  dateVol: string;
+  poidsBrutLtaKg: number | null;
+  nombreColis: number;
+  dimensions: string;
+  lignes: LigneProduitFrance[];
+  sousTotauxFcfa: { agro: number | null; vetements: number | null; divers: number | null };
+};
+
+type ResultatAppel<T> =
   | {
       ok: true;
-      data: DeclarationFranceIA;
+      data: T;
       modele: string;
       tokensEntree: number | null;
       tokensSortie: number | null;
@@ -18,45 +29,44 @@ export type ResultatGeneration =
     }
   | { ok: false; erreur: string };
 
-function construirePromptUser(input: {
-  mawb: string;
-  dateVol: string;
-  poidsBrutLtaKg: number | null;
-  lignes: LigneProduitFrance[];
-  sousTotauxFcfa: { agro: number | null; vetements: number | null; divers: number | null };
-}): string {
-  const csvLignes = input.lignes
-    .map((l, i) => {
-      const cols = [
-        String(i + 1),
-        l.typeProduit,
-        l.descriptionDouane,
-        l.hsCode ?? "à préciser",
-        l.descriptionProduit,
-        String(l.quantite),
-        "0",
-      ];
-      return cols.join(";");
-    })
-    .join("\n");
+export type ResultatGeneration = ResultatAppel<DeclarationFranceIA>;
+export type ResultatAudit = ResultatAppel<AuditReport>;
 
-  return `Voici l'expédition à traiter :
+function construirePromptUser(input: InputFrance, mode: "audit" | "final"): string {
+  const packing = {
+    mawb: input.mawb,
+    date_vol: input.dateVol,
+    poids_brut_lta_kg: input.poidsBrutLtaKg,
+    nombre_colis: input.nombreColis,
+    dimensions: input.dimensions,
+    packing_valide_par_utilisateur: {
+      sous_totaux_fcfa: {
+        agro: input.sousTotauxFcfa.agro,
+        vetements_textile: input.sousTotauxFcfa.vetements,
+        bijoux_maroquinerie_divers: input.sousTotauxFcfa.divers,
+      },
+      lignes: input.lignes.map((l, i) => ({
+        num_source: i + 1,
+        type_produit: l.typeProduit,
+        description_douane: l.descriptionDouane,
+        hs_source: l.hsCode ?? "à préciser",
+        description_produit: l.descriptionProduit,
+        quantite: l.quantite,
+      })),
+    },
+    mode,
+  };
 
-MAWB : ${input.mawb}
-Date vol : ${input.dateVol}
-Poids brut LTA : ${input.poidsBrutLtaKg ?? "non renseigné"} kg
-Sous-totaux packing brut (FCFA) :
-- Section agro : ${input.sousTotauxFcfa.agro ?? "non renseigné"}
-- Section vêtements/textiles : ${input.sousTotauxFcfa.vetements ?? "non renseigné"}
-- Section bijoux/maroquinerie/divers : ${input.sousTotauxFcfa.divers ?? "non renseigné"}
+  const consigne =
+    mode === "audit"
+      ? "Produis le rapport d'audit (mode \"audit\") selon tes règles."
+      : "Les lignes exclues par l'utilisateur suite à l'audit ne sont plus présentes ci-dessus. Produis le JSON de déclaration douanière finale (mode \"final\") selon tes règles.";
 
-PACKING BRUT (${input.lignes.length} lignes — les lignes exclues par l'utilisateur ne sont pas incluses ici) :
-\`\`\`csv
-ligne;type;description_douane;hs_source;produit;qte;poids_kg
-${csvLignes}
-\`\`\`
+  return `Voici l'expédition à traiter (${input.lignes.length} lignes) :
 
-Produis le JSON de déclaration douanière optimisée selon tes règles.`;
+${JSON.stringify(packing, null, 2)}
+
+${consigne}`;
 }
 
 function extraireJson(texte: string): unknown {
@@ -68,19 +78,16 @@ function extraireJson(texte: string): unknown {
   return JSON.parse(nettoye);
 }
 
-export async function genererDeclarationFrance(input: {
-  mawb: string;
-  dateVol: string;
-  poidsBrutLtaKg: number | null;
-  lignes: LigneProduitFrance[];
-  sousTotauxFcfa: { agro: number | null; vetements: number | null; divers: number | null };
-}): Promise<ResultatGeneration> {
+async function appellerClaudeJson<T>(params: {
+  userPrompt: string;
+  schema: ZodType<T>;
+  validerMetier?: (data: T) => string[];
+}): Promise<ResultatAppel<T>> {
   const client = getAnthropicClient();
   const modele = anthropicModel();
-  const userPrompt = construirePromptUser(input);
 
   const messages: { role: "user" | "assistant"; content: string }[] = [
-    { role: "user", content: userPrompt },
+    { role: "user", content: params.userPrompt },
   ];
 
   let tokensEntreeTotal = 0;
@@ -135,7 +142,7 @@ export async function genererDeclarationFrance(input: {
       continue;
     }
 
-    const parsed = DeclarationFranceSchema.safeParse(json);
+    const parsed = params.schema.safeParse(json);
     if (!parsed.success) {
       derniereErreur = `Réponse IA hors-schéma : ${parsed.error.issues.slice(0, 3).map((i) => i.message).join(" / ")}`;
       messages.push({ role: "assistant", content: texteReponse });
@@ -146,7 +153,7 @@ export async function genererDeclarationFrance(input: {
       continue;
     }
 
-    const erreursMetier = validerDeclarationFrance(parsed.data, input.poidsBrutLtaKg, input.sousTotauxFcfa);
+    const erreursMetier = params.validerMetier?.(parsed.data) ?? [];
     if (erreursMetier.length > 0) {
       derniereErreur = erreursMetier.join(" / ");
       messages.push({ role: "assistant", content: texteReponse });
@@ -168,6 +175,31 @@ export async function genererDeclarationFrance(input: {
   }
 
   return { ok: false, erreur: derniereErreur };
+}
+
+/**
+ * Phase A du prompt v2 — rapport d'audit (produits à risque, cohérence
+ * valeur/poids, regroupement proposé) à faire valider par l'utilisateur
+ * avant de payer le coût d'une génération finale.
+ */
+export async function genererAuditFrance(input: InputFrance): Promise<ResultatAudit> {
+  return appellerClaudeJson({
+    userPrompt: construirePromptUser(input, "audit"),
+    schema: AuditReportSchema,
+  });
+}
+
+/**
+ * Phase B du prompt v2 — JSON final prêt pour les 3 fichiers Excel.
+ * `input.lignes` doit déjà refléter les exclusions décidées par
+ * l'utilisateur (le prompt système ne reçoit jamais les lignes exclues).
+ */
+export async function genererDeclarationFrance(input: InputFrance): Promise<ResultatGeneration> {
+  return appellerClaudeJson({
+    userPrompt: construirePromptUser(input, "final"),
+    schema: DeclarationFranceSchema,
+    validerMetier: (data) => validerDeclarationFrance(data, input.poidsBrutLtaKg, input.sousTotauxFcfa),
+  });
 }
 
 export { PROMPT_VERSION };

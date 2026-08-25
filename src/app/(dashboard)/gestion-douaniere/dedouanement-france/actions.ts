@@ -2,15 +2,73 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { chargerLignesFrance } from "@/lib/dedouanement-france/lignesFrance";
-import { genererDeclarationFrance, PROMPT_VERSION } from "@/lib/dedouanement-france/generation";
+import { chargerLignesFrance, type LigneProduitFrance } from "@/lib/dedouanement-france/lignesFrance";
+import { genererDeclarationFrance, genererAuditFrance, PROMPT_VERSION } from "@/lib/dedouanement-france/generation";
 import { genererMailTransitaire } from "@/lib/dedouanement-france/mail";
 import { buildFactureCommerciale } from "@/lib/dedouanement-france/excel/facture";
 import { buildPackingList } from "@/lib/dedouanement-france/excel/packingList";
 import { buildDeclarationDouane } from "@/lib/dedouanement-france/excel/declarationDouane";
 import { DeclarationFranceSchema } from "@/lib/dedouanement-france/schema";
-import type { DeclarationFranceIA } from "@/lib/dedouanement-france/schema";
+import type { DeclarationFranceIA, AuditReport } from "@/lib/dedouanement-france/schema";
 import type { InfosExpedition } from "@/lib/dedouanement-france/excel/facture";
+
+type ContexteFrance = {
+  expedition: {
+    id: string;
+    mawb: string;
+    date_vol: string;
+    poids_brut_lta_kg: number | null;
+    nombre_colis: number;
+    dimensions: string | null;
+  };
+  lignesIncluses: LigneProduitFrance[];
+  sousTotauxFcfa: { agro: number | null; vetements: number | null; divers: number | null };
+};
+
+/**
+ * Charge l'expédition + les lignes non exclues + les sous-totaux de valeur
+ * saisis côté Dakar — contexte partagé par l'audit et la génération finale.
+ */
+async function chargerContexteFrance(
+  supabase: ReturnType<typeof createClient>,
+  projetId: string
+): Promise<{ error: string } | { ok: true; contexte: ContexteFrance }> {
+  const { data: expedition } = await supabase
+    .from("douane_expeditions_france")
+    .select("id, mawb, date_vol, poids_brut_lta_kg, nombre_colis, dimensions")
+    .eq("projet_id", projetId)
+    .maybeSingle();
+
+  if (!expedition?.mawb || !expedition.date_vol) {
+    return { error: "Renseigne au moins le MAWB et la date de vol avant de continuer." };
+  }
+
+  const toutesLesLignes = await chargerLignesFrance(supabase, projetId);
+  const lignesIncluses = toutesLesLignes.filter((l) => !l.exclu);
+  if (lignesIncluses.length === 0) {
+    return { error: "Aucune ligne produit à déclarer (tout est exclu, ou aucun colis traité)." };
+  }
+
+  const { data: valeursRows } = await supabase
+    .from("douane_declaration_valeurs")
+    .select("section, montant_fcfa")
+    .eq("projet_id", projetId);
+
+  const valeurs = new Map((valeursRows ?? []).map((v) => [v.section, v.montant_fcfa]));
+
+  return {
+    ok: true,
+    contexte: {
+      expedition: { ...expedition, mawb: expedition.mawb, date_vol: expedition.date_vol },
+      lignesIncluses,
+      sousTotauxFcfa: {
+        agro: valeurs.get("alimentaire") ?? null,
+        vetements: valeurs.get("vetements") ?? null,
+        divers: valeurs.get("divers") ?? null,
+      },
+    },
+  };
+}
 
 export async function enregistrerExpeditionFrance(
   projetId: string,
@@ -118,8 +176,39 @@ async function construireFichiers(
         filename: `SIGIL_Declaration_Douane_${infos.dateVol}.xlsx`,
       },
     },
-    mail: genererMailTransitaire(data),
+    // Le mail rédigé par l'IA (prompt v2) est préféré au template ; les
+    // anciennes générations persistées avant ce champ retombent sur le
+    // template.
+    mail: data.mail_transitaire ?? genererMailTransitaire(data),
   };
+}
+
+export type ResultatAuditFrance = { ok: true; audit: AuditReport } | { error: string };
+
+/**
+ * Phase A du prompt v2 — produit un rapport d'audit (produits à risque,
+ * cohérence valeur/poids, regroupement proposé) sans persister ni générer
+ * de fichiers. L'utilisateur ajuste ses exclusions dans le tableau produits
+ * en fonction des alertes, puis lance la génération finale.
+ */
+export async function auditerDeclarationFrance(projetId: string): Promise<ResultatAuditFrance> {
+  const supabase = createClient();
+  const contexteResultat = await chargerContexteFrance(supabase, projetId);
+  if ("error" in contexteResultat) return contexteResultat;
+  const { expedition, lignesIncluses, sousTotauxFcfa } = contexteResultat.contexte;
+
+  const resultat = await genererAuditFrance({
+    mawb: expedition.mawb,
+    dateVol: expedition.date_vol,
+    poidsBrutLtaKg: expedition.poids_brut_lta_kg,
+    nombreColis: expedition.nombre_colis,
+    dimensions: expedition.dimensions ?? "",
+    lignes: lignesIncluses,
+    sousTotauxFcfa,
+  });
+
+  if (!resultat.ok) return { error: `Échec de l'audit IA : ${resultat.erreur}` };
+  return { ok: true, audit: resultat.data };
 }
 
 /**
@@ -174,39 +263,18 @@ export async function regenererDepuisDernierJson(projetId: string): Promise<Resu
 export async function genererDocumentsFrance(projetId: string): Promise<ResultatDocumentsFrance> {
   const supabase = createClient();
 
-  const { data: expedition } = await supabase
-    .from("douane_expeditions_france")
-    .select("id, mawb, date_vol, poids_brut_lta_kg, nombre_colis, dimensions")
-    .eq("projet_id", projetId)
-    .maybeSingle();
-
-  if (!expedition?.mawb || !expedition.date_vol) {
-    return { error: "Renseigne au moins le MAWB et la date de vol avant de générer les documents." };
-  }
-
-  const toutesLesLignes = await chargerLignesFrance(supabase, projetId);
-  const lignesIncluses = toutesLesLignes.filter((l) => !l.exclu);
-  if (lignesIncluses.length === 0) {
-    return { error: "Aucune ligne produit à déclarer (tout est exclu, ou aucun colis traité)." };
-  }
-
-  const { data: valeursRows } = await supabase
-    .from("douane_declaration_valeurs")
-    .select("section, montant_fcfa")
-    .eq("projet_id", projetId);
-
-  const valeurs = new Map((valeursRows ?? []).map((v) => [v.section, v.montant_fcfa]));
+  const contexteResultat = await chargerContexteFrance(supabase, projetId);
+  if ("error" in contexteResultat) return contexteResultat;
+  const { expedition, lignesIncluses, sousTotauxFcfa } = contexteResultat.contexte;
 
   const resultat = await genererDeclarationFrance({
     mawb: expedition.mawb,
     dateVol: expedition.date_vol,
     poidsBrutLtaKg: expedition.poids_brut_lta_kg,
+    nombreColis: expedition.nombre_colis,
+    dimensions: expedition.dimensions ?? "",
     lignes: lignesIncluses,
-    sousTotauxFcfa: {
-      agro: valeurs.get("alimentaire") ?? null,
-      vetements: valeurs.get("vetements") ?? null,
-      divers: valeurs.get("divers") ?? null,
-    },
+    sousTotauxFcfa,
   });
 
   if (!resultat.ok) {

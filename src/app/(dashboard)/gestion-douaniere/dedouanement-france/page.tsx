@@ -4,6 +4,7 @@ import { chargerLignesFrance } from "@/lib/dedouanement-france/lignesFrance";
 import { DouaneFiltreDepart } from "@/components/douane/DouaneFiltreDepart";
 import { ExpeditionFranceForm } from "@/components/douane/ExpeditionFranceForm";
 import { ProduitsExclusionTable } from "@/components/douane/ProduitsExclusionTable";
+import { AuditReportPanel } from "@/components/douane/AuditReportPanel";
 import { GenerationFranceSection } from "@/components/douane/GenerationFranceSection";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +66,8 @@ export default async function DedouanementFrancePage({
           />
 
           <ProduitsExclusionTable lignes={lignes} />
+
+          <AuditReportPanel projetId={projetId} />
 
           <GenerationFranceSection projetId={projetId} />
         </div>
