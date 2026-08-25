@@ -90,19 +90,21 @@ export async function genererDeclarationFrance(input: {
   for (let tentative = 0; tentative < MAX_TENTATIVES; tentative++) {
     let texteReponse: string;
     try {
-      const reponse = await client.messages.create({
-        model: modele,
-        max_tokens: 32000,
-        output_config: { effort: "low" },
-        system: [
-          {
-            type: "text",
-            text: SIGIL_SYSTEM_PROMPT,
-            cache_control: { type: "ephemeral" },
-          },
-        ],
-        messages,
-      });
+      const reponse = await client.messages
+        .stream({
+          model: modele,
+          max_tokens: 32000,
+          output_config: { effort: "low" },
+          system: [
+            {
+              type: "text",
+              text: SIGIL_SYSTEM_PROMPT,
+              cache_control: { type: "ephemeral" },
+            },
+          ],
+          messages,
+        })
+        .finalMessage();
 
       tokensEntreeTotal += reponse.usage?.input_tokens ?? 0;
       tokensSortieTotal += reponse.usage?.output_tokens ?? 0;
