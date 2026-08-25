@@ -8,7 +8,10 @@ import { AuditReportPanel } from "@/components/douane/AuditReportPanel";
 import { GenerationFranceSection } from "@/components/douane/GenerationFranceSection";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+// Plan Pro + Fluid Compute autorise jusqu'à 800s — les générations France
+// (audit + final) sur un gros départ ont déjà mis ~140-220s sur Hobby (300s),
+// on prend de la marge plutôt que de re-flirter avec la limite.
+export const maxDuration = 600;
 
 export default async function DedouanementFrancePage({
   searchParams,
