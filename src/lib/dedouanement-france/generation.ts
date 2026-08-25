@@ -108,7 +108,8 @@ export async function genererDeclarationFrance(input: {
 
       const blocTexte = reponse.content.find((b) => b.type === "text");
       if (!blocTexte || blocTexte.type !== "text") {
-        derniereErreur = "Réponse IA sans contenu texte.";
+        const blocs = reponse.content.map((b) => b.type).join(",") || "aucun";
+        derniereErreur = `Réponse IA sans contenu texte (stop_reason: ${reponse.stop_reason}, blocs: ${blocs}).`;
         break;
       }
       texteReponse = blocTexte.text;
