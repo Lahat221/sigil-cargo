@@ -12,8 +12,6 @@ import { DeclarationFranceSchema } from "@/lib/dedouanement-france/schema";
 import type { DeclarationFranceIA } from "@/lib/dedouanement-france/schema";
 import type { InfosExpedition } from "@/lib/dedouanement-france/excel/facture";
 
-export const maxDuration = 300;
-
 export async function enregistrerExpeditionFrance(
   projetId: string,
   champs: {
