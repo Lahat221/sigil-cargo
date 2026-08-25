@@ -92,8 +92,8 @@ export async function genererDeclarationFrance(input: {
     try {
       const reponse = await client.messages.create({
         model: modele,
-        max_tokens: 16000,
-        output_config: { effort: "medium" },
+        max_tokens: 32000,
+        output_config: { effort: "low" },
         system: [
           {
             type: "text",
