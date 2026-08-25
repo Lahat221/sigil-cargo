@@ -11,6 +11,14 @@ export type DeclarationSection = {
   types: string[];
 };
 
+// 6 sections au lieu de 3 : l'ancien découpage (alimentaire / vêtements /
+// divers) noyait 7 familles de produits aux densités et prix très différents
+// (maroquinerie, chaussures, cosmétiques, bijoux, ustensiles...) dans un
+// seul bucket "divers" — le module Dédouanement France ne pouvait alors
+// ancrer ses estimations que sur 3 sous-totaux réels, forçant une répartition
+// à l'aveugle entre des familles très hétérogènes. Chaque section ci-dessous
+// correspond à un profil de densité/prix distinct (voir la table de
+// coefficients dans promptSysteme.ts, section 6.4).
 export const SECTIONS_DECLARATION: DeclarationSection[] = [
   {
     cle: "alimentaire",
@@ -18,7 +26,14 @@ export const SECTIONS_DECLARATION: DeclarationSection[] = [
     types: ["Produit alimentaire", "Épice / Condiment", "Plante séchée"],
   },
   { cle: "vetements", nom: "Vêtements & textile", types: ["Vêtement", "Textile"] },
-  { cle: "divers", nom: "Divers", types: [] },
+  { cle: "maroquinerie", nom: "Maroquinerie & chaussures", types: ["Maroquinerie", "Chaussures"] },
+  {
+    cle: "cosmetiques",
+    nom: "Cosmétiques & parfumerie",
+    types: ["Produit cosmétique", "Encens"],
+  },
+  { cle: "bijoux", nom: "Bijoux fantaisie", types: ["Bijoux fantaisie"] },
+  { cle: "divers", nom: "Divers, ustensiles & accessoires", types: [] },
 ];
 
 export function indexSectionPour(typeProduit: string): number {

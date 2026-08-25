@@ -15,7 +15,9 @@ export type InputFrance = {
   nombreColis: number;
   dimensions: string;
   lignes: LigneProduitFrance[];
-  sousTotauxFcfa: { agro: number | null; vetements: number | null; divers: number | null };
+  // Une clé par section de déclaration Dakar (SECTIONS_DECLARATION :
+  // alimentaire, vetements, maroquinerie, cosmetiques, bijoux, divers).
+  sousTotauxFcfa: Record<string, number | null>;
 };
 
 type ResultatAppel<T> =
@@ -40,11 +42,7 @@ function construirePromptUser(input: InputFrance, mode: "audit" | "final"): stri
     nombre_colis: input.nombreColis,
     dimensions: input.dimensions,
     packing_valide_par_utilisateur: {
-      sous_totaux_fcfa: {
-        agro: input.sousTotauxFcfa.agro,
-        vetements_textile: input.sousTotauxFcfa.vetements,
-        bijoux_maroquinerie_divers: input.sousTotauxFcfa.divers,
-      },
+      sous_totaux_fcfa: input.sousTotauxFcfa,
       lignes: input.lignes.map((l, i) => ({
         num_source: i + 1,
         type_produit: l.typeProduit,

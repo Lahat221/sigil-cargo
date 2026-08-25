@@ -11,6 +11,7 @@ import { buildDeclarationDouane } from "@/lib/dedouanement-france/excel/declarat
 import { DeclarationFranceSchema } from "@/lib/dedouanement-france/schema";
 import type { DeclarationFranceIA, AuditReport } from "@/lib/dedouanement-france/schema";
 import type { InfosExpedition } from "@/lib/dedouanement-france/excel/facture";
+import { SECTIONS_DECLARATION } from "@/lib/douane/sections";
 
 type ContexteFrance = {
   expedition: {
@@ -22,7 +23,10 @@ type ContexteFrance = {
     dimensions: string | null;
   };
   lignesIncluses: LigneProduitFrance[];
-  sousTotauxFcfa: { agro: number | null; vetements: number | null; divers: number | null };
+  // Une clé par section de SECTIONS_DECLARATION (alimentaire, vetements,
+  // maroquinerie, cosmetiques, bijoux, divers) — générique pour ne rien
+  // casser si les sections changent encore.
+  sousTotauxFcfa: Record<string, number | null>;
 };
 
 /**
@@ -55,17 +59,17 @@ async function chargerContexteFrance(
     .eq("projet_id", projetId);
 
   const valeurs = new Map((valeursRows ?? []).map((v) => [v.section, v.montant_fcfa]));
+  const sousTotauxFcfa: Record<string, number | null> = {};
+  for (const section of SECTIONS_DECLARATION) {
+    sousTotauxFcfa[section.cle] = valeurs.get(section.cle) ?? null;
+  }
 
   return {
     ok: true,
     contexte: {
       expedition: { ...expedition, mawb: expedition.mawb, date_vol: expedition.date_vol },
       lignesIncluses,
-      sousTotauxFcfa: {
-        agro: valeurs.get("alimentaire") ?? null,
-        vetements: valeurs.get("vetements") ?? null,
-        divers: valeurs.get("divers") ?? null,
-      },
+      sousTotauxFcfa,
     },
   };
 }

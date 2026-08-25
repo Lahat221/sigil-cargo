@@ -12,7 +12,7 @@ const HS_REGEX = /^\d{4}\.\d{2}\.\d{2}\.\d{2}$/;
 export function validerDeclarationFrance(
   data: DeclarationFranceIA,
   poidsBrutLtaKg: number | null,
-  sousTotauxFcfa?: { agro: number | null; vetements: number | null; divers: number | null }
+  sousTotauxFcfa?: Record<string, number | null>
 ): string[] {
   const erreurs: string[] = [];
 
@@ -31,8 +31,10 @@ export function validerDeclarationFrance(
   // Claude (invariant : la répartition ne doit ni perdre ni inventer de
   // valeur). Tolérance 1 FCFA (arrondis).
   if (sousTotauxFcfa) {
-    const sommeAttendue =
-      (sousTotauxFcfa.agro ?? 0) + (sousTotauxFcfa.vetements ?? 0) + (sousTotauxFcfa.divers ?? 0);
+    const sommeAttendue = Object.values(sousTotauxFcfa).reduce(
+      (acc: number, v) => acc + (v ?? 0),
+      0
+    );
     if (sommeAttendue > 0 && Math.abs(data.meta.valeur_totale_fcfa - sommeAttendue) >= 1) {
       erreurs.push(
         `Valeur totale (${data.meta.valeur_totale_fcfa} FCFA) ne correspond pas à la somme des sous-totaux fournis (${sommeAttendue} FCFA).`
