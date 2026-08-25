@@ -8,8 +8,23 @@ import {
   type AuditHistorique,
   type LigneSnapshot,
 } from "@/app/(dashboard)/gestion-douaniere/dedouanement-france/actions";
+import { mettreAJourProduit } from "@/app/(dashboard)/gestion-douaniere/actions";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR");
+
+// Repère un code HS suggéré dans le texte de l'action recommandée ou de la
+// raison (ex. « Reclasser en 1102.90 », « reclasser 1102.90 « Cartons... »)
+// pour pré-remplir le champ de correction — l'IA a déjà fait la suggestion,
+// pas besoin de la retaper.
+const HS_SUGGESTION_REGEX = /\b\d{4}\.\d{2}(?:\.\d{2}\.\d{2})?\b/;
+
+function extraireSuggestionHs(...textes: string[]): string | null {
+  for (const t of textes) {
+    const m = t.match(HS_SUGGESTION_REGEX);
+    if (m) return m[0];
+  }
+  return null;
+}
 
 function resoudreColis(
   snapshot: LigneSnapshot[],
@@ -43,6 +58,12 @@ function AlerteCard({
   const [isPending, startTransition] = useTransition();
   const toutDejaExclu = colis.length > 0 && colis.every((c) => dejaExclus.has(c.produitId));
   const [retire, setRetire] = useState(toutDejaExclu);
+  const [corrige, setCorrige] = useState(false);
+  const [formulaireOuvert, setFormulaireOuvert] = useState(false);
+  const suggestionHs = extraireSuggestionHs(action, raison);
+  const suggestionUtile = suggestionHs && suggestionHs !== hs ? suggestionHs : null;
+  const [nouveauHs, setNouveauHs] = useState(suggestionHs ?? hs ?? "");
+  const [nouvelleDescription, setNouvelleDescription] = useState("");
   const styles = {
     red: "border-red-200 bg-red-50",
     amber: "border-amber-200 bg-amber-50",
@@ -56,6 +77,27 @@ function AlerteCard({
       );
       setRetire(true);
     });
+  }
+
+  function appliquer(champs: { hs_code?: string; description_douane?: string }) {
+    if (Object.keys(champs).length === 0) return;
+    startTransition(async () => {
+      await Promise.all(colis.map((c) => mettreAJourProduit(c.produitId, champs)));
+      setCorrige(true);
+      setFormulaireOuvert(false);
+    });
+  }
+
+  function reclasserDirect() {
+    if (!suggestionUtile) return;
+    appliquer({ hs_code: suggestionUtile });
+  }
+
+  function corriger() {
+    const champs: { hs_code?: string; description_douane?: string } = {};
+    if (nouveauHs.trim()) champs.hs_code = nouveauHs.trim();
+    if (nouvelleDescription.trim()) champs.description_douane = nouvelleDescription.trim();
+    appliquer(champs);
   }
 
   return (
@@ -81,18 +123,78 @@ function AlerteCard({
       <p className="mt-1 text-slate-700">{raison}</p>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
         <p className="font-medium text-slate-800">→ {action}</p>
-        {colis.length > 0 && !retire && (
-          <button
-            type="button"
-            onClick={retirer}
-            disabled={isPending}
-            className="shrink-0 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-          >
-            {isPending ? "..." : `Retirer (${colis.length})`}
-          </button>
-        )}
-        {retire && <span className="shrink-0 text-xs text-emerald-600">Retiré ✓</span>}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {corrige && <span className="text-xs text-emerald-600">Corrigé ✓</span>}
+          {retire && <span className="text-xs text-emerald-600">Retiré ✓</span>}
+          {colis.length > 0 && !retire && !corrige && (
+            <>
+              {suggestionUtile && (
+                <button
+                  type="button"
+                  onClick={reclasserDirect}
+                  disabled={isPending}
+                  className="rounded-md border border-gold-2 bg-gold-1/10 px-2 py-1 font-mono text-xs font-medium text-gold-2 hover:bg-gold-1/20 disabled:opacity-50"
+                  title="Applique directement le HS suggéré par Aïda, sans ouvrir le formulaire."
+                >
+                  {isPending ? "..." : `Reclasser → ${suggestionUtile}`}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setFormulaireOuvert((v) => !v)}
+                disabled={isPending}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              >
+                Corriger
+              </button>
+              <button
+                type="button"
+                onClick={retirer}
+                disabled={isPending}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              >
+                {isPending ? "..." : `Retirer (${colis.length})`}
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {formulaireOuvert && (
+        <div className="mt-2 space-y-1.5 rounded-md border border-slate-300 bg-white p-2">
+          <input
+            type="text"
+            value={nouveauHs}
+            onChange={(e) => setNouveauHs(e.target.value)}
+            placeholder="Nouveau HS (ex. 1102.90.00.00)"
+            className="w-full rounded-md border border-slate-300 px-2 py-1 font-mono text-xs focus:border-navy focus:outline-none"
+          />
+          <input
+            type="text"
+            value={nouvelleDescription}
+            onChange={(e) => setNouvelleDescription(e.target.value)}
+            placeholder="Nouvelle description douane (optionnel)"
+            className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs focus:border-navy focus:outline-none"
+          />
+          <div className="flex justify-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => setFormulaireOuvert(false)}
+              className="rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-slate-100"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={corriger}
+              disabled={isPending}
+              className="rounded-md bg-gold-gradient px-2 py-1 text-xs font-semibold text-navy disabled:opacity-50"
+            >
+              {isPending ? "..." : `Enregistrer (${colis.length})`}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
