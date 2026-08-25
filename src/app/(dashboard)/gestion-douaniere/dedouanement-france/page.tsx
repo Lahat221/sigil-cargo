@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { chargerLignesFrance } from "@/lib/dedouanement-france/lignesFrance";
+import { chargerResumeAuditFrance } from "./actions";
 import { ExpeditionFranceForm } from "@/components/douane/ExpeditionFranceForm";
 import { ProduitsExclusionTable } from "@/components/douane/ProduitsExclusionTable";
-import { AuditReportPanel } from "@/components/douane/AuditReportPanel";
 import { GenerationFranceSection } from "@/components/douane/GenerationFranceSection";
+import { IconBell } from "@/components/ui/Icons";
 
 export const dynamic = "force-dynamic";
 // Plan Pro + Fluid Compute autorise jusqu'à 800s — les générations France
@@ -34,6 +36,10 @@ export default async function DedouanementFrancePage({
     : { data: null };
 
   const lignes = projetId ? await chargerLignesFrance(supabase, projetId) : [];
+  const resumeAudit = projetId ? await chargerResumeAuditFrance(projetId) : null;
+  const nbAlertes = resumeAudit
+    ? resumeAudit.nbCritiques + resumeAudit.nbReglementation + resumeAudit.nbAmbigues
+    : 0;
 
   return (
     <div className="max-w-5xl">
@@ -58,7 +64,22 @@ export default async function DedouanementFrancePage({
 
           <ProduitsExclusionTable lignes={lignes} />
 
-          <AuditReportPanel projetId={projetId} />
+          <Link
+            href={`/gestion-douaniere/audit-france?projet=${projetId}`}
+            className={`flex items-center justify-between gap-2 rounded-xl border p-4 shadow-sm transition-colors ${
+              nbAlertes > 0
+                ? "border-amber-200 bg-amber-50 hover:bg-amber-100"
+                : "border-slate-200/70 bg-white hover:bg-slate-50"
+            }`}
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <IconBell size={16} />
+              {resumeAudit
+                ? `Audit produits (v${resumeAudit.version}) — ${nbAlertes} alerte(s) à traiter`
+                : "Lancer l'audit produits à risque avant de générer les documents"}
+            </span>
+            <span className="text-sm text-gold-2">Voir l&apos;audit →</span>
+          </Link>
 
           <GenerationFranceSection projetId={projetId} />
         </div>

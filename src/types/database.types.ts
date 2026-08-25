@@ -741,6 +741,51 @@ export interface Database {
           }
         ];
       };
+      douane_audits_france: {
+        Row: {
+          id: string;
+          expedition_id: string;
+          version: number;
+          audit_json: Json;
+          lignes_snapshot: Json;
+          nb_alertes_critiques: number;
+          nb_alertes_reglementation: number;
+          nb_alertes_ambigues: number;
+          modele: string | null;
+          prompt_version: string | null;
+          tokens_entree: number | null;
+          tokens_sortie: number | null;
+          cout_estime_usd: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          expedition_id: string;
+          version?: number;
+          audit_json: Json;
+          lignes_snapshot: Json;
+          nb_alertes_critiques?: number;
+          nb_alertes_reglementation?: number;
+          nb_alertes_ambigues?: number;
+          modele?: string | null;
+          prompt_version?: string | null;
+          tokens_entree?: number | null;
+          tokens_sortie?: number | null;
+          cout_estime_usd?: number | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["douane_audits_france"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "douane_audits_france_expedition_id_fkey";
+            columns: ["expedition_id"];
+            referencedRelation: "douane_expeditions_france";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

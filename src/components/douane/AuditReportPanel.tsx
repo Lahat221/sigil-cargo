@@ -1,10 +1,25 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { auditerDeclarationFrance } from "@/app/(dashboard)/gestion-douaniere/dedouanement-france/actions";
-import type { AuditReport } from "@/lib/dedouanement-france/schema";
+import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
+import {
+  auditerDeclarationFrance,
+  toggleExclusionProduit,
+  type AuditHistorique,
+  type LigneSnapshot,
+} from "@/app/(dashboard)/gestion-douaniere/dedouanement-france/actions";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR");
+
+function resoudreColis(
+  snapshot: LigneSnapshot[],
+  a: { ligne_source?: number; lignes_source?: number[] }
+): LigneSnapshot[] {
+  const numeros = a.ligne_source != null ? [a.ligne_source] : a.lignes_source ?? [];
+  return numeros
+    .map((n) => snapshot.find((s) => s.numSource === n))
+    .filter((s): s is LigneSnapshot => !!s);
+}
 
 function AlerteCard({
   niveau,
@@ -12,7 +27,7 @@ function AlerteCard({
   raison,
   action,
   hs,
-  lignes,
+  colis,
   couleur,
 }: {
   niveau: string;
@@ -20,41 +35,101 @@ function AlerteCard({
   raison: string;
   action: string;
   hs?: string;
-  lignes?: string;
+  colis: LigneSnapshot[];
   couleur: "red" | "amber" | "yellow";
 }) {
+  const [isPending, startTransition] = useTransition();
+  const [retire, setRetire] = useState(false);
   const styles = {
     red: "border-red-200 bg-red-50",
     amber: "border-amber-200 bg-amber-50",
     yellow: "border-yellow-200 bg-yellow-50",
   }[couleur];
 
+  function retirer() {
+    startTransition(async () => {
+      await Promise.all(
+        colis.map((c) => toggleExclusionProduit(c.produitId, true, `Audit : ${action}`))
+      );
+      setRetire(true);
+    });
+  }
+
   return (
-    <div className={`rounded-md border px-3 py-2 text-sm ${styles}`}>
+    <div className={`rounded-md border px-3 py-2 text-sm ${styles} ${retire ? "opacity-50" : ""}`}>
       <p className="font-medium text-slate-800">
         {niveau} {produit}
         {hs && <span className="ml-1 font-mono text-xs text-slate-500">({hs})</span>}
       </p>
-      {lignes && <p className="text-xs text-slate-500">Lignes source : {lignes}</p>}
+      {colis.length > 0 && (
+        <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+          Colis :
+          {colis.map((c) => (
+            <Link
+              key={c.produitId}
+              href={`/gestion-douaniere/${c.colisId}`}
+              className="text-gold-2 hover:underline"
+            >
+              #{c.colisNumero}
+            </Link>
+          ))}
+        </p>
+      )}
       <p className="mt-1 text-slate-700">{raison}</p>
-      <p className="mt-1 font-medium text-slate-800">→ {action}</p>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+        <p className="font-medium text-slate-800">→ {action}</p>
+        {colis.length > 0 && !retire && (
+          <button
+            type="button"
+            onClick={retirer}
+            disabled={isPending}
+            className="shrink-0 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+          >
+            {isPending ? "..." : `Retirer (${colis.length})`}
+          </button>
+        )}
+        {retire && <span className="shrink-0 text-xs text-emerald-600">Retiré ✓</span>}
+      </div>
     </div>
   );
 }
 
-export function AuditReportPanel({ projetId }: { projetId: string }) {
+export function AuditReportPanel({
+  projetId,
+  historiqueInitial,
+}: {
+  projetId: string;
+  historiqueInitial: AuditHistorique[];
+}) {
   const [isPending, startTransition] = useTransition();
-  const [resultat, setResultat] = useState<{ ok: true; audit: AuditReport } | { error: string } | null>(null);
+  const [historique, setHistorique] = useState<AuditHistorique[]>(historiqueInitial);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [versionSelectionnee, setVersionSelectionnee] = useState<number | null>(null);
+
+  useEffect(() => {
+    setHistorique(historiqueInitial);
+  }, [historiqueInitial]);
 
   function lancer() {
-    setResultat(null);
+    setErreur(null);
     startTransition(async () => {
       const r = await auditerDeclarationFrance(projetId);
-      setResultat(r);
+      if ("error" in r) {
+        setErreur(r.error);
+        return;
+      }
+      setVersionSelectionnee(null);
+      // Le résultat persisté (avec son instantané colis) arrivera via
+      // historiqueInitial au prochain rendu serveur ; revalidatePath dans
+      // l'action déclenche déjà ce rafraîchissement.
     });
   }
 
-  const audit = resultat && "ok" in resultat ? resultat.audit : null;
+  const entree = versionSelectionnee
+    ? historique.find((h) => h.version === versionSelectionnee) ?? historique[0]
+    : historique[0];
+  const audit = entree?.audit ?? null;
+  const snapshot = entree?.lignesSnapshot ?? [];
 
   return (
     <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
@@ -65,19 +140,34 @@ export function AuditReportPanel({ projetId }: { projetId: string }) {
             Repère les produits interdits/réglementés/ambigus avant de générer les documents finaux.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={lancer}
-          disabled={isPending}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-        >
-          {isPending ? "Audit en cours..." : audit ? "Relancer l'audit" : "Lancer l'audit"}
-        </button>
+        <div className="flex items-center gap-2">
+          {historique.length > 1 && (
+            <select
+              value={entree?.version ?? ""}
+              onChange={(e) => setVersionSelectionnee(Number(e.target.value))}
+              className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-600 focus:border-navy focus:outline-none"
+            >
+              {historique.map((h) => (
+                <option key={h.version} value={h.version}>
+                  v{h.version} — {new Date(h.createdAt).toLocaleString("fr-FR")}
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            type="button"
+            onClick={lancer}
+            disabled={isPending}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+          >
+            {isPending ? "Audit en cours..." : audit ? "Relancer l'audit" : "Lancer l'audit"}
+          </button>
+        </div>
       </div>
 
-      {resultat && "error" in resultat && (
+      {erreur && (
         <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {resultat.error}
+          {erreur}
         </p>
       )}
 
@@ -129,11 +219,7 @@ export function AuditReportPanel({ projetId }: { projetId: string }) {
                     raison={a.raison}
                     action={a.action_recommandee}
                     hs={a.hs}
-                    lignes={
-                      a.ligne_source != null
-                        ? String(a.ligne_source)
-                        : a.lignes_source?.join(", ")
-                    }
+                    colis={resoudreColis(snapshot, a)}
                     couleur="red"
                   />
                 ))}
@@ -155,11 +241,7 @@ export function AuditReportPanel({ projetId }: { projetId: string }) {
                     raison={a.raison}
                     action={a.action_recommandee}
                     hs={a.hs}
-                    lignes={
-                      a.ligne_source != null
-                        ? String(a.ligne_source)
-                        : a.lignes_source?.join(", ")
-                    }
+                    colis={resoudreColis(snapshot, a)}
                     couleur="amber"
                   />
                 ))}
@@ -181,11 +263,7 @@ export function AuditReportPanel({ projetId }: { projetId: string }) {
                     raison={a.raison}
                     action={a.action_recommandee}
                     hs={a.hs_source ?? a.hs}
-                    lignes={
-                      a.ligne_source != null
-                        ? String(a.ligne_source)
-                        : a.lignes_source?.join(", ")
-                    }
+                    colis={resoudreColis(snapshot, a)}
                     couleur="yellow"
                   />
                 ))}

@@ -6,6 +6,8 @@ import { ValiderLotButton } from "@/components/douane/ValiderLotButton";
 import { ExportDouaneButton } from "@/components/douane/ExportDouaneButton";
 import { STATUT_DOUANE_LABELS, STATUT_DOUANE_STYLES } from "@/components/douane/statutLabels";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
+import { chargerResumeAuditFrance } from "./dedouanement-france/actions";
+import { IconBell } from "@/components/ui/Icons";
 import type { StatutExtractionDouane } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -106,6 +108,10 @@ export default async function GestionDouanierePage({
     .map((c) => c.id);
 
   const lignesExport = projetId ? await chargerVueEnsemble(supabase, projetId) : [];
+  const resumeAudit = projetId ? await chargerResumeAuditFrance(projetId) : null;
+  const nbAlertesAudit = resumeAudit
+    ? resumeAudit.nbCritiques + resumeAudit.nbReglementation + resumeAudit.nbAmbigues
+    : 0;
 
   const colisAffiches = statutFiltre ? colis.filter((c) => statutDe(c) === statutFiltre) : colis;
 
@@ -125,6 +131,24 @@ export default async function GestionDouanierePage({
           <div className="mb-4">
             <DouaneStatsCards stats={stats} projetId={projetId} statutActif={statutFiltre} />
           </div>
+
+          {nbAlertesAudit > 0 && (
+            <Link
+              href={`/gestion-douaniere/audit-france?projet=${projetId}`}
+              className="mb-4 flex items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm transition-colors hover:bg-amber-100"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <IconBell size={16} />
+                Audit France (v{resumeAudit!.version}) — {nbAlertesAudit} alerte(s) à traiter
+                {resumeAudit!.nbCritiques > 0 && (
+                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                    {resumeAudit!.nbCritiques} critique(s)
+                  </span>
+                )}
+              </span>
+              <span className="text-sm text-gold-2">Voir l&apos;audit →</span>
+            </Link>
+          )}
 
           <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
             <TraiterDepartButton

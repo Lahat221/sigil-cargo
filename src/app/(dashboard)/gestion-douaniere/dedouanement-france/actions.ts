@@ -8,10 +8,27 @@ import { genererMailTransitaire } from "@/lib/dedouanement-france/mail";
 import { buildFactureCommerciale } from "@/lib/dedouanement-france/excel/facture";
 import { buildPackingList } from "@/lib/dedouanement-france/excel/packingList";
 import { buildDeclarationDouane } from "@/lib/dedouanement-france/excel/declarationDouane";
-import { DeclarationFranceSchema } from "@/lib/dedouanement-france/schema";
+import { DeclarationFranceSchema, AuditReportSchema } from "@/lib/dedouanement-france/schema";
 import type { DeclarationFranceIA, AuditReport } from "@/lib/dedouanement-france/schema";
 import type { InfosExpedition } from "@/lib/dedouanement-france/excel/facture";
 import { SECTIONS_DECLARATION } from "@/lib/douane/sections";
+
+// num_source (1-indexé, ordre exact envoyé à Claude) -> identifiants réels,
+// figé au moment de l'audit pour que les liens "Voir le colis"/"Retirer"
+// restent corrects même après des exclusions faites entre-temps.
+export type LigneSnapshot = {
+  numSource: number;
+  produitId: string;
+  colisId: string;
+  colisNumero: number;
+};
+
+export type AuditHistorique = {
+  version: number;
+  createdAt: string;
+  audit: AuditReport;
+  lignesSnapshot: LigneSnapshot[];
+};
 
 type ContexteFrance = {
   expedition: {
@@ -119,6 +136,46 @@ export async function toggleExclusionProduit(
   return { success: true };
 }
 
+export type ResumeAuditFrance = {
+  version: number;
+  createdAt: string;
+  nbCritiques: number;
+  nbReglementation: number;
+  nbAmbigues: number;
+};
+
+/**
+ * Résumé léger (compteurs seulement, pas le JSON complet) du dernier audit
+ * France d'un départ — alimente le bandeau du tableau de bord principal
+ * sans avoir à charger/parser tout le rapport.
+ */
+export async function chargerResumeAuditFrance(projetId: string): Promise<ResumeAuditFrance | null> {
+  const supabase = createClient();
+  const { data: expedition } = await supabase
+    .from("douane_expeditions_france")
+    .select("id")
+    .eq("projet_id", projetId)
+    .maybeSingle();
+  if (!expedition) return null;
+
+  const { data } = await supabase
+    .from("douane_audits_france")
+    .select("version, created_at, nb_alertes_critiques, nb_alertes_reglementation, nb_alertes_ambigues")
+    .eq("expedition_id", expedition.id)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  return {
+    version: data.version,
+    createdAt: data.created_at,
+    nbCritiques: data.nb_alertes_critiques,
+    nbReglementation: data.nb_alertes_reglementation,
+    nbAmbigues: data.nb_alertes_ambigues,
+  };
+}
+
 export type ResultatDocumentsFrance =
   | {
       ok: true;
@@ -191,9 +248,10 @@ export type ResultatAuditFrance = { ok: true; audit: AuditReport } | { error: st
 
 /**
  * Phase A du prompt v2 — produit un rapport d'audit (produits à risque,
- * cohérence valeur/poids, regroupement proposé) sans persister ni générer
- * de fichiers. L'utilisateur ajuste ses exclusions dans le tableau produits
- * en fonction des alertes, puis lance la génération finale.
+ * cohérence valeur/poids, regroupement proposé), persisté avec un
+ * instantané num_source -> produit/colis pour que le rapport (et ses liens
+ * "Voir"/"Retirer") survive à la navigation et reste consultable en
+ * historique, même après des exclusions faites depuis.
  */
 export async function auditerDeclarationFrance(projetId: string): Promise<ResultatAuditFrance> {
   const supabase = createClient();
@@ -212,7 +270,76 @@ export async function auditerDeclarationFrance(projetId: string): Promise<Result
   });
 
   if (!resultat.ok) return { error: `Échec de l'audit IA : ${resultat.erreur}` };
+
+  const lignesSnapshot: LigneSnapshot[] = lignesIncluses.map((l, i) => ({
+    numSource: i + 1,
+    produitId: l.produitId,
+    colisId: l.colisId,
+    colisNumero: l.colisNumero,
+  }));
+
+  const { data: derniere } = await supabase
+    .from("douane_audits_france")
+    .select("version")
+    .eq("expedition_id", expedition.id)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  await supabase.from("douane_audits_france").insert({
+    expedition_id: expedition.id,
+    version: (derniere?.version ?? 0) + 1,
+    audit_json: JSON.parse(JSON.stringify(resultat.data)),
+    lignes_snapshot: JSON.parse(JSON.stringify(lignesSnapshot)),
+    nb_alertes_critiques: resultat.data.alertes_critiques.length,
+    nb_alertes_reglementation: resultat.data.alertes_reglementation.length,
+    nb_alertes_ambigues: resultat.data.alertes_ambigues.length,
+    modele: resultat.modele,
+    prompt_version: PROMPT_VERSION,
+    tokens_entree: resultat.tokensEntree,
+    tokens_sortie: resultat.tokensSortie,
+    cout_estime_usd: resultat.coutEstimeUsd,
+  });
+
+  revalidatePath("/gestion-douaniere/dedouanement-france");
+  revalidatePath("/gestion-douaniere");
+
   return { ok: true, audit: resultat.data };
+}
+
+/**
+ * Historique complet des audits d'un départ (le plus récent en premier) —
+ * hydrate le panneau d'audit au chargement de page et alimente le
+ * sélecteur d'historique.
+ */
+export async function chargerHistoriqueAuditsFrance(projetId: string): Promise<AuditHistorique[]> {
+  const supabase = createClient();
+  const { data: expedition } = await supabase
+    .from("douane_expeditions_france")
+    .select("id")
+    .eq("projet_id", projetId)
+    .maybeSingle();
+
+  if (!expedition) return [];
+
+  const { data: audits } = await supabase
+    .from("douane_audits_france")
+    .select("version, audit_json, lignes_snapshot, created_at")
+    .eq("expedition_id", expedition.id)
+    .order("version", { ascending: false });
+
+  const historique: AuditHistorique[] = [];
+  for (const a of audits ?? []) {
+    const parsed = AuditReportSchema.safeParse(a.audit_json);
+    if (!parsed.success) continue;
+    historique.push({
+      version: a.version,
+      createdAt: a.created_at,
+      audit: parsed.data,
+      lignesSnapshot: (a.lignes_snapshot as LigneSnapshot[]) ?? [],
+    });
+  }
+  return historique;
 }
 
 /**

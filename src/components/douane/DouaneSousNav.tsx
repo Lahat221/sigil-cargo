@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { IconPackage, IconGrid, IconFileText, IconTruck, IconFolder } from "@/components/ui/Icons";
+import { IconPackage, IconGrid, IconFileText, IconTruck, IconBell, IconFolder } from "@/components/ui/Icons";
 
 const ONGLETS = [
   { href: "/gestion-douaniere", label: "Colis", icon: IconPackage },
   { href: "/gestion-douaniere/vue-ensemble", label: "Vue d'ensemble", icon: IconGrid },
   { href: "/gestion-douaniere/declaration", label: "Déclaration", icon: IconFileText },
   { href: "/gestion-douaniere/dedouanement-france", label: "Dédouanement France", icon: IconTruck },
+  { href: "/gestion-douaniere/audit-france", label: "Audit France", icon: IconBell },
   { href: "/gestion-douaniere/referentiel", label: "Référentiel", icon: IconFolder },
 ];
 

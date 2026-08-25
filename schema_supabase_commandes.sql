@@ -447,3 +447,27 @@ alter table douane_declarations_france enable row level security;
 
 create policy "authenticated_all" on douane_expeditions_france for all using (auth.role() = 'authenticated');
 create policy "authenticated_all" on douane_declarations_france for all using (auth.role() = 'authenticated');
+
+-- Historique des audits France (rapport de vigilance produits, avant
+-- génération finale) — voir migration_audits_france.sql pour le détail.
+create table douane_audits_france (
+  id uuid primary key default gen_random_uuid(),
+  expedition_id uuid not null references douane_expeditions_france(id) on delete cascade,
+  version int not null default 1,
+  audit_json jsonb not null,
+  lignes_snapshot jsonb not null,
+  nb_alertes_critiques int not null default 0,
+  nb_alertes_reglementation int not null default 0,
+  nb_alertes_ambigues int not null default 0,
+  modele text,
+  prompt_version text,
+  tokens_entree int,
+  tokens_sortie int,
+  cout_estime_usd numeric(10,5),
+  created_at timestamptz not null default now()
+);
+
+create index idx_douane_audits_france_expedition on douane_audits_france(expedition_id);
+
+alter table douane_audits_france enable row level security;
+create policy "authenticated_all" on douane_audits_france for all using (auth.role() = 'authenticated');
