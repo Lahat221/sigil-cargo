@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { chargerHistoriqueAuditsFrance } from "../dedouanement-france/actions";
+import { chargerLignesFrance } from "@/lib/dedouanement-france/lignesFrance";
 import { AuditReportPanel } from "@/components/douane/AuditReportPanel";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,8 @@ export default async function AuditFrancePage({
   }
 
   const historiqueAudits = await chargerHistoriqueAuditsFrance(projetId);
+  const lignes = await chargerLignesFrance(supabase, projetId);
+  const produitsExclus = lignes.filter((l) => l.exclu).map((l) => l.produitId);
 
   return (
     <div className="max-w-5xl">
@@ -52,7 +55,11 @@ export default async function AuditFrancePage({
         </p>
       )}
 
-      <AuditReportPanel projetId={projetId} historiqueInitial={historiqueAudits} />
+      <AuditReportPanel
+        projetId={projetId}
+        historiqueInitial={historiqueAudits}
+        produitsExclusInitial={produitsExclus}
+      />
     </div>
   );
 }

@@ -28,6 +28,7 @@ function AlerteCard({
   action,
   hs,
   colis,
+  dejaExclus,
   couleur,
 }: {
   niveau: string;
@@ -36,10 +37,12 @@ function AlerteCard({
   action: string;
   hs?: string;
   colis: LigneSnapshot[];
+  dejaExclus: Set<string>;
   couleur: "red" | "amber" | "yellow";
 }) {
   const [isPending, startTransition] = useTransition();
-  const [retire, setRetire] = useState(false);
+  const toutDejaExclu = colis.length > 0 && colis.every((c) => dejaExclus.has(c.produitId));
+  const [retire, setRetire] = useState(toutDejaExclu);
   const styles = {
     red: "border-red-200 bg-red-50",
     amber: "border-amber-200 bg-amber-50",
@@ -97,14 +100,17 @@ function AlerteCard({
 export function AuditReportPanel({
   projetId,
   historiqueInitial,
+  produitsExclusInitial = [],
 }: {
   projetId: string;
   historiqueInitial: AuditHistorique[];
+  produitsExclusInitial?: string[];
 }) {
   const [isPending, startTransition] = useTransition();
   const [historique, setHistorique] = useState<AuditHistorique[]>(historiqueInitial);
   const [erreur, setErreur] = useState<string | null>(null);
   const [versionSelectionnee, setVersionSelectionnee] = useState<number | null>(null);
+  const dejaExclus = new Set(produitsExclusInitial);
 
   useEffect(() => {
     setHistorique(historiqueInitial);
@@ -220,6 +226,7 @@ export function AuditReportPanel({
                     action={a.action_recommandee}
                     hs={a.hs}
                     colis={resoudreColis(snapshot, a)}
+                    dejaExclus={dejaExclus}
                     couleur="red"
                   />
                 ))}
@@ -242,6 +249,7 @@ export function AuditReportPanel({
                     action={a.action_recommandee}
                     hs={a.hs}
                     colis={resoudreColis(snapshot, a)}
+                    dejaExclus={dejaExclus}
                     couleur="amber"
                   />
                 ))}
@@ -264,6 +272,7 @@ export function AuditReportPanel({
                     action={a.action_recommandee}
                     hs={a.hs_source ?? a.hs}
                     colis={resoudreColis(snapshot, a)}
+                    dejaExclus={dejaExclus}
                     couleur="yellow"
                   />
                 ))}
