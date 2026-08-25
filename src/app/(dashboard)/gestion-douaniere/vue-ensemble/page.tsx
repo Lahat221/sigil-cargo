@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function VueEnsembleDouanePage({
   searchParams,
 }: {
-  searchParams: { projet?: string };
+  searchParams: { projet?: string; hs?: string };
 }) {
   const supabase = createClient();
 
@@ -21,7 +21,11 @@ export default async function VueEnsembleDouanePage({
   const projetId = searchParams.projet || projets?.[0]?.id;
   const nomProjet = projets?.find((p) => p.id === projetId)?.nom;
 
-  const lignes = projetId ? await chargerVueEnsemble(supabase, projetId) : [];
+  const toutesLesLignes = projetId ? await chargerVueEnsemble(supabase, projetId) : [];
+  const filtreHsIncertain = searchParams.hs === "a_verifier";
+  const lignes = filtreHsIncertain
+    ? toutesLesLignes.filter((l) => !l.hsCode && l.typeProduit)
+    : toutesLesLignes;
 
   let colisPrecedent: string | null = null;
 
@@ -32,8 +36,19 @@ export default async function VueEnsembleDouanePage({
           <h1 className="text-xl font-bold text-white">Vue d&apos;ensemble</h1>
           {nomProjet && <p className="text-sm text-white/60">{nomProjet}</p>}
         </div>
-        <ExportDouaneButton lignes={lignes} />
+        <ExportDouaneButton lignes={toutesLesLignes} />
       </div>
+
+      {filtreHsIncertain && (
+        <div className="mb-3 flex items-center gap-2 text-sm text-white/70">
+          <span>
+            Filtré : <span className="font-medium text-white">HS à vérifier</span> ({lignes.length})
+          </span>
+          <Link href={`/gestion-douaniere/vue-ensemble?projet=${projetId}`} className="text-gold-2 hover:underline">
+            Effacer le filtre
+          </Link>
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-slate-200/70 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
@@ -55,7 +70,7 @@ export default async function VueEnsembleDouanePage({
             {lignes.length === 0 && (
               <tr>
                 <td colSpan={10} className="px-3 py-6 text-center text-slate-400">
-                  Aucun colis pour ce départ.
+                  {filtreHsIncertain ? "Aucun HS à vérifier." : "Aucun colis pour ce départ."}
                 </td>
               </tr>
             )}

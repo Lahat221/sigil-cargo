@@ -24,10 +24,19 @@ type ColisRow = {
   } | null;
 };
 
+const STATUTS_VALIDES: StatutExtractionDouane[] = [
+  "non_traite",
+  "en_cours",
+  "traite",
+  "a_verifier",
+  "valide",
+  "erreur",
+];
+
 export default async function GestionDouanierePage({
   searchParams,
 }: {
-  searchParams: { projet?: string };
+  searchParams: { projet?: string; statut?: string };
 }) {
   const supabase = createClient();
 
@@ -37,6 +46,7 @@ export default async function GestionDouanierePage({
     .order("created_at", { ascending: false });
 
   const projetId = searchParams.projet || projets?.[0]?.id;
+  const statutFiltre = STATUTS_VALIDES.find((s) => s === searchParams.statut);
 
   let colis: ColisRow[] = [];
   if (projetId) {
@@ -97,6 +107,8 @@ export default async function GestionDouanierePage({
 
   const lignesExport = projetId ? await chargerVueEnsemble(supabase, projetId) : [];
 
+  const colisAffiches = statutFiltre ? colis.filter((c) => statutDe(c) === statutFiltre) : colis;
+
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -111,7 +123,7 @@ export default async function GestionDouanierePage({
       ) : (
         <>
           <div className="mb-4">
-            <DouaneStatsCards stats={stats} />
+            <DouaneStatsCards stats={stats} projetId={projetId} statutActif={statutFiltre} />
           </div>
 
           <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
@@ -121,6 +133,18 @@ export default async function GestionDouanierePage({
             />
             <ValiderLotButton commandeIds={commandeIdsAValider} />
           </div>
+
+          {statutFiltre && (
+            <div className="mb-3 flex items-center gap-2 text-sm text-white/70">
+              <span>
+                Filtré : <span className="font-medium text-white">{STATUT_DOUANE_LABELS[statutFiltre]}</span> (
+                {colisAffiches.length})
+              </span>
+              <Link href={`/gestion-douaniere?projet=${projetId}`} className="text-gold-2 hover:underline">
+                Effacer le filtre
+              </Link>
+            </div>
+          )}
 
           <div className="overflow-x-auto rounded-xl border border-slate-200/70 bg-white shadow-sm">
             <table className="w-full text-left text-sm">
@@ -135,14 +159,14 @@ export default async function GestionDouanierePage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {colis.length === 0 && (
+                {colisAffiches.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
-                      Aucun colis pour ce départ.
+                      {statutFiltre ? "Aucun colis avec ce statut." : "Aucun colis pour ce départ."}
                     </td>
                   </tr>
                 )}
-                {colis.map((c) => {
+                {colisAffiches.map((c) => {
                   const statut = statutDe(c);
                   const extraction = c.douane_extractions;
                   return (
