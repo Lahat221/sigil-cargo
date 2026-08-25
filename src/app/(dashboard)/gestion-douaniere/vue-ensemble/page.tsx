@@ -24,7 +24,7 @@ export default async function VueEnsembleDouanePage({
   const toutesLesLignes = projetId ? await chargerVueEnsemble(supabase, projetId) : [];
   const filtreHsIncertain = searchParams.hs === "a_verifier";
   const lignes = filtreHsIncertain
-    ? toutesLesLignes.filter((l) => !l.hsCode && l.typeProduit)
+    ? toutesLesLignes.filter((l) => l.hsStatus === "a_verifier")
     : toutesLesLignes;
 
   let colisPrecedent: string | null = null;

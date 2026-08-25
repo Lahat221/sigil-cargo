@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, StatutExtractionDouane } from "@/types/database.types";
+import type { Database, HsStatus, StatutExtractionDouane } from "@/types/database.types";
 
 export type LigneVueEnsemble = {
   colisId: string;
@@ -11,6 +11,7 @@ export type LigneVueEnsemble = {
   typeProduit: string | null;
   descriptionDouane: string | null;
   hsCode: string | null;
+  hsStatus: HsStatus | null;
   descriptionProduit: string | null;
   quantite: number | null;
   unite: string | null;
@@ -56,6 +57,7 @@ export async function chargerVueEnsemble(
       type_produit: string;
       description_douane: string;
       hs_code: string | null;
+      hs_status: HsStatus | null;
       description_produit: string;
       quantite: number;
       unite: string;
@@ -67,7 +69,7 @@ export async function chargerVueEnsemble(
     const { data: produits } = await supabase
       .from("douane_produits")
       .select(
-        "extraction_id, type_produit, description_douane, hs_code, description_produit, quantite, unite, confiance"
+        "extraction_id, type_produit, description_douane, hs_code, hs_status, description_produit, quantite, unite, confiance"
       )
       .in("extraction_id", extractionIds)
       .order("ordre");
@@ -99,6 +101,7 @@ export async function chargerVueEnsemble(
         typeProduit: null,
         descriptionDouane: null,
         hsCode: null,
+        hsStatus: null,
         descriptionProduit: null,
         quantite: null,
         unite: null,
@@ -113,6 +116,7 @@ export async function chargerVueEnsemble(
         typeProduit: p.type_produit,
         descriptionDouane: p.description_douane,
         hsCode: p.hs_code,
+        hsStatus: p.hs_status,
         descriptionProduit: p.description_produit,
         quantite: p.quantite,
         unite: p.unite,
