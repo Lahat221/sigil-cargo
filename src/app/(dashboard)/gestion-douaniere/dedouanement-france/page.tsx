@@ -30,10 +30,19 @@ export default async function DedouanementFrancePage({
   const { data: expedition } = projetId
     ? await supabase
         .from("douane_expeditions_france")
-        .select("mawb, date_vol, poids_brut_lta_kg, nombre_colis, dimensions")
+        .select("mawb, date_vol, poids_brut_lta_kg, nombre_colis, dimensions, lta_fichier_path")
         .eq("projet_id", projetId)
         .maybeSingle()
     : { data: null };
+
+  let ltaFichier: { nom: string; urlSignee: string | null } | null = null;
+  if (expedition?.lta_fichier_path) {
+    const { data: signe } = await supabase.storage
+      .from("lta-documents")
+      .createSignedUrl(expedition.lta_fichier_path, 3600);
+    const nom = expedition.lta_fichier_path.split("/").pop() ?? expedition.lta_fichier_path;
+    ltaFichier = { nom, urlSignee: signe?.signedUrl ?? null };
+  }
 
   const lignes = projetId ? await chargerLignesFrance(supabase, projetId) : [];
   const resumeAudit = projetId ? await chargerResumeAuditFrance(projetId) : null;
@@ -60,6 +69,7 @@ export default async function DedouanementFrancePage({
               nombreColis: expedition?.nombre_colis ?? 1,
               dimensions: expedition?.dimensions ?? "",
             }}
+            ltaFichier={ltaFichier}
           />
 
           <ProduitsExclusionTable lignes={lignes} />

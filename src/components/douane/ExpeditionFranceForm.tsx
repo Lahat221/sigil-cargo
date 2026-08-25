@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { enregistrerExpeditionFrance } from "@/app/(dashboard)/gestion-douaniere/dedouanement-france/actions";
+import { createClient } from "@/lib/supabase/client";
+import {
+  enregistrerExpeditionFrance,
+  enregistrerLtaFichier,
+} from "@/app/(dashboard)/gestion-douaniere/dedouanement-france/actions";
+import { IconPaperclip, IconDownload } from "@/components/ui/Icons";
 
 export function ExpeditionFranceForm({
   projetId,
   initial,
+  ltaFichier,
 }: {
   projetId: string;
   initial: {
@@ -16,6 +22,7 @@ export function ExpeditionFranceForm({
     nombreColis: number;
     dimensions: string;
   };
+  ltaFichier: { nom: string; urlSignee: string | null } | null;
 }) {
   const router = useRouter();
   const [mawb, setMawb] = useState(initial.mawb);
@@ -25,6 +32,8 @@ export function ExpeditionFranceForm({
   const [dimensions, setDimensions] = useState(initial.dimensions);
   const [isPending, startTransition] = useTransition();
   const [erreur, setErreur] = useState<string | null>(null);
+  const [uploadPending, setUploadPending] = useState(false);
+  const [uploadErreur, setUploadErreur] = useState<string | null>(null);
 
   function enregistrer() {
     setErreur(null);
@@ -42,6 +51,32 @@ export function ExpeditionFranceForm({
       }
       router.refresh();
     });
+  }
+
+  async function uploaderLta(e: ChangeEvent<HTMLInputElement>) {
+    const fichier = e.target.files?.[0];
+    e.target.value = "";
+    if (!fichier) return;
+
+    setUploadErreur(null);
+    setUploadPending(true);
+    try {
+      const supabase = createClient();
+      const path = `${projetId}/${crypto.randomUUID()}-${fichier.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("lta-documents")
+        .upload(path, fichier);
+      if (uploadError) throw new Error(uploadError.message);
+
+      const resultat = await enregistrerLtaFichier(projetId, path);
+      if ("error" in resultat) throw new Error(resultat.error);
+
+      router.refresh();
+    } catch (err) {
+      setUploadErreur(err instanceof Error ? err.message : "Erreur d'upload.");
+    } finally {
+      setUploadPending(false);
+    }
   }
 
   return (
@@ -110,6 +145,43 @@ export function ExpeditionFranceForm({
           {isPending ? "..." : "Enregistrer"}
         </button>
         {erreur && <span className="text-xs text-red-600">{erreur}</span>}
+      </div>
+
+      <div className="mt-4 border-t border-slate-100 pt-3">
+        <p className="mb-1.5 text-xs font-medium text-slate-500">
+          Document LTA officiel (PDF/photo) — obligatoire avant audit/génération
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {ltaFichier && (
+            <span className="flex items-center gap-1.5 text-sm text-slate-700">
+              <IconPaperclip size={14} />
+              {ltaFichier.urlSignee ? (
+                <a
+                  href={ltaFichier.urlSignee}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 text-gold-2 hover:underline"
+                >
+                  {ltaFichier.nom}
+                  <IconDownload size={12} />
+                </a>
+              ) : (
+                ltaFichier.nom
+              )}
+            </span>
+          )}
+          <label className="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100">
+            {uploadPending ? "Envoi..." : ltaFichier ? "Remplacer le fichier" : "Uploader la LTA"}
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              onChange={uploaderLta}
+              disabled={uploadPending}
+              className="hidden"
+            />
+          </label>
+          {uploadErreur && <span className="text-xs text-red-600">{uploadErreur}</span>}
+        </div>
       </div>
     </div>
   );

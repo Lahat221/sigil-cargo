@@ -674,6 +674,8 @@ export interface Database {
           poids_brut_lta_kg: number | null;
           nombre_colis: number;
           dimensions: string | null;
+          declaration_dakar_validee: boolean;
+          lta_fichier_path: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -685,6 +687,8 @@ export interface Database {
           poids_brut_lta_kg?: number | null;
           nombre_colis?: number;
           dimensions?: string | null;
+          declaration_dakar_validee?: boolean;
+          lta_fichier_path?: string | null;
           created_at?: string;
           updated_at?: string;
         };

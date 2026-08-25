@@ -56,12 +56,39 @@ async function chargerContexteFrance(
 ): Promise<{ error: string } | { ok: true; contexte: ContexteFrance }> {
   const { data: expedition } = await supabase
     .from("douane_expeditions_france")
-    .select("id, mawb, date_vol, poids_brut_lta_kg, nombre_colis, dimensions")
+    .select(
+      "id, mawb, date_vol, poids_brut_lta_kg, nombre_colis, dimensions, declaration_dakar_validee, lta_fichier_path"
+    )
     .eq("projet_id", projetId)
     .maybeSingle();
 
+  // Deux documents obligatoires avant tout traitement (audit ou final) —
+  // §2bis du prompt système : la LTA officielle (mawb/date_vol/poids +
+  // fichier uploadé) et la déclaration Dakar validée (bouton, pas de
+  // fichier). Contrôlé ici en dur, avant même d'appeler Claude : plus
+  // fiable qu'une consigne de prompt, et évite un appel payant voué à
+  // l'échec.
   if (!expedition?.mawb || !expedition.date_vol) {
-    return { error: "Renseigne au moins le MAWB et la date de vol avant de continuer." };
+    return {
+      error:
+        "LTA manquante : MAWB et/ou date de vol non renseignés. Complète la LTA officielle avant de continuer.",
+    };
+  }
+  if (!expedition.poids_brut_lta_kg || expedition.poids_brut_lta_kg <= 0) {
+    return {
+      error: "LTA manquante : poids brut non renseigné. Complète la LTA officielle avant de continuer.",
+    };
+  }
+  if (!expedition.lta_fichier_path) {
+    return {
+      error: "LTA manquante : aucun document LTA uploadé. Ajoute le fichier LTA officiel avant de continuer.",
+    };
+  }
+  if (!expedition.declaration_dakar_validee) {
+    return {
+      error:
+        "Déclaration Dakar non validée. Valide la déclaration sur l'écran Déclaration avant de continuer.",
+    };
   }
 
   const toutesLesLignes = await chargerLignesFrance(supabase, projetId);
@@ -110,6 +137,30 @@ export async function enregistrerExpeditionFrance(
       poids_brut_lta_kg: champs.poidsBrutLtaKg,
       nombre_colis: champs.nombreColis,
       dimensions: champs.dimensions || null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "projet_id" }
+  );
+
+  if (error) return { error: error.message };
+  revalidatePath("/gestion-douaniere/dedouanement-france");
+  return { success: true };
+}
+
+/**
+ * Enregistre le chemin du fichier LTA déjà uploadé côté client (bucket
+ * Storage "lta-documents", pattern identique à charges-factures) — §2bis,
+ * la LTA doit être un vrai document, pas seulement des champs saisis.
+ */
+export async function enregistrerLtaFichier(
+  projetId: string,
+  path: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+  const { error } = await supabase.from("douane_expeditions_france").upsert(
+    {
+      projet_id: projetId,
+      lta_fichier_path: path,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "projet_id" }

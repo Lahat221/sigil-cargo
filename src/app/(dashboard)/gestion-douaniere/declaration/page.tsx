@@ -3,6 +3,7 @@ import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { regrouperParSection, poidsTotalUnique } from "@/lib/douane/sections";
 import { ValeurSectionInput } from "@/components/douane/ValeurSectionInput";
 import { DeclarationXlsxButton } from "@/components/douane/DeclarationXlsxButton";
+import { ValiderDeclarationButton } from "@/components/douane/ValiderDeclarationButton";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,15 @@ export default async function DeclarationPage({
   const dateAffichee = projet?.date_depart
     ? new Date(projet.date_depart).toLocaleDateString("fr-FR")
     : new Date().toLocaleDateString("fr-FR");
+
+  const { data: expeditionFrance } = projetId
+    ? await supabase
+        .from("douane_expeditions_france")
+        .select("declaration_dakar_validee")
+        .eq("projet_id", projetId)
+        .maybeSingle()
+    : { data: null };
+  const declarationValidee = expeditionFrance?.declaration_dakar_validee ?? false;
 
   return (
     <div className="max-w-5xl">
@@ -158,16 +168,19 @@ export default async function DeclarationPage({
           })}
 
           {sections.some((s) => s.lignes.length > 0) && (
-            <div className="mb-6 flex flex-wrap items-center justify-end gap-6 rounded-xl bg-gold-gradient px-5 py-3 shadow-sm">
-              <p className="font-semibold text-navy">
-                TOTAL :{" "}
-                <span className="text-lg">
-                  {valeurTotal.toLocaleString("fr-FR")} FCFA
-                </span>
-              </p>
-              <p className="font-semibold text-navy">
-                POIDS TOTAL : <span className="text-lg">{poidsTotal.toFixed(2)} KG</span>
-              </p>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gold-gradient px-5 py-3 shadow-sm">
+              <div className="flex flex-wrap items-center gap-6">
+                <p className="font-semibold text-navy">
+                  TOTAL :{" "}
+                  <span className="text-lg">
+                    {valeurTotal.toLocaleString("fr-FR")} FCFA
+                  </span>
+                </p>
+                <p className="font-semibold text-navy">
+                  POIDS TOTAL : <span className="text-lg">{poidsTotal.toFixed(2)} KG</span>
+                </p>
+              </div>
+              <ValiderDeclarationButton projetId={projetId} dejaValidee={declarationValidee} />
             </div>
           )}
         </>

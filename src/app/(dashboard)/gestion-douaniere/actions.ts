@@ -211,7 +211,39 @@ export async function enregistrerValeurSection(
   );
 
   if (error) return { error: error.message };
+
+  // Toute modification d'une valeur invalide la déclaration si elle avait
+  // déjà été validée — §2bis, éviter une validation obsolète après édition.
+  await supabase
+    .from("douane_expeditions_france")
+    .update({ declaration_dakar_validee: false })
+    .eq("projet_id", projetId);
+
   revalidatePath("/gestion-douaniere/declaration");
+  return { success: true };
+}
+
+/**
+ * Marque la déclaration Dakar comme validée pour ce départ — §2bis, un des
+ * deux documents obligatoires avant l'audit/génération France. Simple
+ * bouton de confirmation, pas de fichier (contrairement à la LTA).
+ */
+export async function validerDeclarationDakar(
+  projetId: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+  const { error } = await supabase.from("douane_expeditions_france").upsert(
+    {
+      projet_id: projetId,
+      declaration_dakar_validee: true,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "projet_id" }
+  );
+
+  if (error) return { error: error.message };
+  revalidatePath("/gestion-douaniere/declaration");
+  revalidatePath("/gestion-douaniere/dedouanement-france");
   return { success: true };
 }
 

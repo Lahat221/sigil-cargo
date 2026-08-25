@@ -471,3 +471,22 @@ create index idx_douane_audits_france_expedition on douane_audits_france(expedit
 
 alter table douane_audits_france enable row level security;
 create policy "authenticated_all" on douane_audits_france for all using (auth.role() = 'authenticated');
+
+-- Documents obligatoires France (§2bis) : déclaration Dakar validée (bouton,
+-- pas de fichier) + LTA officielle (fichier uploadé). Bucket "lta-documents"
+-- créé via l'API Storage (public: false), voir migration_lta_document.sql.
+alter table douane_expeditions_france
+  add column if not exists declaration_dakar_validee boolean not null default false,
+  add column if not exists lta_fichier_path text;
+
+create policy "authenticated_read_lta_documents"
+on storage.objects for select
+using (bucket_id = 'lta-documents' and auth.role() = 'authenticated');
+
+create policy "authenticated_upload_lta_documents"
+on storage.objects for insert
+with check (bucket_id = 'lta-documents' and auth.role() = 'authenticated');
+
+create policy "authenticated_delete_lta_documents"
+on storage.objects for delete
+using (bucket_id = 'lta-documents' and auth.role() = 'authenticated');
