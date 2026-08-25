@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { regrouperParSection, poidsTotalUnique } from "@/lib/douane/sections";
-import { DouaneFiltreDepart } from "@/components/douane/DouaneFiltreDepart";
 import { ValeurSectionInput } from "@/components/douane/ValeurSectionInput";
 import { DeclarationXlsxButton } from "@/components/douane/DeclarationXlsxButton";
 
@@ -56,16 +54,6 @@ export default async function DeclarationPage({
 
   return (
     <div className="max-w-5xl">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <Link
-          href={projetId ? `/gestion-douaniere?projet=${projetId}` : "/gestion-douaniere"}
-          className="text-sm text-white/60 hover:text-white"
-        >
-          ← Retour à Gestion Douanière
-        </Link>
-        <DouaneFiltreDepart projets={projets ?? []} />
-      </div>
-
       {!projetId ? (
         <p className="rounded-xl border border-slate-200/70 bg-white p-4 text-sm text-slate-500 shadow-sm">
           Aucun départ trouvé.

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ExtractionTable, type ProduitLigne } from "@/components/douane/ExtractionTable";
@@ -83,13 +82,6 @@ export default async function DetailDouanePage({ params }: { params: { id: strin
 
   return (
     <div className="max-w-4xl">
-      <Link
-        href="/gestion-douaniere"
-        className="mb-4 inline-block text-sm text-white/60 hover:text-white"
-      >
-        ← Retour à la liste
-      </Link>
-
       <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-white">Colis #{colis.numero}</h1>

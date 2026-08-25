@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { chargerLignesFrance } from "@/lib/dedouanement-france/lignesFrance";
-import { DouaneFiltreDepart } from "@/components/douane/DouaneFiltreDepart";
 import { ExpeditionFranceForm } from "@/components/douane/ExpeditionFranceForm";
 import { ProduitsExclusionTable } from "@/components/douane/ProduitsExclusionTable";
 import { AuditReportPanel } from "@/components/douane/AuditReportPanel";
@@ -39,16 +37,6 @@ export default async function DedouanementFrancePage({
 
   return (
     <div className="max-w-5xl">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <Link
-          href={projetId ? `/gestion-douaniere?projet=${projetId}` : "/gestion-douaniere"}
-          className="text-sm text-white/60 hover:text-white"
-        >
-          ← Retour à Gestion Douanière
-        </Link>
-        <DouaneFiltreDepart projets={projets ?? []} />
-      </div>
-
       <h1 className="mb-4 text-xl font-bold text-white">Dédouanement France</h1>
 
       {!projetId ? (

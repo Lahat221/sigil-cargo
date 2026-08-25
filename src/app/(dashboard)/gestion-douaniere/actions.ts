@@ -123,6 +123,40 @@ export async function validerExtraction(
   return { success: true };
 }
 
+/**
+ * Valide en une fois toutes les extractions "traité"/"à vérifier" d'un
+ * départ — évite d'ouvrir chaque colis un par un après un retraitement HS
+ * en masse.
+ */
+export async function validerLot(
+  commandeIds: string[]
+): Promise<{ error: string } | { valides: number }> {
+  if (commandeIds.length === 0) return { valides: 0 };
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error, count } = await supabase
+    .from("douane_extractions")
+    .update(
+      {
+        statut: "valide",
+        valide_par: user?.id ?? null,
+        valide_at: new Date().toISOString(),
+      },
+      { count: "exact" }
+    )
+    .in("commande_id", commandeIds)
+    .neq("statut", "valide");
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/gestion-douaniere");
+  return { valides: count ?? 0 };
+}
+
 export async function genererDeclarationXlsx(
   projetId: string
 ): Promise<{ error: string } | { base64: string; filename: string }> {

@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { DouaneFiltreDepart } from "@/components/douane/DouaneFiltreDepart";
 import { DouaneStatsCards } from "@/components/douane/DouaneStatsCards";
 import { TraiterDepartButton } from "@/components/douane/TraiterDepartButton";
+import { ValiderLotButton } from "@/components/douane/ValiderLotButton";
 import { ExportDouaneButton } from "@/components/douane/ExportDouaneButton";
 import { STATUT_DOUANE_LABELS, STATUT_DOUANE_STYLES } from "@/components/douane/statutLabels";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
-import { IconGrid, IconFileText } from "@/components/ui/Icons";
 import type { StatutExtractionDouane } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -92,44 +91,17 @@ export default async function GestionDouanierePage({
     .filter((c) => statutDe(c) === "non_traite")
     .map((c) => c.id);
   const commandeIdsTous = colis.map((c) => c.id);
+  const commandeIdsAValider = colis
+    .filter((c) => statutDe(c) === "traite" || statutDe(c) === "a_verifier")
+    .map((c) => c.id);
 
   const lignesExport = projetId ? await chargerVueEnsemble(supabase, projetId) : [];
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-white">Gestion Douanière</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          {projetId && (
-            <Link
-              href={`/gestion-douaniere/vue-ensemble?projet=${projetId}`}
-              className="flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-            >
-              <IconGrid size={15} />
-              Visualiser
-            </Link>
-          )}
-          <ExportDouaneButton lignes={lignesExport} />
-          {projetId && (
-            <Link
-              href={`/gestion-douaniere/declaration?projet=${projetId}`}
-              className="flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-            >
-              <IconFileText size={15} />
-              Déclaration
-            </Link>
-          )}
-          {projetId && (
-            <Link
-              href={`/gestion-douaniere/dedouanement-france?projet=${projetId}`}
-              className="flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-            >
-              <IconFileText size={15} />
-              Dédouanement France
-            </Link>
-          )}
-          <DouaneFiltreDepart projets={projets ?? []} />
-        </div>
+        <h1 className="text-xl font-bold text-white">Colis du départ</h1>
+        <ExportDouaneButton lignes={lignesExport} />
       </div>
 
       {!projetId ? (
@@ -142,11 +114,12 @@ export default async function GestionDouanierePage({
             <DouaneStatsCards stats={stats} />
           </div>
 
-          <div className="mb-6 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
+          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
             <TraiterDepartButton
               commandeIds={commandeIdsNonTraites}
               tousLesCommandeIds={commandeIdsTous}
             />
+            <ValiderLotButton commandeIds={commandeIdsAValider} />
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-slate-200/70 bg-white shadow-sm">

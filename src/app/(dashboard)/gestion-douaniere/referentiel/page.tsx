@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ReferentielTable, type EntreeReferentiel } from "@/components/douane/ReferentielTable";
 
@@ -15,12 +14,6 @@ export default async function ReferentielPage() {
 
   return (
     <div className="max-w-4xl">
-      <Link
-        href="/gestion-douaniere"
-        className="mb-4 inline-block text-sm text-white/60 hover:text-white"
-      >
-        ← Retour à Gestion Douanière
-      </Link>
       <h1 className="mb-4 text-xl font-bold text-white">Référentiel produits</h1>
       <p className="mb-4 text-sm text-white/60">
         Les correspondances trouvées ici sont proposées en priorité à l&apos;IA avant qu&apos;elle

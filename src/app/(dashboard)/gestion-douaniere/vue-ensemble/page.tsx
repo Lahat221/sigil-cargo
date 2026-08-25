@@ -27,13 +27,6 @@ export default async function VueEnsembleDouanePage({
 
   return (
     <div>
-      <Link
-        href={projetId ? `/gestion-douaniere?projet=${projetId}` : "/gestion-douaniere"}
-        className="mb-4 inline-block text-sm text-white/60 hover:text-white"
-      >
-        ← Retour à Gestion Douanière
-      </Link>
-
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold text-white">Vue d&apos;ensemble</h1>
