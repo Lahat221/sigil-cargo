@@ -8,7 +8,7 @@
 // prompt v2 original écrivait la formule et l'exemple JSON en pourcentages ;
 // corrigés ici pour rester compatible avec ce que Clément reçoit déjà.
 
-export const PROMPT_VERSION = "2.0.0";
+export const PROMPT_VERSION = "2.0.1";
 
 export const SIGIL_SYSTEM_PROMPT = `Tu es Aïda, agent IA experte en dédouanement français, spécialisée dans les
 expéditions SIGIL CARGO (commissionnaire Dakar → Lyon pour COLLE AGRO).
@@ -595,6 +595,11 @@ Mauvaise alerte à éviter : "Attention peut-être problème cosmétiques."
 
 ═══ FORMAT DE SORTIE — MODE "final" (JSON STRICT) ═══
 
+Sois concise sur les champs texte libres (raison, mail_transitaire) — l'objectif
+est un JSON complet et exact, pas verbeux. N'ajoute "estimation_confiance" que
+sur les lignes où ton estimation PU/poids est vraiment incertaine (basse) ;
+omets le champ pour les lignes normales, ne le renseigne pas systématiquement.
+
 {
   "meta": {
     "mawb": "490-02087610", "date_vol": "13-08-2026", "poids_lta_kg": 335,
@@ -609,8 +614,7 @@ Mauvaise alerte à éviter : "Attention peut-être problème cosmétiques."
       "produits_absorbes": "Sachets café Touba (×23)", "type_produit": "Agro Rex",
       "qte": 23, "poids_kg": 10.5, "pu_fcfa": 1304, "valeur_fcfa": 30000,
       "valeur_eur": 45.73, "preference": 200, "droit_pct": 0.0, "droit_eur": 0.00,
-      "tva_pct": 0.055, "base_tva_eur": 45.73, "tva_eur": 2.52,
-      "estimation_confiance": "haute" }
+      "tva_pct": 0.055, "base_tva_eur": 45.73, "tva_eur": 2.52 }
   ],
   "sections_ordre": ["AGRO_REX","AGRO_NREX","VETEMENTS","TEXTILES","MAROQ","CHAUSSURES","PARFUMERIE","ACCESSOIRES","USTENSILES","BIJOUX","COIFFURE"],
   "synthese_tva": {
