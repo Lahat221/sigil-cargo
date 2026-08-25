@@ -91,6 +91,7 @@ export default async function GestionDouanierePage({
   const commandeIdsNonTraites = colis
     .filter((c) => statutDe(c) === "non_traite")
     .map((c) => c.id);
+  const commandeIdsTous = colis.map((c) => c.id);
 
   const lignesExport = projetId ? await chargerVueEnsemble(supabase, projetId) : [];
 
@@ -142,7 +143,10 @@ export default async function GestionDouanierePage({
           </div>
 
           <div className="mb-6 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
-            <TraiterDepartButton commandeIds={commandeIdsNonTraites} />
+            <TraiterDepartButton
+              commandeIds={commandeIdsNonTraites}
+              tousLesCommandeIds={commandeIdsTous}
+            />
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-slate-200/70 bg-white shadow-sm">

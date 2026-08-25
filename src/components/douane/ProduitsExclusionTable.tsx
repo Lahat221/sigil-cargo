@@ -9,9 +9,17 @@ export function ProduitsExclusionTable({ lignes }: { lignes: LigneProduitFrance[
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  function demanderRaison(): string | null {
+    try {
+      return prompt("Raison de l'exclusion (optionnel) :");
+    } catch {
+      return null;
+    }
+  }
+
   function toggle(produitId: string, exclu: boolean) {
     startTransition(async () => {
-      const raison = exclu ? prompt("Raison de l'exclusion (optionnel) :") : null;
+      const raison = exclu ? demanderRaison() : null;
       await toggleExclusionProduit(produitId, exclu, raison);
       router.refresh();
     });

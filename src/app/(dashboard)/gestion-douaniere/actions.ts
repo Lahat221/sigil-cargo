@@ -32,9 +32,13 @@ async function chargerColis(
  * voir le plan : pas de nouvelle queue, boucle pilotée côté client).
  */
 export async function traiterLot(
-  commandeIds: string[]
+  commandeIds: string[],
+  options: { force?: boolean } = {}
 ): Promise<{ traites: number; erreurs: { commandeId: string; erreur: string }[] }> {
   const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const erreurs: { commandeId: string; erreur: string }[] = [];
   let traites = 0;
 
@@ -44,13 +48,17 @@ export async function traiterLot(
       erreurs.push({ commandeId, erreur: "Colis introuvable." });
       continue;
     }
-    const resultat = await traiterColis(supabase, {
-      commandeId: colis.id,
-      rawDescription: colis.description ?? "",
-      poidsKg: colis.poids_kg,
-      clientNom: colis.clients?.nom ?? null,
-      clientTelephone: colis.clients?.telephone ?? null,
-    });
+    const resultat = await traiterColis(
+      supabase,
+      {
+        commandeId: colis.id,
+        rawDescription: colis.description ?? "",
+        poidsKg: colis.poids_kg,
+        clientNom: colis.clients?.nom ?? null,
+        clientTelephone: colis.clients?.telephone ?? null,
+      },
+      { force: options.force, utilisateurId: user?.id ?? null }
+    );
     if (resultat.ok) {
       traites += 1;
     } else {
