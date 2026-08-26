@@ -246,7 +246,7 @@ using (bucket_id = 'campagnes-media' and auth.role() = 'authenticated');
 -- ---------- EXTRACTIONS (une par colis, commande_id unique = idempotence) ----------
 create table douane_extractions (
   id uuid primary key default gen_random_uuid(),
-  commande_id uuid not null references commandes(id) unique,
+  commande_id uuid not null references commandes(id) on delete cascade unique,
   statut text not null default 'non_traite'
     check (statut in ('non_traite','en_cours','traite','a_verifier','valide','erreur')),
   version int not null default 1,
@@ -329,7 +329,7 @@ create index idx_douane_referentiel_synonymes on douane_produits_referentiel usi
 create table douane_logs (
   id uuid primary key default gen_random_uuid(),
   extraction_id uuid references douane_extractions(id) on delete set null,
-  commande_id uuid references commandes(id),
+  commande_id uuid references commandes(id) on delete cascade,
   modele text not null,
   prompt_version text,
   duree_ms int,

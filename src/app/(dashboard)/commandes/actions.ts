@@ -260,6 +260,12 @@ export async function supprimerCommande(
   commandeId: string
 ): Promise<{ error: string } | { success: true }> {
   const supabase = createClient();
+
+  // douane_extractions/douane_logs référencent commandes(id) sans ON DELETE CASCADE :
+  // il faut les purger avant, sinon la suppression échoue avec une violation de clé étrangère.
+  await supabase.from("douane_logs").delete().eq("commande_id", commandeId);
+  await supabase.from("douane_extractions").delete().eq("commande_id", commandeId);
+
   const { error } = await supabase
     .from("commandes")
     .delete()
