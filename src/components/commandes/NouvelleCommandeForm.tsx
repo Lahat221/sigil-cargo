@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { createCommande } from "@/app/(dashboard)/commandes/nouvelle/actions";
 import { ClientField, type ClientSelection } from "./ClientField";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
+import { VideoPreviewList } from "./VideoPreviewList";
 
 const MAX_PHOTOS = 5;
 const MAX_VIDEOS = 4;
@@ -68,6 +69,10 @@ export function NouvelleCommandeForm({
   function handleVideosChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []).slice(0, MAX_VIDEOS);
     setVideos(files);
+  }
+
+  function handleRemoveVideo(index: number) {
+    setVideos((vs) => vs.filter((_, i) => i !== index));
   }
 
   const clientPret =
@@ -332,6 +337,7 @@ export function NouvelleCommandeForm({
           <label className="mb-1 block text-sm font-medium text-slate-700">
             Vidéos ({videos.length}/{MAX_VIDEOS})
           </label>
+          <VideoPreviewList files={videos} onRemove={handleRemoveVideo} />
           <input
             type="file"
             accept="video/*"

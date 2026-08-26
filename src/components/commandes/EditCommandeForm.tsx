@@ -7,6 +7,7 @@ import { updateCommande } from "@/app/(dashboard)/commandes/actions";
 import { ClientField, type ClientSelection } from "./ClientField";
 import type { ClientMatch } from "@/app/(dashboard)/commandes/nouvelle/actions";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
+import { VideoPreviewList } from "./VideoPreviewList";
 
 const MAX_PHOTOS = 5;
 const MAX_VIDEOS = 4;
@@ -105,6 +106,10 @@ export function EditCommandeForm({
     const remaining = MAX_VIDEOS - keptVideos.length;
     const files = Array.from(e.target.files ?? []).slice(0, remaining);
     setNewVideos(files);
+  }
+
+  function handleRemoveNewVideo(index: number) {
+    setNewVideos((vs) => vs.filter((_, i) => i !== index));
   }
 
   const clientPret =
@@ -405,6 +410,7 @@ export function EditCommandeForm({
               ))}
             </div>
           )}
+          <VideoPreviewList files={newVideos} onRemove={handleRemoveNewVideo} />
           {keptVideos.length < MAX_VIDEOS && (
             <input
               type="file"

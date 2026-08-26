@@ -7,6 +7,7 @@ import { SupprimerCommandeButton } from "@/components/commandes/SupprimerCommand
 import { NotifButtons } from "@/components/commandes/NotifButtons";
 import { PartagerWhatsAppButton } from "@/components/commandes/PartagerMediaButton";
 import { PartagerFichierButton } from "@/components/commandes/PartagerFichierButton";
+import { PartagerVideoWhatsAppButton } from "@/components/commandes/PartagerVideoWhatsAppButton";
 import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
 
@@ -273,11 +274,17 @@ export default async function CommandeDetailPage({
             {videoItems.map((item) => (
               <div key={item.path} className="flex flex-col items-center gap-1">
                 <video src={item.url} controls className="h-24 rounded-md" />
-                <PartagerFichierButton
-                  url={item.url}
-                  filename={item.path.split("/").pop() ?? "video.mp4"}
-                  mimeType="video/mp4"
-                />
+                <div className="flex items-center gap-2">
+                  <PartagerFichierButton
+                    url={item.url}
+                    filename={item.path.split("/").pop() ?? "video.mp4"}
+                    mimeType="video/mp4"
+                  />
+                  <PartagerVideoWhatsAppButton
+                    url={item.url}
+                    numero={commande.numero}
+                  />
+                </div>
               </div>
             ))}
           </div>
