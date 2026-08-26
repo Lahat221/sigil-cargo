@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PageTransition } from "@/components/layout/PageTransition";
+import { RefreshButton } from "@/components/layout/RefreshButton";
 import { IconLogout } from "@/components/ui/Icons";
 import { signOut } from "./actions";
 
@@ -41,6 +42,7 @@ export default async function DashboardLayout({
                   {user.email}
                 </span>
               )}
+              <RefreshButton />
               <form action={signOut}>
                 <button
                   type="submit"
