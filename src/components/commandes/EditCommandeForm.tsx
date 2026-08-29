@@ -45,7 +45,7 @@ export function EditCommandeForm({
   initialClient: ClientMatch;
   initialProjetId: string;
   initialProduitId: string;
-  initialPoidsKg: number;
+  initialPoidsKg: number | null;
   initialPrixParKg: number | null;
   initialVolumeM3: number | null;
   initialPrixParM3: number | null;
@@ -71,7 +71,9 @@ export function EditCommandeForm({
   const [prixParKg, setPrixParKg] = useState(
     initialPrixParKg !== null ? initialPrixParKg.toString() : ""
   );
-  const [poidsKg, setPoidsKg] = useState(initialPoidsKg.toString());
+  const [poidsKg, setPoidsKg] = useState(
+    initialPoidsKg !== null ? initialPoidsKg.toString() : ""
+  );
   const [volumeM3, setVolumeM3] = useState(
     initialVolumeM3 !== null ? initialVolumeM3.toString() : ""
   );
@@ -148,8 +150,17 @@ export function EditCommandeForm({
       setError("Le nom et le téléphone du client sont requis.");
       return;
     }
-    const poids = parseFloat(poidsKg);
-    if (Number.isNaN(poids) || poids <= 0) {
+    // Le poids reste obligatoire en fret aérien (il fixe le prix) ; en
+    // groupage conteneur, un lot réel n'a souvent pas de pesée individuelle
+    // (seul le volume compte pour la facturation).
+    let poids: number | null = null;
+    if (poidsKg.trim()) {
+      poids = parseFloat(poidsKg);
+      if (Number.isNaN(poids) || poids <= 0) {
+        setError("Indique un poids valide.");
+        return;
+      }
+    } else if (!enModeConteneur) {
       setError("Indique un poids valide.");
       return;
     }
@@ -294,13 +305,13 @@ export function EditCommandeForm({
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            Poids (kg)
+            Poids (kg){enModeConteneur && " (optionnel)"}
           </label>
           <input
             type="number"
             step="0.001"
             min="0"
-            required
+            required={!enModeConteneur}
             value={poidsKg}
             onChange={(e) => setPoidsKg(e.target.value)}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"

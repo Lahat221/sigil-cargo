@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 type ColisDetail = {
   id: string;
   numero: number;
-  poids_kg: number;
+  poids_kg: number | null;
   description: string | null;
   clients: { nom: string; telephone: string | null } | null;
 };
@@ -87,7 +87,8 @@ export default async function DetailDouanePage({ params }: { params: { id: strin
           <h1 className="text-2xl font-bold text-ink">Colis #{colis.numero}</h1>
           <p className="text-sm text-ink-muted">
             {colis.clients?.nom ?? "—"}
-            {colis.clients?.telephone && ` · ${colis.clients.telephone}`} · {colis.poids_kg} kg
+            {colis.clients?.telephone && ` · ${colis.clients.telephone}`} ·{" "}
+            {colis.poids_kg !== null ? `${colis.poids_kg} kg` : "—"}
           </p>
         </div>
         {extraction && (

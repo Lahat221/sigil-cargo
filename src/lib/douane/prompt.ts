@@ -82,7 +82,7 @@ RÈGLES ABSOLUES :
 
 export function buildUserPrompt(input: {
   rawDescription: string;
-  poidsKg: number;
+  poidsKg: number | null;
   referentielMatches: ReferentielMatch[];
 }): string {
   const referentielBlock =
@@ -97,7 +97,7 @@ export function buildUserPrompt(input: {
           .join("\n")
       : "(aucune correspondance trouvée dans le référentiel pour ce texte)";
 
-  return `Poids total du colis (contexte uniquement, ne pas redistribuer) : ${input.poidsKg} kg
+  return `Poids total du colis (contexte uniquement, ne pas redistribuer) : ${input.poidsKg !== null ? `${input.poidsKg} kg` : "non renseigné"}
 
 Référentiel interne pertinent :
 ${referentielBlock}

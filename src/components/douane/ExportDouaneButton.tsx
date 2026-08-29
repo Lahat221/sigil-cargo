@@ -48,7 +48,7 @@ export function ExportDouaneButton({
           ? `${l.descriptionProduit} (${l.quantite} ${l.unite ?? ""})`
           : "",
         l.quantite != null ? l.quantite.toString() : "",
-        premiereLigneDuColis ? `${l.poidsKg} kg` : "",
+        premiereLigneDuColis && l.poidsKg !== null ? `${l.poidsKg} kg` : "",
       ]
         .map(csvEscape)
         .join(";");

@@ -132,7 +132,9 @@ export interface Database {
           client_id: string;
           projet_id: string;
           produit_id: string;
-          poids_kg: number;
+          // Optionnel : un lot groupage conteneur réel n'a souvent pas de
+          // pesée individuelle (seul volume_m3 est connu et facture).
+          poids_kg: number | null;
           prix_par_kg: number | null;
           // Groupage conteneur (au m³) — cf. migration_groupage_conteneur.sql.
           // mode_fret copié du projet à la création ; volume_m3/prix_par_m3
@@ -168,7 +170,7 @@ export interface Database {
           client_id: string;
           projet_id: string;
           produit_id: string;
-          poids_kg: number;
+          poids_kg?: number | null;
           prix_par_kg?: number | null;
           mode_fret?: "aerien" | "conteneur";
           volume_m3?: number | null;

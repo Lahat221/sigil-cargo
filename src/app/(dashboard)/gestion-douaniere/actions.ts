@@ -9,7 +9,7 @@ import type { HsCodeSource, HsStatus } from "@/types/database.types";
 
 type ColisMinimal = {
   id: string;
-  poids_kg: number;
+  poids_kg: number | null;
   description: string | null;
   clients: { nom: string; telephone: string | null; telephone_pays: string | null } | null;
 };

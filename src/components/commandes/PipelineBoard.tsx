@@ -67,7 +67,7 @@ export function PipelineBoard({
                     #{c.numero} — {c.clients?.nom ?? "—"}
                   </Link>
                   <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
-                    <span>{c.poids_kg} kg</span>
+                    <span>{c.poids_kg !== null ? `${c.poids_kg} kg` : "—"}</span>
                     <span>{montantFormatter.format(c.montant_total)}</span>
                   </div>
                   {suivant && (

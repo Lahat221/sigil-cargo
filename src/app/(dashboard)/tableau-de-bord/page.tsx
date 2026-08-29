@@ -136,13 +136,13 @@ export default async function TableauDeBordPage({
   const poidsParProduit = new Map<string, number>();
   for (const c of actives) {
     const nom = c.produits?.nom ?? "—";
-    poidsParProduit.set(nom, (poidsParProduit.get(nom) ?? 0) + c.poids_kg);
+    poidsParProduit.set(nom, (poidsParProduit.get(nom) ?? 0) + (c.poids_kg ?? 0));
   }
   const meilleurProduit =
     Array.from(poidsParProduit.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ??
     "—";
 
-  const poidsTotal = actives.reduce((sum, c) => sum + c.poids_kg, 0);
+  const poidsTotal = actives.reduce((sum, c) => sum + (c.poids_kg ?? 0), 0);
 
   const jours = joursDeLaPeriode(debut, fin);
   const caParJourMap = new Map<string, number>();
@@ -161,7 +161,7 @@ export default async function TableauDeBordPage({
   const poidsParProjetMap = new Map<string, number>();
   for (const c of actives) {
     const nom = c.projets?.nom ?? "—";
-    poidsParProjetMap.set(nom, (poidsParProjetMap.get(nom) ?? 0) + c.poids_kg);
+    poidsParProjetMap.set(nom, (poidsParProjetMap.get(nom) ?? 0) + (c.poids_kg ?? 0));
   }
   const poidsParProjet = Array.from(poidsParProjetMap.entries())
     .map(([label, value]) => ({ label, value }))

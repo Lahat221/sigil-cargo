@@ -158,7 +158,7 @@ export default async function DeclarationPage({
                               {l.quantite} {l.unite}
                             </td>
                             <td className="px-3 py-2 text-right text-slate-400">
-                              {afficherPoids ? `${l.poidsKg} kg` : ""}
+                              {afficherPoids && l.poidsKg !== null ? `${l.poidsKg} kg` : ""}
                             </td>
                           </tr>
                         );

@@ -57,7 +57,7 @@ export default async function ProjetsPage() {
     s.nbCommandes += 1;
     if (c.statut !== "annulee") {
       s.ca += c.montant_total;
-      s.poids += c.poids_kg;
+      s.poids += c.poids_kg ?? 0;
     }
   }
   for (const ch of charges ?? []) {

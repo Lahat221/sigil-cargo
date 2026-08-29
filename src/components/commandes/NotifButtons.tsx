@@ -34,7 +34,7 @@ export function NotifButtons({
   clientNom: string;
   clientTelephone: string | null;
   clientTelephonePays: string | null;
-  poidsKg: number;
+  poidsKg: number | null;
   montantTotal: number;
   description?: string | null;
 }) {
@@ -84,7 +84,7 @@ export function NotifButtons({
         onClick={() =>
           envoyer(
             "recue",
-            `Bonjour ${clientNom}, nous avons bien reçu votre colis #${numero} chez ${BRAND.nom} (${poidsKg} kg, ${montantFormatter.format(montantTotal)})${description?.trim() ? ` : ${description.trim()}` : ""}. Merci !`
+            `Bonjour ${clientNom}, nous avons bien reçu votre colis #${numero} chez ${BRAND.nom} (${poidsKg !== null ? `${poidsKg} kg, ` : ""}${montantFormatter.format(montantTotal)})${description?.trim() ? ` : ${description.trim()}` : ""}. Merci !`
           )
         }
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50"

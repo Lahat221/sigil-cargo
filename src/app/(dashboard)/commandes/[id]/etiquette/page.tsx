@@ -49,10 +49,14 @@ export default async function EtiquetteCommandePage({
 
         <div className="mb-4 space-y-1 text-sm text-slate-700">
           <p>
-            {commande.poids_kg} kg
-            {commande.mode_fret === "conteneur" &&
-              commande.volume_m3 !== null &&
-              ` · ${commande.volume_m3} m³`}
+            {[
+              commande.poids_kg !== null ? `${commande.poids_kg} kg` : null,
+              commande.mode_fret === "conteneur" && commande.volume_m3 !== null
+                ? `${commande.volume_m3} m³`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "—"}
           </p>
           {commande.projets?.nom && <p>{commande.projets.nom}</p>}
         </div>

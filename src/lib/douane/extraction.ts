@@ -11,7 +11,7 @@ import { estimerCoutUsd } from "./cout";
 type ColisAAnalyser = {
   commandeId: string;
   rawDescription: string;
-  poidsKg: number;
+  poidsKg: number | null;
   clientNom: string | null;
   clientTelephone: string | null;
 };
@@ -105,7 +105,7 @@ export async function traiterColis(
           statut: "a_verifier",
           version: nouvelleVersion,
           raw_description: "",
-          poids_total: colis.poidsKg,
+          poids_total: colis.poidsKg ?? 0,
           client_nom: colis.clientNom,
           client_telephone: colis.clientTelephone,
           anomalies: ["Aucune description fournie pour ce colis."],
@@ -130,7 +130,7 @@ export async function traiterColis(
       statut: "en_cours",
       version: nouvelleVersion,
       raw_description: rawDescription,
-      poids_total: colis.poidsKg,
+      poids_total: colis.poidsKg ?? 0,
       client_nom: colis.clientNom,
       client_telephone: colis.clientTelephone,
     },
@@ -173,7 +173,7 @@ export async function traiterColis(
           statut: statutExtractionPour(resultat.produits),
           version: nouvelleVersion,
           raw_description: rawDescription,
-          poids_total: colis.poidsKg,
+          poids_total: colis.poidsKg ?? 0,
           client_nom: colis.clientNom,
           client_telephone: colis.clientTelephone,
           anomalies: resultat.anomalies,

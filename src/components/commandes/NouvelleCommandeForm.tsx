@@ -115,8 +115,17 @@ export function NouvelleCommandeForm({
       setError("Sélectionne un produit.");
       return;
     }
-    const poids = parseFloat(poidsKg);
-    if (Number.isNaN(poids) || poids <= 0) {
+    // Le poids reste obligatoire en fret aérien (il fixe le prix) ; en
+    // groupage conteneur, un lot réel n'a souvent pas de pesée individuelle
+    // (seul le volume compte pour la facturation).
+    let poids: number | null = null;
+    if (poidsKg.trim()) {
+      poids = parseFloat(poidsKg);
+      if (Number.isNaN(poids) || poids <= 0) {
+        setError("Indique un poids valide.");
+        return;
+      }
+    } else if (!enModeConteneur) {
       setError("Indique un poids valide.");
       return;
     }
@@ -264,13 +273,13 @@ export function NouvelleCommandeForm({
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            Poids (kg)
+            Poids (kg){enModeConteneur && " (optionnel)"}
           </label>
           <input
             type="number"
             step="0.001"
             min="0"
-            required
+            required={!enModeConteneur}
             value={poidsKg}
             onChange={(e) => setPoidsKg(e.target.value)}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"

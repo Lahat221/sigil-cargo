@@ -25,6 +25,12 @@ alter table commandes
 -- (tarifée au m³) n'a pas forcément de prix au kg.
 alter table commandes alter column prix_par_kg drop not null;
 
+-- poids_kg : en pratique, un lot groupage conteneur réel (ex. import du
+-- 30/08/2026, 46 colis) n'a souvent pas de pesée individuelle — seul le CBM
+-- (volume) est connu. Le poids reste utile/affiché quand il est renseigné,
+-- mais n'est plus obligatoire à la création.
+alter table commandes alter column poids_kg drop not null;
+
 -- montant_total doit rester une colonne générée, mais avec une formule
 -- conditionnelle selon le mode. Postgres ne permet pas d'ALTER une colonne
 -- générée : on la supprime et on la recrée avec la nouvelle formule (la

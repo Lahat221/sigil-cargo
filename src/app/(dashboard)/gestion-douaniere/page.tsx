@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 type ColisRow = {
   id: string;
   numero: number;
-  poids_kg: number;
+  poids_kg: number | null;
   clients: { nom: string; telephone: string | null } | null;
   // commande_id est UNIQUE sur douane_extractions : PostgREST embarque donc
   // un objet unique (ou null), pas un tableau, malgré la relation FK inverse.
@@ -197,7 +197,9 @@ export default async function GestionDouanierePage({
                     <tr key={c.id} className="hover:bg-slate-50">
                       <td className="px-3 py-2 font-mono text-xs">#{c.numero}</td>
                       <td className="px-3 py-2">{c.clients?.nom ?? "—"}</td>
-                      <td className="px-3 py-2">{c.poids_kg} kg</td>
+                      <td className="px-3 py-2">
+                        {c.poids_kg !== null ? `${c.poids_kg} kg` : "—"}
+                      </td>
                       <td className="px-3 py-2">
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUT_DOUANE_STYLES[statut]}`}

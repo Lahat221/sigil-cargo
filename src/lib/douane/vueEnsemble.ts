@@ -6,7 +6,7 @@ export type LigneVueEnsemble = {
   numero: number;
   clientNom: string;
   telephone: string;
-  poidsKg: number;
+  poidsKg: number | null;
   statutColis: StatutExtractionDouane;
   typeProduit: string | null;
   descriptionDouane: string | null;
@@ -21,7 +21,7 @@ export type LigneVueEnsemble = {
 type ColisRow = {
   id: string;
   numero: number;
-  poids_kg: number;
+  poids_kg: number | null;
   clients: { nom: string; telephone: string | null } | null;
   douane_extractions: { id: string; statut: StatutExtractionDouane } | null;
 };

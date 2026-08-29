@@ -4,7 +4,7 @@ export type CommandeListItem = {
   id: string;
   numero: number;
   statut: StatutCommande;
-  poids_kg: number;
+  poids_kg: number | null;
   montant_total: number;
   description: string | null;
   code_barre_colis: string | null;

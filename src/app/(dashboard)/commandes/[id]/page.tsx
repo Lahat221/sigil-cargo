@@ -27,7 +27,7 @@ type CommandeDetail = {
   id: string;
   numero: number;
   statut: StatutCommande;
-  poids_kg: number;
+  poids_kg: number | null;
   prix_par_kg: number | null;
   mode_fret: "aerien" | "conteneur";
   volume_m3: number | null;
@@ -168,7 +168,7 @@ export default async function CommandeDetailPage({
           texte={[
             `Colis #${commande.numero} chez ${BRAND.nom}`,
             commande.projets?.nom ? `Projet : ${commande.projets.nom}` : null,
-            `Poids : ${commande.poids_kg} kg`,
+            commande.poids_kg !== null ? `Poids : ${commande.poids_kg} kg` : null,
             commande.mode_fret === "conteneur"
               ? `Volume : ${commande.volume_m3} m³`
               : null,
@@ -206,7 +206,9 @@ export default async function CommandeDetailPage({
         </div>
         <div>
           <p className="text-slate-500">Poids</p>
-          <p className="font-medium text-slate-900">{commande.poids_kg} kg</p>
+          <p className="font-medium text-slate-900">
+            {commande.poids_kg !== null ? `${commande.poids_kg} kg` : "—"}
+          </p>
         </div>
         {commande.mode_fret === "conteneur" && (
           <div>

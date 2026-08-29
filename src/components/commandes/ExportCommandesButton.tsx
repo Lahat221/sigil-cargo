@@ -40,7 +40,7 @@ export function ExportCommandesButton({
         c.clients?.adresse ?? "",
         c.projets?.nom ?? "",
         STATUT_LABELS[c.statut],
-        c.poids_kg.toString(),
+        c.poids_kg !== null ? c.poids_kg.toString() : "",
         c.montant_total.toString(),
         c.description ?? "",
       ]

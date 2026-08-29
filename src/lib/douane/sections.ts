@@ -62,7 +62,7 @@ export function poidsTotalUnique(lignes: LigneVueEnsemble[]): number {
     if (l.typeProduit === null) continue;
     if (!vus.has(l.colisId)) {
       vus.add(l.colisId);
-      total += l.poidsKg;
+      total += l.poidsKg ?? 0;
     }
   }
   return total;

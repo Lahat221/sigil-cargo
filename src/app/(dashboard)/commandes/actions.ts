@@ -36,7 +36,7 @@ type UpdateCommandeInput = {
   } | null;
   projetId: string;
   produitId: string;
-  poidsKg: number;
+  poidsKg: number | null;
   prixParKg: number | null;
   modeFret: "aerien" | "conteneur";
   volumeM3: number | null;

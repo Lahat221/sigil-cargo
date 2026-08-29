@@ -13,8 +13,8 @@ const montantFormatter = new Intl.NumberFormat("fr-FR", {
   currency: BRAND.devise,
 });
 
-function formatPoids(poids: number) {
-  return `${poids.toLocaleString("fr-FR")} kg`;
+function formatPoids(poids: number | null) {
+  return poids !== null ? `${poids.toLocaleString("fr-FR")} kg` : "—";
 }
 
 export function CommandesListe({
