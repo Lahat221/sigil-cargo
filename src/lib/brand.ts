@@ -131,16 +131,15 @@ const SIGIL_CARGO: BrandConfig = {
 };
 
 // M.N Logistics Cargo — logo reçu le 28/08/2026 (sunburst bronze sur
-// triangle navy, "MAWAAHIBOU NAAFIH" en sous-titre du mark). Couleurs
-// Palette officielle communiquée par l'utilisateur (identité visuelle du
-// logo de référence) — luxe africain contemporain, dominante orange/bronze/
-// or, bleu nuit en couleur secondaire (utilisée ici pour les fonds sombres
-// de l'interface, cohérent avec "élément métallique bronze/or sur zone bleu
-// nuit" décrit dans le brief) :
+// triangle navy, "MAWAAHIBOU NAAFIH" en sous-titre du mark). Palette
+// affinée par rapport au brief initial (l'utilisateur a laissé le choix
+// final) : même famille de couleurs (bleu nuit secondaire, dominante
+// or/bronze) mais un fond de page ivoire/champagne très doux plutôt qu'un
+// aplat orange saturé — plus "premium élégant", moins "orange soupe" — et
+// un texte en brun foncé nuancé plutôt que noir pur.
 //   orange doré #D78F33 · brun orangé #A75517 · brun profond #8D3F11
 //   bronze #BC6B20 · or/bronze clair #D3AC83 · bleu nuit #202639
 //   blanc cassé #E8E6E3 (réservé au monogramme du logo, pas un token UI)
-//   gris clair #D7D2CB
 // Le slug "ami-chine-dakar" doit correspondre à la valeur de
 // NEXT_PUBLIC_BRAND réglée sur son déploiement Vercel. Sens du flux inversé
 // par rapport à SIGIL CARGO : expéditeur en Chine, destinataire à Dakar.
@@ -153,7 +152,7 @@ const AMI_CHINE_DAKAR: BrandConfig = {
     navy2: "#262C42",
     navy3: "#2C3350",
     gold1: "#D78F33",
-    gold2: "#A75517",
+    gold2: "#BC6B20",
     muted2: "#D7D2CB",
     line: "#333B54",
     gradientGoldDe: "#D3AC83",
@@ -162,14 +161,12 @@ const AMI_CHINE_DAKAR: BrandConfig = {
     gradientNavyA: "#2C3350",
     gradientNavyB: "#262C42",
     gradientNavyC: "#202639",
-    // Fond de page orange clair (demandé explicitement) — dégradé doux du
-    // blanc cassé/or clair vers un bronze clair, texte en brun très foncé
-    // pour rester lisible. La sidebar reste bleu nuit (gradientNavyA/B/C
-    // ci-dessus, inchangés) : le bleu nuit du brief reste "secondaire",
-    // cantonné à cette zone et au symbole du logo.
-    pageGradientA: "#FBF3E7",
-    pageGradientB: "#F3DFC0",
-    pageGradientC: "#E8C9A0",
+    // Fond de page ivoire/champagne — chaleureux mais sobre, laisse les
+    // accents or/bronze (boutons, badges, nav active) porter la couleur.
+    // La sidebar reste bleu nuit (gradientNavyA/B/C ci-dessus, inchangés).
+    pageGradientA: "#FDFBF7",
+    pageGradientB: "#F7EFE1",
+    pageGradientC: "#EDE0C8",
     ink: "#2B1D12",
     inkMuted: "#6B4A2ECC",
     inkOverlay: "#2B1D121A",

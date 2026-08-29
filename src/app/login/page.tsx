@@ -11,7 +11,7 @@ export default function LoginPage({
     <div className="flex min-h-screen items-center justify-center bg-navy-gradient px-4">
       <div className="w-full max-w-sm rounded-xl border border-line bg-navy-2/60 p-8 shadow-xl backdrop-blur">
         <div className="mb-6 flex justify-center">
-          <Logo size={44} tagline />
+          <Logo size={56} tagline />
         </div>
         <p className="mb-6 text-center text-sm text-muted2">
           Connexion à la gestion des commandes

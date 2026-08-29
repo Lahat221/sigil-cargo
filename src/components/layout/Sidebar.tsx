@@ -230,7 +230,7 @@ export function Sidebar({
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-6">
           <Link href={accueilHref} className="transition-opacity hover:opacity-80">
-            <Logo tagline />
+            <Logo size={44} tagline />
           </Link>
           <button
             type="button"

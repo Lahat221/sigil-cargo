@@ -7,15 +7,17 @@ import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND 
 export function LogoMark({ size = 32 }: { size?: number }) {
   if (BRAND.slug !== "sigil-cargo") {
     if (!BRAND.logoImagePath) return null;
+    // Le fichier logo fourni est un large lock-up horizontal (symbole +
+    // texte), pas une icône carrée : on le contraint par hauteur seule
+    // (largeur libre) pour qu'il ne soit jamais écrasé dans une case carrée
+    // minuscule comme le mark SVG de SIGIL.
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={BRAND.logoImagePath}
         alt={BRAND.nom}
-        width={size}
-        height={size}
-        className="shrink-0 rounded object-contain"
-        style={{ width: size, height: size }}
+        className="shrink-0 object-contain"
+        style={{ height: size, width: "auto" }}
       />
     );
   }
@@ -62,7 +64,10 @@ export function Logo({
     <div className="flex items-center gap-3">
       <LogoMark size={size} />
       <div className="leading-none">
-        <div className="text-lg font-extrabold tracking-wide text-ink">
+        {/* Le logo est toujours affiché sur un fond sombre (sidebar ou
+            carte de login bg-navy-2), quel que soit le tenant — texte
+            volontairement fixe en blanc, pas theme-aware (text-ink). */}
+        <div className="text-lg font-extrabold tracking-wide text-white">
           {premier}
           {suite && <span className="font-semibold text-gold-1"> {suite}</span>}
         </div>
