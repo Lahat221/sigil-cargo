@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { resolveClientId } from "@/lib/commandes/resolveClient";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import type { StatutCommande } from "@/types/database.types";
+import { BRAND } from "@/lib/brand";
 
 export async function changerStatut(
   commandeId: string,
@@ -94,7 +95,7 @@ const TEMPLATE_COMMANDE_PRETE_SID = "HX1c2dc12ebe5ffa069883940e2ab6f52f";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
-  currency: "EUR",
+  currency: BRAND.devise,
 });
 
 export async function envoyerNotificationCommande(

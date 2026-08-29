@@ -3,12 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { SupprimerChargeButton } from "@/components/charges/SupprimerChargeButton";
 import { ProjetFilterSelect } from "@/components/commandes/ProjetFilterSelect";
 import { IconFileText, IconInvoice, IconPencil, IconPlus } from "@/components/ui/Icons";
+import { BRAND } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
-  currency: "EUR",
+  currency: BRAND.devise,
 });
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
 

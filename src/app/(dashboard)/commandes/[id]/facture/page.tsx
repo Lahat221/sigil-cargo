@@ -6,9 +6,15 @@ import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND 
 
 export const dynamic = "force-dynamic";
 
-function formatMontant(valeur: number): string {
-  return valeur.toFixed(2);
-}
+// Intl.NumberFormat applique automatiquement les bonnes conventions par
+// devise (2 décimales + symbole "€" pour l'euro, 0 décimale + "F CFA" pour
+// le XOF) — remplace l'ancien formatage manuel (.toFixed(2) + " EUR" en dur)
+// qui ne fonctionnait que pour SIGIL CARGO.
+const montantFormatter = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: BRAND.devise,
+});
+const LABEL_DEVISE = BRAND.devise === "XOF" ? "Franc CFA" : "Euro";
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
 
 // Identité + couleurs de l'exportateur telles qu'imprimées sur la facture
@@ -118,10 +124,10 @@ export default async function FactureCommandePage({
                 <th className="py-2 font-semibold">Produit</th>
                 <th className="py-2 text-right font-semibold">Poids (kg)</th>
                 <th className="py-2 text-right font-semibold">
-                  Valeur unitaire en Euro
+                  Valeur unitaire en {LABEL_DEVISE}
                 </th>
                 <th className="py-2 text-right font-semibold">
-                  Valeur totale en Euro
+                  Valeur totale en {LABEL_DEVISE}
                 </th>
               </tr>
             </thead>
@@ -134,10 +140,10 @@ export default async function FactureCommandePage({
                   {commande.poids_kg}
                 </td>
                 <td className="py-2 text-right text-slate-700">
-                  {formatMontant(commande.prix_par_kg)}
+                  {montantFormatter.format(commande.prix_par_kg)}
                 </td>
                 <td className="py-2 text-right font-medium text-slate-900">
-                  {formatMontant(commande.montant_total)}
+                  {montantFormatter.format(commande.montant_total)}
                 </td>
               </tr>
             </tbody>
@@ -148,7 +154,7 @@ export default async function FactureCommandePage({
               className="rounded-md px-4 py-2 text-sm font-bold"
               style={{ backgroundColor: `${VERT}14`, color: VERT }}
             >
-              TOTAL FACTURE : {formatMontant(commande.montant_total)} EUR
+              TOTAL FACTURE : {montantFormatter.format(commande.montant_total)}
             </p>
           </div>
 

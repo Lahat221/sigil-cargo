@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
-  currency: "EUR",
+  currency: BRAND.devise,
 });
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
   dateStyle: "medium",

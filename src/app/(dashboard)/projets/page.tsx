@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { SupprimerProjetButton } from "@/components/projets/SupprimerProjetButton";
 import { IconFolder, IconPencil, IconPlus } from "@/components/ui/Icons";
+import { BRAND } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ const STATUT_LABELS: Record<string, string> = {
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
-  currency: "EUR",
+  currency: BRAND.devise,
 });
 
 export default async function ProjetsPage() {

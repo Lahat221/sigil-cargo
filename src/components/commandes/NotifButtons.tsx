@@ -7,7 +7,7 @@ import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND 
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
-  currency: "EUR",
+  currency: BRAND.devise,
 });
 
 function formatNumeroWhatsApp(

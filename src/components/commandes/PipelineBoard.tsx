@@ -7,6 +7,7 @@ import { changerStatut } from "@/app/(dashboard)/commandes/actions";
 import { STATUT_LABELS } from "./StatutBadge";
 import type { StatutCommande } from "@/types/database.types";
 import type { CommandeListItem } from "./types";
+import { BRAND } from "@/lib/brand";
 
 const COLONNES: StatutCommande[] = [
   "recue",
@@ -19,7 +20,7 @@ const COLONNES: StatutCommande[] = [
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
-  currency: "EUR",
+  currency: BRAND.devise,
 });
 
 export function PipelineBoard({

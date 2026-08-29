@@ -7,12 +7,13 @@ import { createCommande } from "@/app/(dashboard)/commandes/nouvelle/actions";
 import { ClientField, type ClientSelection } from "./ClientField";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 import { VideoPreviewList } from "./VideoPreviewList";
+import { BRAND } from "@/lib/brand";
 
 const MAX_PHOTOS = 5;
 const MAX_VIDEOS = 4;
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
-  currency: "EUR",
+  currency: BRAND.devise,
 });
 
 type Produit = { id: string; nom: string; prix_par_kg: number };

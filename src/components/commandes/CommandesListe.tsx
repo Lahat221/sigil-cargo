@@ -6,10 +6,11 @@ import { StatutBadge } from "./StatutBadge";
 import { SupprimerCommandeButton } from "./SupprimerCommandeButton";
 import { NotifButtons } from "./NotifButtons";
 import type { CommandeListItem } from "./types";
+import { BRAND } from "@/lib/brand";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
-  currency: "EUR",
+  currency: BRAND.devise,
 });
 
 function formatPoids(poids: number) {

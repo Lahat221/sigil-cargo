@@ -9,6 +9,14 @@ export type BrandConfig = {
   slug: string;
   nom: string;
   tagline: string;
+  // Code devise ISO 4217 utilisé par Intl.NumberFormat pour tous les
+  // montants (devis, commandes, factures) — SIGIL CARGO facture en euros
+  // (destination France), M.N Logistics Cargo en franc CFA (Sénégal).
+  devise: string;
+  // Le module "groupage conteneur" (tarification au m³, en plus du fret
+  // aérien classique tarifé au kg) n'a de sens que pour un tenant qui fait
+  // du fret maritime/groupage — désactivé par défaut.
+  modeGroupageConteneurActif: boolean;
   couleurs: {
     navy: string;
     navy2: string;
@@ -82,6 +90,8 @@ const SIGIL_CARGO: BrandConfig = {
   slug: "sigil-cargo",
   nom: "SIGIL CARGO",
   tagline: "Rapide · Fiable · Sûre",
+  devise: "EUR",
+  modeGroupageConteneurActif: false,
   couleurs: {
     navy: "#0A1A33",
     navy2: "#0E2547",
@@ -147,6 +157,8 @@ const AMI_CHINE_DAKAR: BrandConfig = {
   slug: "ami-chine-dakar",
   nom: "M.N Logistics Cargo",
   tagline: "Rapide · Fiable · Sûre",
+  devise: "XOF",
+  modeGroupageConteneurActif: true,
   couleurs: {
     navy: "#202639",
     navy2: "#262C42",
