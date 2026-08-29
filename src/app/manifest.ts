@@ -12,7 +12,10 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: BRAND.couleurs.navy,
     icons: [
       {
-        src: "/icon.svg",
+        // Route dynamique (src/app/icon.tsx) recolorée par tenant — plus un
+        // fichier statique figé sur les couleurs SIGIL, d'où le chemin sans
+        // extension (c'est ainsi que Next.js sert une icône générée).
+        src: "/icon",
         sizes: "any",
         type: "image/svg+xml",
         purpose: "any",

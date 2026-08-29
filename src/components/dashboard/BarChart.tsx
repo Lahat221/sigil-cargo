@@ -51,9 +51,7 @@ export function BarChart({
           const y = CHART_HEIGHT - barHeight;
           return (
             <g key={i}>
-              <title>
-                {d.label} — {formatValue(d.value)}
-              </title>
+              <title>{`${d.label} — ${formatValue(d.value)}`}</title>
               <rect
                 x={x}
                 y={y}

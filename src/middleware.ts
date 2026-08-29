@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest", "/api/twilio"];
+// /icon : route dynamique (src/app/icon.tsx, recolorée par tenant) — sans
+// extension dans son URL, elle ne correspond plus au filtre d'assets
+// statiques du matcher ci-dessous (qui exclut .svg/.png/...), donc elle doit
+// être listée ici explicitement pour rester accessible sans connexion
+// (sinon le favicon/icône PWA redirige vers /login pour un visiteur non
+// authentifié, au lieu de s'afficher).
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest", "/api/twilio", "/icon"];
 
 function moduleSlug(pathname: string) {
   return pathname.split("/")[1] || null;
