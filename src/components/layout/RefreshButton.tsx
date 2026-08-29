@@ -23,7 +23,7 @@ export function RefreshButton() {
       onClick={handleClick}
       title="Actualiser les données"
       aria-label="Actualiser les données"
-      className="flex items-center gap-1.5 rounded-md border border-white/20 px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/10 disabled:opacity-50"
+      className="flex items-center gap-1.5 rounded-md border border-ink-overlay px-3 py-1.5 text-sm text-ink-muted transition-colors hover:bg-ink-overlay disabled:opacity-50"
     >
       <IconRefresh size={14} className={isPending ? "animate-spin" : undefined} />
       <span className="hidden sm:inline">

@@ -33,16 +33,16 @@ export default async function VueEnsembleDouanePage({
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-white">Vue d&apos;ensemble</h1>
-          {nomProjet && <p className="text-sm text-white/60">{nomProjet}</p>}
+          <h1 className="text-xl font-bold text-ink">Vue d&apos;ensemble</h1>
+          {nomProjet && <p className="text-sm text-ink-muted">{nomProjet}</p>}
         </div>
         <ExportDouaneButton lignes={toutesLesLignes} />
       </div>
 
       {filtreHsIncertain && (
-        <div className="mb-3 flex items-center gap-2 text-sm text-white/70">
+        <div className="mb-3 flex items-center gap-2 text-sm text-ink-muted">
           <span>
-            Filtré : <span className="font-medium text-white">HS à vérifier</span> ({lignes.length})
+            Filtré : <span className="font-medium text-ink">HS à vérifier</span> ({lignes.length})
           </span>
           <Link href={`/gestion-douaniere/vue-ensemble?projet=${projetId}`} className="text-gold-2 hover:underline">
             Effacer le filtre

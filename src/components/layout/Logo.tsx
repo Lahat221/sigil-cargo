@@ -62,7 +62,7 @@ export function Logo({
     <div className="flex items-center gap-3">
       <LogoMark size={size} />
       <div className="leading-none">
-        <div className="text-lg font-extrabold tracking-wide text-white">
+        <div className="text-lg font-extrabold tracking-wide text-ink">
           {premier}
           {suite && <span className="font-semibold text-gold-1"> {suite}</span>}
         </div>

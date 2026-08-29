@@ -50,7 +50,7 @@ export default async function ChargesDepensesPage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-white">Charges & Dépenses</h1>
+        <h1 className="text-xl font-bold text-ink">Charges & Dépenses</h1>
         <Link
           href="/charges-depenses/nouveau"
           className="flex items-center gap-1.5 rounded-lg bg-gold-gradient px-4 py-1.5 text-sm font-semibold text-navy shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:brightness-105"

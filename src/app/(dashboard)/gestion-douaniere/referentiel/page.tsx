@@ -14,8 +14,8 @@ export default async function ReferentielPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="mb-4 text-xl font-bold text-white">Référentiel produits</h1>
-      <p className="mb-4 text-sm text-white/60">
+      <h1 className="mb-4 text-xl font-bold text-ink">Référentiel produits</h1>
+      <p className="mb-4 text-sm text-ink-muted">
         Les correspondances trouvées ici sont proposées en priorité à l&apos;IA avant qu&apos;elle
         n&apos;improvise une classification. Les codes HS non renseignés seront proposés par l&apos;IA
         au cas par cas et resteront à vérifier.

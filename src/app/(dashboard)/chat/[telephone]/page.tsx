@@ -47,12 +47,12 @@ export default async function ConversationPage({
     <div className="flex h-[calc(100vh-8rem)] flex-col">
       <Link
         href="/chat"
-        className="mb-4 inline-block text-sm text-white/60 hover:text-white"
+        className="mb-4 inline-block text-sm text-ink-muted hover:text-ink"
       >
         ← Retour aux conversations
       </Link>
 
-      <h1 className="mb-4 text-xl font-bold text-white">
+      <h1 className="mb-4 text-xl font-bold text-ink">
         {nom ?? telephone}
       </h1>
 

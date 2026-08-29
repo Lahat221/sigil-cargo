@@ -23,6 +23,17 @@ export type BrandConfig = {
     gradientNavyA: string;
     gradientNavyB: string;
     gradientNavyC: string;
+    // Fond de la zone de contenu du tableau de bord (distinct de la
+    // sidebar, qui reste toujours navy-gradient) + couleur du texte
+    // "principal" sur ce fond. Par défaut = mêmes valeurs que le navy
+    // (thème sombre inchangé) ; un tenant à fond de page clair (ex. M.N
+    // Logistics Cargo) les surcharge.
+    pageGradientA: string;
+    pageGradientB: string;
+    pageGradientC: string;
+    ink: string;
+    inkMuted: string;
+    inkOverlay: string;
   };
   // Le module Dédouanement France (HS parapluie, REX, TVA FR, LTA...) est
   // spécifique aux règles douanières françaises — n'a pas de sens pour un
@@ -85,6 +96,12 @@ const SIGIL_CARGO: BrandConfig = {
     gradientNavyA: "#12326B",
     gradientNavyB: "#0E2547",
     gradientNavyC: "#0A1A33",
+    pageGradientA: "#12326B",
+    pageGradientB: "#0E2547",
+    pageGradientC: "#0A1A33",
+    ink: "#FFFFFF",
+    inkMuted: "#FFFFFF99",
+    inkOverlay: "#FFFFFF1A",
   },
   moduleFranceActif: true,
   logoImagePath: null,
@@ -145,6 +162,17 @@ const AMI_CHINE_DAKAR: BrandConfig = {
     gradientNavyA: "#2C3350",
     gradientNavyB: "#262C42",
     gradientNavyC: "#202639",
+    // Fond de page orange clair (demandé explicitement) — dégradé doux du
+    // blanc cassé/or clair vers un bronze clair, texte en brun très foncé
+    // pour rester lisible. La sidebar reste bleu nuit (gradientNavyA/B/C
+    // ci-dessus, inchangés) : le bleu nuit du brief reste "secondaire",
+    // cantonné à cette zone et au symbole du logo.
+    pageGradientA: "#FBF3E7",
+    pageGradientB: "#F3DFC0",
+    pageGradientC: "#E8C9A0",
+    ink: "#2B1D12",
+    inkMuted: "#6B4A2ECC",
+    inkOverlay: "#2B1D121A",
   },
   moduleFranceActif: false,
   logoImagePath: "/mn-logistics-logo.jpeg",

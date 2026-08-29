@@ -14,10 +14,10 @@ export default async function NouvelleChargePage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-white">Nouvelle charge</h1>
+        <h1 className="text-xl font-bold text-ink">Nouvelle charge</h1>
         <Link
           href="/charges-depenses"
-          className="text-sm text-white/60 hover:text-white"
+          className="text-sm text-ink-muted hover:text-ink"
         >
           ← Retour à la liste
         </Link>

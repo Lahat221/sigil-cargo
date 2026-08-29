@@ -56,7 +56,7 @@ export default async function DedouanementFrancePage({
 
   return (
     <div className="max-w-5xl">
-      <h1 className="mb-4 text-xl font-bold text-white">Dédouanement France</h1>
+      <h1 className="mb-4 text-xl font-bold text-ink">Dédouanement France</h1>
 
       {!projetId ? (
         <p className="rounded-xl border border-slate-200/70 bg-white p-4 text-sm text-slate-500 shadow-sm">

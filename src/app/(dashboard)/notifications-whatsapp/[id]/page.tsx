@@ -49,15 +49,15 @@ export default async function CampagnePage({
     <div>
       <Link
         href="/notifications-whatsapp"
-        className="mb-4 inline-block text-sm text-white/60 hover:text-white"
+        className="mb-4 inline-block text-sm text-ink-muted hover:text-ink"
       >
         ← Retour aux campagnes
       </Link>
 
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">{campagne.nom}</h1>
-          <p className="text-sm text-white/60">
+          <h1 className="text-xl font-bold text-ink">{campagne.nom}</h1>
+          <p className="text-sm text-ink-muted">
             {envoyes}/{total} envoyé(s)
           </p>
         </div>

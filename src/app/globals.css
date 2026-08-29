@@ -21,6 +21,17 @@
   --color-navy-gradient-a: #12326b;
   --color-navy-gradient-b: #0e2547;
   --color-navy-gradient-c: #0a1a33;
+
+  /* Fond de la zone de contenu (distinct de la sidebar) et couleur de texte
+     "principal" sur ce fond — par défaut identiques au fond navy pour que
+     SIGIL CARGO garde son thème sombre inchangé. Un tenant à fond clair
+     (ex. M.N Logistics Cargo) surcharge ces 5 variables dans layout.tsx. */
+  --color-page-gradient-a: var(--color-navy-gradient-a);
+  --color-page-gradient-b: var(--color-navy-gradient-b);
+  --color-page-gradient-c: var(--color-navy-gradient-c);
+  --color-ink: #ffffff;
+  --color-ink-muted: #ffffff99;
+  --color-ink-overlay: #ffffff1a;
 }
 
 body {

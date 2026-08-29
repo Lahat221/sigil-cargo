@@ -50,6 +50,12 @@ const brandStyle = `:root {
   --color-navy-gradient-a: ${BRAND.couleurs.gradientNavyA};
   --color-navy-gradient-b: ${BRAND.couleurs.gradientNavyB};
   --color-navy-gradient-c: ${BRAND.couleurs.gradientNavyC};
+  --color-page-gradient-a: ${BRAND.couleurs.pageGradientA};
+  --color-page-gradient-b: ${BRAND.couleurs.pageGradientB};
+  --color-page-gradient-c: ${BRAND.couleurs.pageGradientC};
+  --color-ink: ${BRAND.couleurs.ink};
+  --color-ink-muted: ${BRAND.couleurs.inkMuted};
+  --color-ink-overlay: ${BRAND.couleurs.inkOverlay};
 }`;
 
 export default function RootLayout({

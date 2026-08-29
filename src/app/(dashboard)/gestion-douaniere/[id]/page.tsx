@@ -84,14 +84,14 @@ export default async function DetailDouanePage({ params }: { params: { id: strin
     <div className="max-w-4xl">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-white">Colis #{colis.numero}</h1>
-          <p className="text-sm text-white/60">
+          <h1 className="text-2xl font-bold text-ink">Colis #{colis.numero}</h1>
+          <p className="text-sm text-ink-muted">
             {colis.clients?.nom ?? "—"}
             {colis.clients?.telephone && ` · ${colis.clients.telephone}`} · {colis.poids_kg} kg
           </p>
         </div>
         {extraction && (
-          <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-white/80">
+          <span className="rounded-full bg-ink-overlay px-3 py-1 text-sm text-ink-muted">
             {STATUT_DOUANE_LABELS[extraction.statut]} · v{extraction.version}
           </span>
         )}

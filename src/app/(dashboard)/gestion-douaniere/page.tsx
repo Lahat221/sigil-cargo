@@ -118,7 +118,7 @@ export default async function GestionDouanierePage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-white">Colis du départ</h1>
+        <h1 className="text-xl font-bold text-ink">Colis du départ</h1>
         <ExportDouaneButton lignes={lignesExport} />
       </div>
 
@@ -159,9 +159,9 @@ export default async function GestionDouanierePage({
           </div>
 
           {statutFiltre && (
-            <div className="mb-3 flex items-center gap-2 text-sm text-white/70">
+            <div className="mb-3 flex items-center gap-2 text-sm text-ink-muted">
               <span>
-                Filtré : <span className="font-medium text-white">{STATUT_DOUANE_LABELS[statutFiltre]}</span> (
+                Filtré : <span className="font-medium text-ink">{STATUT_DOUANE_LABELS[statutFiltre]}</span> (
                 {colisAffiches.length})
               </span>
               <Link href={`/gestion-douaniere?projet=${projetId}`} className="text-gold-2 hover:underline">

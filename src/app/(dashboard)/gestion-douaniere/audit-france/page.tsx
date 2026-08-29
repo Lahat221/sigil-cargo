@@ -41,12 +41,12 @@ export default async function AuditFrancePage({
   return (
     <div className="max-w-5xl">
       <div className="mb-4">
-        <h1 className="text-xl font-bold text-white">Audit France</h1>
-        {nomProjet && <p className="text-sm text-white/60">{nomProjet}</p>}
+        <h1 className="text-xl font-bold text-ink">Audit France</h1>
+        {nomProjet && <p className="text-sm text-ink-muted">{nomProjet}</p>}
       </div>
 
       {historiqueAudits.length === 0 && (
-        <p className="mb-4 text-sm text-white/60">
+        <p className="mb-4 text-sm text-ink-muted">
           Aucun audit encore lancé pour ce départ. Vérifie d&apos;abord que le MAWB et la date de vol
           sont renseignés sur{" "}
           <Link

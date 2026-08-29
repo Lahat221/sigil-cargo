@@ -35,12 +35,12 @@ export default async function PipelinePage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-white">
+        <h1 className="text-xl font-bold text-ink">
           Suivi de colis
         </h1>
         <Link
           href="/commandes"
-          className="text-sm text-white/60 hover:text-white"
+          className="text-sm text-ink-muted hover:text-ink"
         >
           ← Vue liste
         </Link>

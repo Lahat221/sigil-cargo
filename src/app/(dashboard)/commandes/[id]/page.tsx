@@ -104,17 +104,17 @@ export default async function CommandeDetailPage({
     <div className="max-w-3xl">
       <Link
         href="/commandes"
-        className="mb-4 inline-block text-sm text-white/60 hover:text-white"
+        className="mb-4 inline-block text-sm text-ink-muted hover:text-ink"
       >
         ← Retour à la liste
       </Link>
 
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-ink">
             Colis #{commande.numero}
           </h1>
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-ink-muted">
             {commande.clients?.nom ?? "—"}
             {commande.clients?.telephone && ` · ${commande.clients.telephone}`}
           </p>

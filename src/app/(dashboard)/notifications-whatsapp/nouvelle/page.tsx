@@ -14,10 +14,10 @@ export default async function NouvelleCampagnePage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-white">Nouvelle campagne</h1>
+        <h1 className="text-xl font-bold text-ink">Nouvelle campagne</h1>
         <Link
           href="/notifications-whatsapp"
-          className="text-sm text-white/60 hover:text-white"
+          className="text-sm text-ink-muted hover:text-ink"
         >
           ← Retour à la liste
         </Link>

@@ -32,7 +32,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-navy-gradient">
+    <div className="flex min-h-screen bg-page-gradient">
       <div className="print:hidden">
         <Sidebar modulesAutorises={modulesAutorises} />
       </div>
@@ -42,7 +42,7 @@ export default async function DashboardLayout({
           <div className="flex items-center justify-end px-4 py-3 sm:px-6">
             <div className="flex items-center gap-4">
               {user && (
-                <span className="hidden text-sm text-white/60 sm:inline">
+                <span className="hidden text-sm text-ink-muted sm:inline">
                   {user.email}
                 </span>
               )}
@@ -50,7 +50,7 @@ export default async function DashboardLayout({
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 rounded-md border border-white/20 px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/10"
+                  className="flex items-center gap-1.5 rounded-md border border-ink-overlay px-3 py-1.5 text-sm text-ink-muted transition-colors hover:bg-ink-overlay"
                 >
                   <IconLogout size={14} />
                   Déconnexion

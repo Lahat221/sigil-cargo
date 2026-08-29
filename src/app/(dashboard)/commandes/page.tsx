@@ -78,12 +78,12 @@ export default async function CommandesPage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-white">Colis</h1>
+        <h1 className="text-xl font-bold text-ink">Colis</h1>
         <div className="flex flex-wrap gap-2">
           <ActualiserButton />
           <Link
             href="/commandes/pipeline"
-            className="flex items-center gap-1.5 rounded-md border border-white/25 px-3 py-1.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10"
+            className="flex items-center gap-1.5 rounded-md border border-ink-overlay px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-ink-overlay"
           >
             <IconGrid size={15} />
             Suivi de colis

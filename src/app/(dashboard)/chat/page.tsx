@@ -53,7 +53,7 @@ export default async function ChatPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-bold text-white">Chat</h1>
+      <h1 className="mb-4 text-xl font-bold text-ink">Chat</h1>
 
       <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
         {liste.length === 0 ? (
