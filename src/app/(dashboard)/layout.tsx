@@ -5,6 +5,10 @@ import { RefreshButton } from "@/components/layout/RefreshButton";
 import { IconLogout } from "@/components/ui/Icons";
 import { signOut } from "./actions";
 
+// Même précaution que le layout racine (voir src/app/layout.tsx) : garantit
+// que le Sidebar (qui affiche BRAND.nom) est réévalué à chaque requête.
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children,
 }: {
