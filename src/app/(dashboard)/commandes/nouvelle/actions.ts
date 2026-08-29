@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { resolveClientId } from "@/lib/commandes/resolveClient";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export type ClientMatch = {
   id: string;
@@ -69,7 +70,7 @@ export async function createCommande(
     return { error: "Produit introuvable." };
   }
 
-  const codeBarreColis = `SIGIL-${input.commandeId.split("-")[0].toUpperCase()}`;
+  const codeBarreColis = `${BRAND.nom.split(" ")[0].toUpperCase()}-${input.commandeId.split("-")[0].toUpperCase()}`;
 
   const { error: insertError } = await supabase.from("commandes").insert({
     id: input.commandeId,

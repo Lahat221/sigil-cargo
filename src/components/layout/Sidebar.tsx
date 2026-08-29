@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 import {
   IconDashboard,
   IconStore,
@@ -286,7 +287,7 @@ export function Sidebar({
         </nav>
 
         <div className="border-t border-line px-5 py-3 text-center text-[10px] text-white/30">
-          SIGIL v2.0
+          {BRAND.nom.split(" ")[0]} v2.0
         </div>
       </aside>
     </>

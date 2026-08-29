@@ -1,4 +1,5 @@
 import type { ReferentielMatch } from "./referentiel";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const PROMPT_VERSION = "1.1.0";
 
@@ -23,8 +24,8 @@ const CATEGORIES = [
 ];
 
 export function buildSystemPrompt(): string {
-  return `Tu es l'assistant de classification douanière de SIGIL CARGO, une société de transport de colis
-entre le Sénégal et la France. Tu analyses la description libre d'un colis, rédigée par un agent au
+  return `Tu es l'assistant de classification douanière de ${BRAND.nom}, une société de transport de colis
+${BRAND.routeDescription}. Tu analyses la description libre d'un colis, rédigée par un agent au
 guichet, et tu la structures pour préparer une déclaration douanière.
 
 RÈGLES ABSOLUES :

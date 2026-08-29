@@ -1,29 +1,32 @@
 import ExcelJS from "exceljs";
 import type { LigneVueEnsemble } from "./vueEnsemble";
 import { SECTIONS_DECLARATION, regrouperParSection } from "./sections";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
-// Coordonnées fixes de l'expéditeur (Sénégal) et du destinataire (France) —
-// identiques sur chaque départ, reprises du modèle de déclaration fourni
-// par l'utilisateur pour son transitaire à Dakar.
-const EXPEDITEUR_NOM = "Aminata MBAYE";
-const EXPEDITEUR_ADRESSE = "Pikine  Djidah Thiaroye, Dakar Senegal";
-const EXPEDITEUR_TEL = "+221 77 970 49 23  -  +221 77 271 65 25";
-
-const DESTINATAIRE_NOM = "Abdou Lahat MBAYE";
-const DESTINATAIRE_SIRET = "10216746700012";
-const DESTINATAIRE_EORI = "FR10216746700012";
-const DESTINATAIRE_ADRESSE = "37 Rue Docteur Rollet 69100, Villeurbanne";
-const DESTINATAIRE_TEL = "+33 06 95 81 11 29";
-const DESTINATAIRE_EMAIL = "lahat221@gmail.com";
+// Coordonnées de l'expéditeur/destinataire — identiques sur chaque départ,
+// reprises du modèle de déclaration fourni par l'utilisateur. Une valeur
+// par tenant (voir src/lib/brand.ts) : le sens du flux change selon la
+// route (SIGIL = Dakar→France, un autre tenant peut être inversé).
+const { expediteurNom: EXPEDITEUR_NOM, expediteurAdresse: EXPEDITEUR_ADRESSE, expediteurTel: EXPEDITEUR_TEL } =
+  BRAND.identite;
+const {
+  destinataireNom: DESTINATAIRE_NOM,
+  destinataireSiret: DESTINATAIRE_SIRET,
+  destinataireEori: DESTINATAIRE_EORI,
+  destinataireAdresse: DESTINATAIRE_ADRESSE,
+  destinataireTel: DESTINATAIRE_TEL,
+  destinataireEmail: DESTINATAIRE_EMAIL,
+} = BRAND.identite;
 
 const NOTE_BAS_DE_PAGE =
   "NB : Concernant les vêtements et autres produits, ceux-ci ne disposent pas de facture car la plupart sont déjà utilisés ou de type traditionnel. Un inventaire chiffré a donc été établi afin d'en estimer la valeur.";
 
-// Couleurs de la marque SIGIL CARGO (navy + or), reprises du reste de
-// l'application plutôt que d'un jaune Excel générique.
-const NAVY = "FF0A1A33";
-const GOLD = "FFD3A238";
-const GOLD_LIGHT = "FFF3CE63";
+// Couleurs de la marque active (voir src/lib/brand.ts), reprises du reste
+// de l'application plutôt que d'un jaune Excel générique.
+const argb = (hex: string) => `FF${hex.replace("#", "")}`;
+const NAVY = argb(BRAND.couleurs.navy);
+const GOLD = argb(BRAND.couleurs.gold2);
+const GOLD_LIGHT = argb(BRAND.couleurs.gold1);
 const WHITE = "FFFFFFFF";
 
 const FOND_NAVY: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
@@ -65,7 +68,7 @@ export async function genererDeclarationBuffer(
 
   ws.mergeCells("A1:H1");
   const titre = ws.getCell("A1");
-  titre.value = "SIGIL CARGO — DÉCLARATION DE MARCHANDISE";
+  titre.value = `${BRAND.nom} — DÉCLARATION DE MARCHANDISE`;
   titre.font = { bold: true, size: 16, color: { argb: WHITE } };
   titre.alignment = { horizontal: "center", vertical: "middle" };
   titre.fill = FOND_NAVY;
@@ -96,7 +99,7 @@ export async function genererDeclarationBuffer(
   for (let r = 2; r <= 10; r++) {
     ws.getRow(r).eachCell((cell) => {
       cell.border = BORDURE_BASSE;
-      cell.font = { bold: r === 2 || r === 5, color: { argb: "FF0A1A33" } };
+      cell.font = { bold: r === 2 || r === 5, color: { argb: NAVY } };
     });
   }
 
@@ -166,7 +169,7 @@ export async function genererDeclarationBuffer(
     const celluleValeur = ws.getCell(`H${debutSection}`);
     const valeur = valeursParSection[section.cle];
     if (valeur != null) celluleValeur.value = valeur;
-    celluleValeur.font = { bold: true, color: { argb: "FF0A1A33" } };
+    celluleValeur.font = { bold: true, color: { argb: NAVY } };
     celluleValeur.fill = FOND_OR_CLAIR;
     celluleValeur.alignment = { horizontal: "center", vertical: "middle" };
     celluleValeur.numFmt = '#,##0" FCFA"';
@@ -193,13 +196,13 @@ export async function genererDeclarationBuffer(
 
   const lignePoidsTotal = ligneTotal + 1;
   ws.getCell(`G${lignePoidsTotal}`).value = "POIDS TOTAL";
-  ws.getCell(`G${lignePoidsTotal}`).font = { bold: true, size: 12, color: { argb: "FF0A1A33" } };
+  ws.getCell(`G${lignePoidsTotal}`).font = { bold: true, size: 12, color: { argb: NAVY } };
   ws.getCell(`G${lignePoidsTotal}`).fill = FOND_OR;
   ws.getCell(`G${lignePoidsTotal}`).alignment = { horizontal: "center" };
   ws.getCell(`G${lignePoidsTotal}`).border = BORDURE_BASSE;
   const cellulePoidsTotal = ws.getCell(`H${lignePoidsTotal}`);
   cellulePoidsTotal.value = poidsCellRefs.length > 0 ? { formula: poidsCellRefs.join("+") } : 0;
-  cellulePoidsTotal.font = { bold: true, size: 12, color: { argb: "FF0A1A33" } };
+  cellulePoidsTotal.font = { bold: true, size: 12, color: { argb: NAVY } };
   cellulePoidsTotal.fill = FOND_OR;
   cellulePoidsTotal.alignment = { horizontal: "center" };
   cellulePoidsTotal.numFmt = '0.00" KG"';

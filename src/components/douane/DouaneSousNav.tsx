@@ -3,15 +3,25 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { IconPackage, IconGrid, IconFileText, IconTruck, IconBell, IconFolder } from "@/components/ui/Icons";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
-const ONGLETS = [
-  { href: "/gestion-douaniere", label: "Colis", icon: IconPackage },
-  { href: "/gestion-douaniere/vue-ensemble", label: "Vue d'ensemble", icon: IconGrid },
-  { href: "/gestion-douaniere/declaration", label: "Déclaration", icon: IconFileText },
-  { href: "/gestion-douaniere/dedouanement-france", label: "Dédouanement France", icon: IconTruck },
-  { href: "/gestion-douaniere/audit-france", label: "Audit France", icon: IconBell },
-  { href: "/gestion-douaniere/referentiel", label: "Référentiel", icon: IconFolder },
+const TOUS_LES_ONGLETS = [
+  { href: "/gestion-douaniere", label: "Colis", icon: IconPackage, france: false },
+  { href: "/gestion-douaniere/vue-ensemble", label: "Vue d'ensemble", icon: IconGrid, france: false },
+  { href: "/gestion-douaniere/declaration", label: "Déclaration", icon: IconFileText, france: false },
+  {
+    href: "/gestion-douaniere/dedouanement-france",
+    label: "Dédouanement France",
+    icon: IconTruck,
+    france: true,
+  },
+  { href: "/gestion-douaniere/audit-france", label: "Audit France", icon: IconBell, france: true },
+  { href: "/gestion-douaniere/referentiel", label: "Référentiel", icon: IconFolder, france: false },
 ];
+
+// Le module Dédouanement France (HS parapluie, REX, TVA FR...) n'a de sens
+// que pour un tenant qui exporte vers la France — voir src/lib/brand.ts.
+const ONGLETS = TOUS_LES_ONGLETS.filter((o) => !o.france || BRAND.moduleFranceActif);
 
 export function DouaneSousNav() {
   const pathname = usePathname();

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { envoyerNotificationCommande } from "@/app/(dashboard)/commandes/actions";
 import { IconWhatsApp } from "@/components/ui/Icons";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -83,7 +84,7 @@ export function NotifButtons({
         onClick={() =>
           envoyer(
             "recue",
-            `Bonjour ${clientNom}, nous avons bien reçu votre colis #${numero} chez SIGIL CARGO (${poidsKg} kg, ${montantFormatter.format(montantTotal)})${description?.trim() ? ` : ${description.trim()}` : ""}. Merci !`
+            `Bonjour ${clientNom}, nous avons bien reçu votre colis #${numero} chez ${BRAND.nom} (${poidsKg} kg, ${montantFormatter.format(montantTotal)})${description?.trim() ? ` : ${description.trim()}` : ""}. Merci !`
           )
         }
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50"
@@ -97,7 +98,7 @@ export function NotifButtons({
         onClick={() =>
           envoyer(
             "prete",
-            `Bonjour ${clientNom}, votre colis #${numero} est prêt pour le retrait chez SIGIL CARGO. À bientôt !`
+            `Bonjour ${clientNom}, votre colis #${numero} est prêt pour le retrait chez ${BRAND.nom}. À bientôt !`
           )
         }
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50"

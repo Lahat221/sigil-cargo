@@ -1,4 +1,25 @@
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
+
+// Marque vectorielle SIGIL CARGO — spécifique à ce tenant. Un autre tenant
+// avec son propre logo (fichier fourni, déposé dans /public et référencé
+// par BRAND.logoImagePath) affiche directement ce fichier ; sans fichier
+// fourni, le texte seul (dans Logo ci-dessous) sert de repli fonctionnel.
 export function LogoMark({ size = 32 }: { size?: number }) {
+  if (BRAND.slug !== "sigil-cargo") {
+    if (!BRAND.logoImagePath) return null;
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={BRAND.logoImagePath}
+        alt={BRAND.nom}
+        width={size}
+        height={size}
+        className="shrink-0 rounded object-contain"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   return (
     <svg width={size} height={size} viewBox="0 0 120 120" aria-hidden="true">
       <defs>
@@ -34,16 +55,20 @@ export function Logo({
   tagline?: boolean;
   size?: number;
 }) {
+  const [premier, ...reste] = BRAND.nom.split(" ");
+  const suite = reste.join(" ");
+
   return (
     <div className="flex items-center gap-3">
       <LogoMark size={size} />
       <div className="leading-none">
         <div className="text-lg font-extrabold tracking-wide text-white">
-          SIGIL<span className="font-semibold text-gold-1">CARGO</span>
+          {premier}
+          {suite && <span className="font-semibold text-gold-1"> {suite}</span>}
         </div>
         {tagline && (
           <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-gold-1">
-            Rapide · Fiable · Sûre
+            {BRAND.tagline}
           </div>
         )}
       </div>

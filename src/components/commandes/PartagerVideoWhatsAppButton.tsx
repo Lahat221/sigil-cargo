@@ -1,6 +1,7 @@
 "use client";
 
 import { IconWhatsApp } from "@/components/ui/Icons";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export function PartagerVideoWhatsAppButton({
   url,
@@ -10,7 +11,7 @@ export function PartagerVideoWhatsAppButton({
   numero: number;
 }) {
   function partager() {
-    const texte = `Voici la vidéo de votre colis #${numero} chez SIGIL CARGO : ${url}`;
+    const texte = `Voici la vidéo de votre colis #${numero} chez ${BRAND.nom} : ${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(texte)}`, "_blank");
   }
 

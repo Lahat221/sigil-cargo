@@ -4,18 +4,21 @@ import { regrouperParSection, poidsTotalUnique } from "@/lib/douane/sections";
 import { ValeurSectionInput } from "@/components/douane/ValeurSectionInput";
 import { DeclarationXlsxButton } from "@/components/douane/DeclarationXlsxButton";
 import { ValiderDeclarationButton } from "@/components/douane/ValiderDeclarationButton";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
 
-const EXPEDITEUR_NOM = "Aminata MBAYE";
-const EXPEDITEUR_ADRESSE = "Pikine  Djidah Thiaroye, Dakar Senegal";
-const EXPEDITEUR_TEL = "+221 77 970 49 23  -  +221 77 271 65 25";
-const DESTINATAIRE_NOM = "Abdou Lahat MBAYE";
-const DESTINATAIRE_SIRET = "10216746700012";
-const DESTINATAIRE_EORI = "FR10216746700012";
-const DESTINATAIRE_ADRESSE = "37 Rue Docteur Rollet 69100, Villeurbanne";
-const DESTINATAIRE_TEL = "+33 06 95 81 11 29";
-const DESTINATAIRE_EMAIL = "lahat221@gmail.com";
+const {
+  expediteurNom: EXPEDITEUR_NOM,
+  expediteurAdresse: EXPEDITEUR_ADRESSE,
+  expediteurTel: EXPEDITEUR_TEL,
+  destinataireNom: DESTINATAIRE_NOM,
+  destinataireSiret: DESTINATAIRE_SIRET,
+  destinataireEori: DESTINATAIRE_EORI,
+  destinataireAdresse: DESTINATAIRE_ADRESSE,
+  destinataireTel: DESTINATAIRE_TEL,
+  destinataireEmail: DESTINATAIRE_EMAIL,
+} = BRAND.identite;
 
 export default async function DeclarationPage({
   searchParams,
@@ -73,7 +76,7 @@ export default async function DeclarationPage({
           <div className="mb-6 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm">
             <div className="bg-navy px-5 py-3">
               <h1 className="text-center text-lg font-bold tracking-wide text-white">
-                SIGIL CARGO — DÉCLARATION DE MARCHANDISE
+                {BRAND.nom} — DÉCLARATION DE MARCHANDISE
               </h1>
             </div>
             <div className="grid grid-cols-1 gap-4 border-b border-slate-100 p-5 text-sm sm:grid-cols-2">

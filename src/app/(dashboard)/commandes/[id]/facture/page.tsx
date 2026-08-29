@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PrintButton } from "@/components/commandes/PrintButton";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
 
@@ -10,16 +11,19 @@ function formatMontant(valeur: number): string {
 }
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
 
-// Informations légales de l'exportateur (identiques sur toutes les factures).
-const EXPORTATEUR_NOM = "AMINATA MBAYE";
-const EXPORTATEUR_ADRESSE = "Djidah Thiaroye Kao, Dakar, Sénégal";
-const EXPORTATEUR_NINEA = "SN005845493";
-const EXPORTATEUR_REX = "SNREX1356ASX";
-const EXPORTATEUR_EMAIL = "Binet1801@gmail.com";
-
-// Couleurs de la marque COLLE AGRO, extraites du logo.
-const VERT = "#3C6E32";
-const TERRE = "#96461E";
+// Identité + couleurs de l'exportateur telles qu'imprimées sur la facture
+// (marque commerciale du tenant — distincte de l'identité douane/LTA).
+const {
+  nom: EXPORTATEUR_NOM,
+  adresse: EXPORTATEUR_ADRESSE,
+  ninea: EXPORTATEUR_NINEA,
+  rex: EXPORTATEUR_REX,
+  email: EXPORTATEUR_EMAIL,
+  couleurPrincipale: VERT,
+  couleurSecondaire: TERRE,
+  logoPath: LOGO_PATH,
+  cachetPath: CACHET_PATH,
+} = BRAND.factureExportateur;
 
 export default async function FactureCommandePage({
   params,
@@ -66,7 +70,7 @@ export default async function FactureCommandePage({
                 className="mb-4 text-xl font-bold"
                 style={{ color: VERT }}
               >
-                COLLE AGRO
+                {EXPORTATEUR_NOM}
               </h2>
               <div className="text-sm text-slate-700">
                 <p>Exportateur : {EXPORTATEUR_NOM}</p>
@@ -76,12 +80,14 @@ export default async function FactureCommandePage({
                 <p>Email : {EXPORTATEUR_EMAIL}</p>
               </div>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/colle-agro-logo.jpg"
-              alt="COLLE AGRO"
-              className="h-20 w-auto shrink-0 object-contain"
-            />
+            {LOGO_PATH && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={LOGO_PATH}
+                alt={EXPORTATEUR_NOM}
+                className="h-20 w-auto shrink-0 object-contain"
+              />
+            )}
           </div>
 
           <p
@@ -121,7 +127,9 @@ export default async function FactureCommandePage({
             </thead>
             <tbody>
               <tr className="border-b border-slate-100">
-                <td className="py-2 text-slate-900">Fret aérien SIGIL</td>
+                <td className="py-2 text-slate-900">
+                  Fret aérien {BRAND.nom.split(" ")[0]}
+                </td>
                 <td className="py-2 text-right text-slate-700">
                   {commande.poids_kg}
                 </td>
@@ -152,14 +160,16 @@ export default async function FactureCommandePage({
             {dateFormatter.format(new Date(commande.created_at))}
           </p>
 
-          <div className="mt-16 flex justify-center print:mt-24">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/colle-agro-cachet.jpg"
-              alt="Cachet COLLE AGRO"
-              className="h-24 w-auto object-contain"
-            />
-          </div>
+          {CACHET_PATH && (
+            <div className="mt-16 flex justify-center print:mt-24">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={CACHET_PATH}
+                alt={`Cachet ${EXPORTATEUR_NOM}`}
+                className="h-24 w-auto object-contain"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

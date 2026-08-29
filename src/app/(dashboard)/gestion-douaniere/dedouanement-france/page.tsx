@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { chargerLignesFrance } from "@/lib/dedouanement-france/lignesFrance";
 import { chargerResumeAuditFrance } from "./actions";
@@ -6,6 +7,7 @@ import { ExpeditionFranceForm } from "@/components/douane/ExpeditionFranceForm";
 import { ProduitsExclusionTable } from "@/components/douane/ProduitsExclusionTable";
 import { GenerationFranceSection } from "@/components/douane/GenerationFranceSection";
 import { IconBell } from "@/components/ui/Icons";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
 // Plan Pro + Fluid Compute autorise jusqu'à 800s — les générations France
@@ -18,6 +20,8 @@ export default async function DedouanementFrancePage({
 }: {
   searchParams: { projet?: string };
 }) {
+  if (!BRAND.moduleFranceActif) notFound();
+
   const supabase = createClient();
 
   const { data: projets } = await supabase

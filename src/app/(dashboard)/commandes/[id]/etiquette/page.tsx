@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PrintButton } from "@/components/commandes/PrintButton";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ export default async function EtiquetteCommandePage({
 
       <div className="etiquette rounded-lg border-2 border-slate-900 bg-white p-6 shadow-lg print:border-0 print:shadow-none">
         <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-          SIGIL CARGO
+          {BRAND.nom}
         </p>
 
         <h2 className="mb-4 break-words text-4xl font-extrabold leading-tight text-slate-900">

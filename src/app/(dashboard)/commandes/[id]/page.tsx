@@ -10,6 +10,7 @@ import { PartagerFichierButton } from "@/components/commandes/PartagerFichierBut
 import { PartagerVideoWhatsAppButton } from "@/components/commandes/PartagerVideoWhatsAppButton";
 import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
 
@@ -162,7 +163,7 @@ export default async function CommandeDetailPage({
           clientTelephone={commande.clients?.telephone ?? null}
           clientTelephonePays={commande.clients?.telephone_pays ?? null}
           texte={[
-            `Colis #${commande.numero} chez SIGIL CARGO`,
+            `Colis #${commande.numero} chez ${BRAND.nom}`,
             commande.projets?.nom ? `Projet : ${commande.projets.nom}` : null,
             `Poids : ${commande.poids_kg} kg`,
             `Montant : ${montantFormatter.format(commande.montant_total)}`,

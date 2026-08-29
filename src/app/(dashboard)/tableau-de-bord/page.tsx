@@ -4,6 +4,7 @@ import { StatutBadge, STATUT_LABELS } from "@/components/commandes/StatutBadge";
 import { DashboardFiltres } from "@/components/dashboard/DashboardFiltres";
 import { BarChart } from "@/components/dashboard/BarChart";
 import type { StatutCommande } from "@/types/database.types";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
 
@@ -173,7 +174,7 @@ export default async function TableauDeBordPage({
     <div>
       <h1 className="text-2xl font-bold text-white">Tableau de bord</h1>
       <p className="mb-6 text-sm text-white/60">
-        SIGIL CARGO · Vue d&apos;ensemble
+        {BRAND.nom} · Vue d&apos;ensemble
       </p>
 
       <DashboardFiltres projets={projets ?? []} />

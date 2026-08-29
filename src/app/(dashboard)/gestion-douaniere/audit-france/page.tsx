@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { chargerHistoriqueAuditsFrance } from "../dedouanement-france/actions";
 import { chargerLignesFrance } from "@/lib/dedouanement-france/lignesFrance";
 import { AuditReportPanel } from "@/components/douane/AuditReportPanel";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 600;
@@ -12,6 +14,8 @@ export default async function AuditFrancePage({
 }: {
   searchParams: { projet?: string };
 }) {
+  if (!BRAND.moduleFranceActif) notFound();
+
   const supabase = createClient();
 
   const { data: projets } = await supabase

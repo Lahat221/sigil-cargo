@@ -12,24 +12,25 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         navy: {
-          DEFAULT: "#0A1A33",
-          2: "#0E2547",
-          3: "#12326B",
+          DEFAULT: "var(--color-navy)",
+          2: "var(--color-navy-2)",
+          3: "var(--color-navy-3)",
         },
         gold: {
-          1: "#F3CE63",
-          2: "#D3A238",
+          1: "var(--color-gold-1)",
+          2: "var(--color-gold-2)",
         },
-        muted2: "#9FB2CC",
-        line: "#223960",
+        muted2: "var(--color-muted2)",
+        line: "var(--color-line)",
       },
       fontFamily: {
         sans: ["var(--font-montserrat)", "system-ui", "sans-serif"],
       },
       backgroundImage: {
-        "gold-gradient": "linear-gradient(160deg, #F7D97A, #EBBF52 55%, #C9962F)",
+        "gold-gradient":
+          "linear-gradient(160deg, var(--color-gold-gradient-a), var(--color-gold-gradient-b) 55%, var(--color-gold-gradient-c))",
         "navy-gradient":
-          "radial-gradient(120% 120% at 50% 0%, #12326B 0%, #0E2547 42%, #0A1A33 100%)",
+          "radial-gradient(120% 120% at 50% 0%, var(--color-navy-gradient-a) 0%, var(--color-navy-gradient-b) 42%, var(--color-navy-gradient-c) 100%)",
       },
     },
   },

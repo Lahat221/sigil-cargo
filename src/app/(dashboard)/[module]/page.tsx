@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { IconArrowRight } from "@/components/ui/Icons";
+import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 const MODULES: Record<string, string> = {
   publicites: "Publicités",
@@ -24,8 +25,8 @@ export default function ModuleBientotPage({
         </span>
         <h1 className="mb-2 text-xl font-bold text-navy">{label}</h1>
         <p className="mb-6 text-sm text-slate-500">
-          Ce module arrive dans une prochaine étape de la refonte SIGIL
-          CARGO — module par module.
+          Ce module arrive dans une prochaine étape de la refonte{" "}
+          {BRAND.nom} — module par module.
         </p>
         <Link
           href="/tableau-de-bord"

@@ -5,6 +5,22 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Valeurs par défaut (SIGIL CARGO) — surchargées par tenant dans
+     src/app/layout.tsx via src/lib/brand.ts. */
+  --color-navy: #0a1a33;
+  --color-navy-2: #0e2547;
+  --color-navy-3: #12326b;
+  --color-gold-1: #f3ce63;
+  --color-gold-2: #d3a238;
+  --color-muted2: #9fb2cc;
+  --color-line: #223960;
+  --color-gold-gradient-a: #f7d97a;
+  --color-gold-gradient-b: #ebbf52;
+  --color-gold-gradient-c: #c9962f;
+  --color-navy-gradient-a: #12326b;
+  --color-navy-gradient-b: #0e2547;
+  --color-navy-gradient-c: #0a1a33;
 }
 
 body {
