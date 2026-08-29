@@ -115,29 +115,36 @@ const SIGIL_CARGO: BrandConfig = {
 
 // M.N Logistics Cargo — logo reçu le 28/08/2026 (sunburst bronze sur
 // triangle navy, "MAWAAHIBOU NAAFIH" en sous-titre du mark). Couleurs
-// approximées à l'œil depuis le logo ; à ajuster si l'utilisateur a les
-// codes hexa exacts. Le slug "ami-chine-dakar" doit correspondre à la
-// valeur de NEXT_PUBLIC_BRAND réglée sur son déploiement Vercel. Sens du
-// flux inversé par rapport à SIGIL CARGO : expéditeur en Chine, destinataire
-// à Dakar.
+// Palette officielle communiquée par l'utilisateur (identité visuelle du
+// logo de référence) — luxe africain contemporain, dominante orange/bronze/
+// or, bleu nuit en couleur secondaire (utilisée ici pour les fonds sombres
+// de l'interface, cohérent avec "élément métallique bronze/or sur zone bleu
+// nuit" décrit dans le brief) :
+//   orange doré #D78F33 · brun orangé #A75517 · brun profond #8D3F11
+//   bronze #BC6B20 · or/bronze clair #D3AC83 · bleu nuit #202639
+//   blanc cassé #E8E6E3 (réservé au monogramme du logo, pas un token UI)
+//   gris clair #D7D2CB
+// Le slug "ami-chine-dakar" doit correspondre à la valeur de
+// NEXT_PUBLIC_BRAND réglée sur son déploiement Vercel. Sens du flux inversé
+// par rapport à SIGIL CARGO : expéditeur en Chine, destinataire à Dakar.
 const AMI_CHINE_DAKAR: BrandConfig = {
   slug: "ami-chine-dakar",
   nom: "M.N Logistics Cargo",
   tagline: "Rapide · Fiable · Sûre",
   couleurs: {
-    navy: "#16233F",
-    navy2: "#1B2A4A",
-    navy3: "#233A63",
-    gold1: "#D9A05B",
-    gold2: "#B8763E",
-    muted2: "#B7C0D4",
-    line: "#2C3C5C",
-    gradientGoldDe: "#E8B876",
-    gradientGoldMid: "#CC8F4C",
-    gradientGoldA: "#A96E33",
-    gradientNavyA: "#233A63",
-    gradientNavyB: "#1B2A4A",
-    gradientNavyC: "#16233F",
+    navy: "#202639",
+    navy2: "#262C42",
+    navy3: "#2C3350",
+    gold1: "#D78F33",
+    gold2: "#A75517",
+    muted2: "#D7D2CB",
+    line: "#333B54",
+    gradientGoldDe: "#D3AC83",
+    gradientGoldMid: "#BC6B20",
+    gradientGoldA: "#8D3F11",
+    gradientNavyA: "#2C3350",
+    gradientNavyB: "#262C42",
+    gradientNavyC: "#202639",
   },
   moduleFranceActif: false,
   logoImagePath: "/mn-logistics-logo.png",
@@ -159,8 +166,8 @@ const AMI_CHINE_DAKAR: BrandConfig = {
     ninea: "À RENSEIGNER",
     rex: "À RENSEIGNER",
     email: "À RENSEIGNER",
-    couleurPrincipale: "#16233F",
-    couleurSecondaire: "#B8763E",
+    couleurPrincipale: "#D78F33",
+    couleurSecondaire: "#8D3F11",
     logoPath: "/mn-logistics-logo.png",
     cachetPath: null,
   },
