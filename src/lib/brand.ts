@@ -161,15 +161,17 @@ const AMI_CHINE_DAKAR: BrandConfig = {
     gradientNavyA: "#2C3350",
     gradientNavyB: "#262C42",
     gradientNavyC: "#202639",
-    // Fond de page ivoire/champagne — chaleureux mais sobre, laisse les
-    // accents or/bronze (boutons, badges, nav active) porter la couleur.
-    // La sidebar reste bleu nuit (gradientNavyA/B/C ci-dessus, inchangés).
-    pageGradientA: "#FDFBF7",
-    pageGradientB: "#F7EFE1",
-    pageGradientC: "#EDE0C8",
-    ink: "#2B1D12",
-    inkMuted: "#6B4A2ECC",
-    inkOverlay: "#2B1D121A",
+    // Fond de page orange foncé, dans l'esprit du dégradé du logo lui-même
+    // (amber en haut, brun profond vers les bords). Texte en blanc cassé
+    // (même ton que le monogramme du logo, #E8E6E3) pour rester lisible sur
+    // ce fond sombre. La sidebar reste bleu nuit (gradientNavyA/B/C
+    // ci-dessus, inchangés).
+    pageGradientA: "#E8A857",
+    pageGradientB: "#C97D2E",
+    pageGradientC: "#8D3F11",
+    ink: "#E8E6E3",
+    inkMuted: "#E8E6E3B3",
+    inkOverlay: "#E8E6E31A",
   },
   moduleFranceActif: false,
   logoImagePath: "/mn-logistics-logo.jpeg",
