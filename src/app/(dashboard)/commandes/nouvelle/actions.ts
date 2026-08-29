@@ -38,7 +38,10 @@ type CreateCommandeInput = {
   projetId: string;
   produitId: string;
   poidsKg: number;
-  prixParKg: number;
+  prixParKg: number | null;
+  modeFret: "aerien" | "conteneur";
+  volumeM3: number | null;
+  prixParM3: number | null;
   enveloppe: boolean;
   nombrePaquets: number;
   adresseLivraison: string;
@@ -79,6 +82,9 @@ export async function createCommande(
     produit_id: input.produitId,
     poids_kg: input.poidsKg,
     prix_par_kg: input.prixParKg,
+    mode_fret: input.modeFret,
+    volume_m3: input.volumeM3,
+    prix_par_m3: input.prixParM3,
     enveloppe: input.enveloppe,
     nombre_paquets: input.nombrePaquets,
     adresse_livraison: input.adresseLivraison.trim() || null,

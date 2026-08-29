@@ -18,7 +18,7 @@ const montantFormatter = new Intl.NumberFormat("fr-FR", {
 });
 
 type Produit = { id: string; nom: string; prix_par_kg: number };
-type Projet = { id: string; nom: string };
+type Projet = { id: string; nom: string; mode_fret: "aerien" | "conteneur" };
 type ExistingMedia = { path: string; url: string };
 
 export function EditCommandeForm({
@@ -28,6 +28,8 @@ export function EditCommandeForm({
   initialProduitId,
   initialPoidsKg,
   initialPrixParKg,
+  initialVolumeM3,
+  initialPrixParM3,
   initialEnveloppe,
   initialNombrePaquets,
   initialAdresseLivraison,
@@ -44,7 +46,9 @@ export function EditCommandeForm({
   initialProjetId: string;
   initialProduitId: string;
   initialPoidsKg: number;
-  initialPrixParKg: number;
+  initialPrixParKg: number | null;
+  initialVolumeM3: number | null;
+  initialPrixParM3: number | null;
   initialEnveloppe: boolean;
   initialNombrePaquets: number;
   initialAdresseLivraison: string;
@@ -64,8 +68,16 @@ export function EditCommandeForm({
   });
   const [projetId, setProjetId] = useState(initialProjetId);
   const [produitId, setProduitId] = useState(initialProduitId);
-  const [prixParKg, setPrixParKg] = useState(initialPrixParKg.toString());
+  const [prixParKg, setPrixParKg] = useState(
+    initialPrixParKg !== null ? initialPrixParKg.toString() : ""
+  );
   const [poidsKg, setPoidsKg] = useState(initialPoidsKg.toString());
+  const [volumeM3, setVolumeM3] = useState(
+    initialVolumeM3 !== null ? initialVolumeM3.toString() : ""
+  );
+  const [prixParM3, setPrixParM3] = useState(
+    initialPrixParM3 !== null ? initialPrixParM3.toString() : ""
+  );
   const [enveloppe, setEnveloppe] = useState(initialEnveloppe);
   const [nombrePaquets, setNombrePaquets] = useState(initialNombrePaquets);
   const [adresseLivraison, setAdresseLivraison] = useState(
@@ -90,7 +102,17 @@ export function EditCommandeForm({
     if (p) setPrixParKg(p.prix_par_kg.toString());
   }
 
+  const modeFret =
+    projets.find((p) => p.id === projetId)?.mode_fret ?? "aerien";
+  const enModeConteneur = BRAND.modeGroupageConteneurActif && modeFret === "conteneur";
+
   const montantEstime = (() => {
+    if (enModeConteneur) {
+      const volume = parseFloat(volumeM3);
+      const prix = parseFloat(prixParM3);
+      if (Number.isNaN(volume) || Number.isNaN(prix)) return null;
+      return volume * prix + (enveloppe ? 15 : 0);
+    }
     const poids = parseFloat(poidsKg);
     const prix = parseFloat(prixParKg);
     if (Number.isNaN(poids) || Number.isNaN(prix)) return null;
@@ -131,10 +153,26 @@ export function EditCommandeForm({
       setError("Indique un poids valide.");
       return;
     }
-    const prix = parseFloat(prixParKg);
-    if (Number.isNaN(prix) || prix < 0) {
-      setError("Indique un prix par kg valide.");
-      return;
+    let prix: number | null = null;
+    let volume: number | null = null;
+    let prixM3: number | null = null;
+    if (enModeConteneur) {
+      volume = parseFloat(volumeM3);
+      if (Number.isNaN(volume) || volume <= 0) {
+        setError("Indique un volume (m³) valide.");
+        return;
+      }
+      prixM3 = parseFloat(prixParM3);
+      if (Number.isNaN(prixM3) || prixM3 < 0) {
+        setError("Indique un prix par m³ valide.");
+        return;
+      }
+    } else {
+      prix = parseFloat(prixParKg);
+      if (Number.isNaN(prix) || prix < 0) {
+        setError("Indique un prix par kg valide.");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -182,6 +220,9 @@ export function EditCommandeForm({
         produitId,
         poidsKg: poids,
         prixParKg: prix,
+        modeFret,
+        volumeM3: volume,
+        prixParM3: prixM3,
         enveloppe,
         nombrePaquets,
         adresseLivraison,
@@ -234,7 +275,7 @@ export function EditCommandeForm({
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            Produit (tarif/kg)
+            {enModeConteneur ? "Produit" : "Produit (tarif/kg)"}
           </label>
           <select
             value={produitId}
@@ -244,7 +285,8 @@ export function EditCommandeForm({
           >
             {produits.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.nom} — {montantFormatter.format(p.prix_par_kg)}/kg
+                {p.nom}
+                {!enModeConteneur && ` — ${montantFormatter.format(p.prix_par_kg)}/kg`}
               </option>
             ))}
           </select>
@@ -265,20 +307,53 @@ export function EditCommandeForm({
           />
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Prix par kg (modifiable)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            required
-            value={prixParKg}
-            onChange={(e) => setPrixParKg(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
-          />
-        </div>
+        {enModeConteneur ? (
+          <>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Volume (m³)
+              </label>
+              <input
+                type="number"
+                step="0.001"
+                min="0"
+                required
+                value={volumeM3}
+                onChange={(e) => setVolumeM3(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Prix par m³ (modifiable)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                value={prixParM3}
+                onChange={(e) => setPrixParM3(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+              />
+            </div>
+          </>
+        ) : (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Prix par kg (modifiable)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              value={prixParKg}
+              onChange={(e) => setPrixParKg(e.target.value)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+            />
+          </div>
+        )}
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -301,7 +376,7 @@ export function EditCommandeForm({
           onChange={(e) => setEnveloppe(e.target.checked)}
           className="h-4 w-4 rounded border-slate-300"
         />
-        Option enveloppe (+15 €)
+        Option enveloppe (+{montantFormatter.format(15)})
       </label>
 
       <div className="rounded-md bg-slate-50 px-3 py-2 text-sm">

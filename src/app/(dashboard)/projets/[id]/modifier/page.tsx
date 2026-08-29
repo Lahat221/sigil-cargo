@@ -14,7 +14,7 @@ export default async function ModifierProjetPage({
 
   const { data: projet } = await supabase
     .from("projets")
-    .select("id, nom, statut, date_depart, date_arrivee")
+    .select("id, nom, statut, date_depart, date_arrivee, mode_fret")
     .eq("id", params.id)
     .maybeSingle();
 
@@ -35,6 +35,7 @@ export default async function ModifierProjetPage({
         initialDateDepart={projet.date_depart ?? ""}
         initialDateArrivee={projet.date_arrivee ?? ""}
         initialStatut={projet.statut}
+        initialModeFret={projet.mode_fret}
       />
     </div>
   );

@@ -30,7 +30,7 @@ export default async function ProjetsPage() {
     await Promise.all([
       supabase
         .from("projets")
-        .select("id, nom, statut, date_depart, date_arrivee")
+        .select("id, nom, statut, date_depart, date_arrivee, mode_fret")
         .order("created_at", { ascending: false }),
       supabase
         .from("commandes")
@@ -67,7 +67,9 @@ export default async function ProjetsPage() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-ink">Projets Fret Aérien</h1>
+        <h1 className="text-xl font-bold text-ink">
+          {BRAND.modeGroupageConteneurActif ? "Projets" : "Projets Fret Aérien"}
+        </h1>
         <Link
           href="/projets/nouveau"
           className="flex items-center gap-1.5 rounded-lg bg-gold-gradient px-4 py-1.5 text-sm font-semibold text-navy shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:brightness-105"
@@ -123,6 +125,11 @@ export default async function ProjetsPage() {
                         >
                           {p.nom}
                         </Link>
+                        {BRAND.modeGroupageConteneurActif && (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-normal text-slate-500">
+                            {p.mode_fret === "conteneur" ? "Conteneur · m³" : "Aérien · kg"}
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5">
                         <span

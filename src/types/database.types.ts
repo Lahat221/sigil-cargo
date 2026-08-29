@@ -85,6 +85,10 @@ export interface Database {
           date_depart: string | null;
           date_arrivee: string | null;
           statut: "actif" | "clos" | "annule";
+          // Mode de fret par défaut du départ/lot : 'aerien' (tarifé au kg)
+          // ou 'conteneur' (groupage, tarifé au m³) — chaque commande créée
+          // sous ce projet copie cette valeur. cf. migration_groupage_conteneur.sql
+          mode_fret: "aerien" | "conteneur";
           created_at: string;
         };
         Insert: {
@@ -93,6 +97,7 @@ export interface Database {
           date_depart?: string | null;
           date_arrivee?: string | null;
           statut?: "actif" | "clos" | "annule";
+          mode_fret?: "aerien" | "conteneur";
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["projets"]["Insert"]>;
@@ -128,7 +133,13 @@ export interface Database {
           projet_id: string;
           produit_id: string;
           poids_kg: number;
-          prix_par_kg: number;
+          prix_par_kg: number | null;
+          // Groupage conteneur (au m³) — cf. migration_groupage_conteneur.sql.
+          // mode_fret copié du projet à la création ; volume_m3/prix_par_m3
+          // ne sont renseignés qu'en mode 'conteneur'.
+          mode_fret: "aerien" | "conteneur";
+          volume_m3: number | null;
+          prix_par_m3: number | null;
           enveloppe: boolean;
           nombre_paquets: number;
           montant_total: number;
@@ -158,7 +169,10 @@ export interface Database {
           projet_id: string;
           produit_id: string;
           poids_kg: number;
-          prix_par_kg: number;
+          prix_par_kg?: number | null;
+          mode_fret?: "aerien" | "conteneur";
+          volume_m3?: number | null;
+          prix_par_m3?: number | null;
           enveloppe?: boolean;
           nombre_paquets?: number;
           statut?: StatutCommande;

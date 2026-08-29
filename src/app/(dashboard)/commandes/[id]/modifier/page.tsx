@@ -15,7 +15,7 @@ export default async function ModifierCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, projet_id, produit_id, poids_kg, prix_par_kg, enveloppe, nombre_paquets, adresse_livraison, description, remarque_interne, photo_urls, video_urls, note_vocale_url, clients(id, nom, telephone, adresse)"
+      "id, projet_id, produit_id, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, adresse_livraison, description, remarque_interne, photo_urls, video_urls, note_vocale_url, clients(id, nom, telephone, adresse)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -24,7 +24,10 @@ export default async function ModifierCommandePage({
 
   const [{ data: produits }, { data: projets }] = await Promise.all([
     supabase.from("produits").select("id, nom, prix_par_kg").order("nom"),
-    supabase.from("projets").select("id, nom").order("created_at", { ascending: false }),
+    supabase
+      .from("projets")
+      .select("id, nom, mode_fret")
+      .order("created_at", { ascending: false }),
   ]);
 
   const existingPhotos = [];
@@ -73,6 +76,8 @@ export default async function ModifierCommandePage({
         initialProduitId={commande.produit_id}
         initialPoidsKg={commande.poids_kg}
         initialPrixParKg={commande.prix_par_kg}
+        initialVolumeM3={commande.volume_m3}
+        initialPrixParM3={commande.prix_par_m3}
         initialEnveloppe={commande.enveloppe}
         initialNombrePaquets={commande.nombre_paquets}
         initialAdresseLivraison={commande.adresse_livraison ?? ""}

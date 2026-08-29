@@ -41,7 +41,7 @@ export default async function FactureCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "numero, poids_kg, prix_par_kg, montant_total, created_at, clients(nom, telephone, adresse), projets(nom)"
+      "numero, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, montant_total, created_at, clients(nom, telephone, adresse), projets(nom)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -49,6 +49,7 @@ export default async function FactureCommandePage({
   if (!commande) notFound();
 
   const numeroFacture = String(commande.numero).padStart(4, "0");
+  const enModeConteneur = commande.mode_fret === "conteneur";
 
   return (
     <div className="mx-auto max-w-2xl p-8">
@@ -122,7 +123,9 @@ export default async function FactureCommandePage({
                 style={{ borderColor: `${VERT}4D`, color: VERT }}
               >
                 <th className="py-2 font-semibold">Produit</th>
-                <th className="py-2 text-right font-semibold">Poids (kg)</th>
+                <th className="py-2 text-right font-semibold">
+                  {enModeConteneur ? "Volume (m³)" : "Poids (kg)"}
+                </th>
                 <th className="py-2 text-right font-semibold">
                   Valeur unitaire en {LABEL_DEVISE}
                 </th>
@@ -134,13 +137,19 @@ export default async function FactureCommandePage({
             <tbody>
               <tr className="border-b border-slate-100">
                 <td className="py-2 text-slate-900">
-                  Fret aérien {BRAND.nom.split(" ")[0]}
+                  {enModeConteneur
+                    ? `Groupage conteneur ${BRAND.nom.split(" ")[0]}`
+                    : `Fret aérien ${BRAND.nom.split(" ")[0]}`}
                 </td>
                 <td className="py-2 text-right text-slate-700">
-                  {commande.poids_kg}
+                  {enModeConteneur ? commande.volume_m3 : commande.poids_kg}
                 </td>
                 <td className="py-2 text-right text-slate-700">
-                  {montantFormatter.format(commande.prix_par_kg)}
+                  {montantFormatter.format(
+                    enModeConteneur
+                      ? commande.prix_par_m3 ?? 0
+                      : commande.prix_par_kg ?? 0
+                  )}
                 </td>
                 <td className="py-2 text-right font-medium text-slate-900">
                   {montantFormatter.format(commande.montant_total)}

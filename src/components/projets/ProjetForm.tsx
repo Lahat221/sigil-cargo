@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { creerProjet, modifierProjet } from "@/app/(dashboard)/projets/actions";
+import { BRAND } from "@/lib/brand";
 
 export function ProjetForm({
   projetId,
@@ -10,18 +11,21 @@ export function ProjetForm({
   initialDateDepart = "",
   initialDateArrivee = "",
   initialStatut = "actif",
+  initialModeFret = "aerien",
 }: {
   projetId?: string;
   initialNom?: string;
   initialDateDepart?: string;
   initialDateArrivee?: string;
   initialStatut?: "actif" | "clos" | "annule";
+  initialModeFret?: "aerien" | "conteneur";
 }) {
   const router = useRouter();
   const [nom, setNom] = useState(initialNom);
   const [dateDepart, setDateDepart] = useState(initialDateDepart);
   const [dateArrivee, setDateArrivee] = useState(initialDateArrivee);
   const [statut, setStatut] = useState(initialStatut);
+  const [modeFret, setModeFret] = useState(initialModeFret);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +34,7 @@ export function ProjetForm({
     setError(null);
     setSubmitting(true);
 
-    const input = { nom, dateDepart, dateArrivee, statut };
+    const input = { nom, dateDepart, dateArrivee, statut, modeFret };
     const result = projetId
       ? await modifierProjet(projetId, input)
       : await creerProjet(input);
@@ -89,6 +93,27 @@ export function ProjetForm({
           />
         </div>
       </div>
+
+      {BRAND.modeGroupageConteneurActif && (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            Mode de fret
+          </label>
+          <select
+            value={modeFret}
+            onChange={(e) =>
+              setModeFret(e.target.value as "aerien" | "conteneur")
+            }
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy/20"
+          >
+            <option value="aerien">Fret aérien (tarifé au kg)</option>
+            <option value="conteneur">Groupage conteneur (tarifé au m³)</option>
+          </select>
+          <p className="mt-1 text-xs text-slate-500">
+            S&apos;applique à tous les colis créés sous ce projet.
+          </p>
+        </div>
+      )}
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">

@@ -8,6 +8,7 @@ export type ProjetInput = {
   dateDepart: string;
   dateArrivee: string;
   statut: "actif" | "clos" | "annule";
+  modeFret: "aerien" | "conteneur";
 };
 
 export async function creerProjet(
@@ -23,6 +24,7 @@ export async function creerProjet(
       date_depart: input.dateDepart || null,
       date_arrivee: input.dateArrivee || null,
       statut: input.statut,
+      mode_fret: input.modeFret,
     })
     .select("id")
     .single();
@@ -49,6 +51,7 @@ export async function modifierProjet(
       date_depart: input.dateDepart || null,
       date_arrivee: input.dateArrivee || null,
       statut: input.statut,
+      mode_fret: input.modeFret,
     })
     .eq("id", projetId);
 

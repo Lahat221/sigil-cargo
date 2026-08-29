@@ -15,7 +15,7 @@ export default async function NouvelleCommandePage() {
       .order("nom"),
     supabase
       .from("projets")
-      .select("id, nom")
+      .select("id, nom, mode_fret")
       .eq("statut", "actif")
       .order("created_at", { ascending: false }),
   ]);

@@ -28,7 +28,10 @@ type CommandeDetail = {
   numero: number;
   statut: StatutCommande;
   poids_kg: number;
-  prix_par_kg: number;
+  prix_par_kg: number | null;
+  mode_fret: "aerien" | "conteneur";
+  volume_m3: number | null;
+  prix_par_m3: number | null;
   enveloppe: boolean;
   nombre_paquets: number;
   montant_total: number;
@@ -61,7 +64,7 @@ export default async function CommandeDetailPage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, prix_par_kg, enveloppe, nombre_paquets, montant_total, adresse_livraison, description, remarque_interne, code_barre_colis, photo_urls, video_urls, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
+      "id, numero, statut, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, montant_total, adresse_livraison, description, remarque_interne, code_barre_colis, photo_urls, video_urls, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
     )
     .eq("id", params.id)
     .maybeSingle<CommandeDetail>();
@@ -166,6 +169,9 @@ export default async function CommandeDetailPage({
             `Colis #${commande.numero} chez ${BRAND.nom}`,
             commande.projets?.nom ? `Projet : ${commande.projets.nom}` : null,
             `Poids : ${commande.poids_kg} kg`,
+            commande.mode_fret === "conteneur"
+              ? `Volume : ${commande.volume_m3} m³`
+              : null,
             `Montant : ${montantFormatter.format(commande.montant_total)}`,
             `Statut : ${STATUT_LABELS[commande.statut]}`,
             commande.description ? `Contenu : ${commande.description}` : null,
@@ -202,6 +208,16 @@ export default async function CommandeDetailPage({
           <p className="text-slate-500">Poids</p>
           <p className="font-medium text-slate-900">{commande.poids_kg} kg</p>
         </div>
+        {commande.mode_fret === "conteneur" && (
+          <div>
+            <p className="text-slate-500">Volume</p>
+            <p className="font-medium text-slate-900">
+              {commande.volume_m3} m³
+              {commande.prix_par_m3 !== null &&
+                ` (${montantFormatter.format(commande.prix_par_m3)}/m³)`}
+            </p>
+          </div>
+        )}
         <div>
           <p className="text-slate-500">Montant</p>
           <p className="font-medium text-slate-900">

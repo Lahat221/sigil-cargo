@@ -16,7 +16,7 @@ export default async function EtiquetteCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "numero, poids_kg, description, code_barre_colis, clients(nom), projets(nom)"
+      "numero, poids_kg, mode_fret, volume_m3, description, code_barre_colis, clients(nom), projets(nom)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -48,7 +48,12 @@ export default async function EtiquetteCommandePage({
         </p>
 
         <div className="mb-4 space-y-1 text-sm text-slate-700">
-          <p>{commande.poids_kg} kg</p>
+          <p>
+            {commande.poids_kg} kg
+            {commande.mode_fret === "conteneur" &&
+              commande.volume_m3 !== null &&
+              ` · ${commande.volume_m3} m³`}
+          </p>
           {commande.projets?.nom && <p>{commande.projets.nom}</p>}
         </div>
 
