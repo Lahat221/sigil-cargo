@@ -304,20 +304,20 @@ export default async function TableauDeBordPage({
             <Link
               key={c.id}
               href={`/commandes/${c.id}`}
-              className="flex items-center justify-between py-3 text-sm hover:bg-slate-50"
+              className="flex flex-col gap-2 py-3 text-sm hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="flex items-center gap-3">
-                <span className="font-medium text-slate-900">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                <span className="shrink-0 font-medium text-slate-900">
                   #{c.numero}
                 </span>
-                <span className="text-slate-600">
+                <span className="min-w-0 truncate text-slate-600">
                   {c.clients?.nom ?? "—"}
                 </span>
-                <span className="text-xs text-slate-400">
+                <span className="hidden shrink-0 truncate text-xs text-slate-400 sm:inline">
                   {c.projets?.nom ?? "—"}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex shrink-0 items-center gap-3">
                 <StatutBadge statut={c.statut} />
                 <span className="font-medium text-slate-900">
                   {montantFormatter.format(c.montant_total)}

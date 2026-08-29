@@ -143,8 +143,15 @@ function MobileTabBar({
 }) {
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-line bg-navy-2/95 shadow-[0_-4px_16px_rgba(0,0,0,0.25)] backdrop-blur md:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-line shadow-[0_-4px_16px_rgba(0,0,0,0.25)] md:hidden"
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom)",
+        // Couleur pleine (jamais transparente) par tenant — cette barre est
+        // fixed par-dessus du contenu, qui peut être blanc juste en dessous
+        // (cartes) : une couleur translucide + backdrop-blur la rendait
+        // difficile à repérer.
+        backgroundColor: BRAND.couleurs.mobileNavBg,
+      }}
     >
       {tabs.map((tab) => {
         const active = pathname.startsWith(tab.href);

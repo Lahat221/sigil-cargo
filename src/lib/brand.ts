@@ -42,6 +42,12 @@ export type BrandConfig = {
     ink: string;
     inkMuted: string;
     inkOverlay: string;
+    // Fond de la barre de menu mobile (bas d'écran, cf. Sidebar.tsx
+    // MobileTabBar) — doit être une couleur PLEINE (jamais transparente),
+    // le composant est fixed par-dessus du contenu qui peut être blanc
+    // (cartes) juste en dessous. Distinct du reste du thème mobile pour
+    // rester bien visible/identifiable sur tous les fonds.
+    mobileNavBg: string;
   };
   // Le module Dédouanement France (HS parapluie, REX, TVA FR, LTA...) est
   // spécifique aux règles douanières françaises — n'a pas de sens pour un
@@ -112,6 +118,7 @@ const SIGIL_CARGO: BrandConfig = {
     ink: "#FFFFFF",
     inkMuted: "#FFFFFF99",
     inkOverlay: "#FFFFFF1A",
+    mobileNavBg: "#0E2547",
   },
   moduleFranceActif: true,
   logoImagePath: null,
@@ -184,6 +191,12 @@ const AMI_CHINE_DAKAR: BrandConfig = {
     ink: "#E8E6E3",
     inkMuted: "#E8E6E3B3",
     inkOverlay: "#E8E6E31A",
+    // Bande pleine (pas de transparence) pour la barre de menu mobile —
+    // brun-orangé profond de la palette officielle, bien distincte du fond
+    // de page (clair) et du reste de l'app (demande explicite : rendre la
+    // barre visible en bas d'écran, elle passait inaperçue en navy sur fond
+    // blanc).
+    mobileNavBg: "#8D3F11",
   },
   moduleFranceActif: false,
   logoImagePath: "/mn-logistics-logo.jpeg",
