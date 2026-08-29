@@ -147,7 +147,7 @@ const AMI_CHINE_DAKAR: BrandConfig = {
     gradientNavyC: "#202639",
   },
   moduleFranceActif: false,
-  logoImagePath: "/mn-logistics-logo.png",
+  logoImagePath: "/mn-logistics-logo.jpeg",
   routeDescription: "entre la Chine et le Sénégal",
   identite: {
     expediteurNom: "À RENSEIGNER (expéditeur Chine)",
@@ -168,7 +168,7 @@ const AMI_CHINE_DAKAR: BrandConfig = {
     email: "À RENSEIGNER",
     couleurPrincipale: "#D78F33",
     couleurSecondaire: "#8D3F11",
-    logoPath: "/mn-logistics-logo.png",
+    logoPath: "/mn-logistics-logo.jpeg",
     cachetPath: null,
   },
 };
