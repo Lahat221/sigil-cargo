@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { traiterColis } from "@/lib/douane/extraction";
+import { reclassifierProduit } from "@/lib/douane/reclassifierProduit";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { genererDeclarationBuffer } from "@/lib/douane/declarationXlsx";
 import type { HsCodeSource, HsStatus } from "@/types/database.types";
@@ -330,78 +331,85 @@ function normaliserNomReferentiel(nom: string): string {
   return nom.trim().toLowerCase();
 }
 
-type CorrectionReferentiel = {
-  typeProduit: string;
-  descriptionDouane: string;
-  hsCode: string | null;
-  descriptionProduit: string;
-  synonymes: string;
-};
-
 /**
- * Corrige une ligne de produit ET enregistre la correction dans le
- * référentiel interne (douane_produits_referentiel) : la prochaine fois que
- * ce même produit local (nom_normalise) apparaît dans une description brute,
- * rechercherReferentiel() le retrouvera directement et l'IA n'aura plus à le
- * redeviner — "réglé une fois pour toutes", comme demandé.
+ * Crée ou met à jour (par nom_normalise) une entrée du référentiel interne —
+ * partagé par toute action qui doit "régler un produit pour toujours".
  */
-export async function corrigerEtReferencer(
-  produitId: string,
-  input: CorrectionReferentiel
+async function upsertReferentiel(
+  supabase: ReturnType<typeof createClient>,
+  entree: { nomLocal: string; typeProduit: string; descriptionDouane: string; hsCode: string | null }
 ): Promise<{ error: string } | { success: true }> {
-  if (!input.descriptionProduit.trim() || !input.typeProduit.trim() || !input.descriptionDouane.trim()) {
-    return { error: "Nom local, type de produit et description douane sont requis." };
-  }
-
-  const resultatProduit = await mettreAJourProduit(produitId, {
-    type_produit: input.typeProduit,
-    description_douane: input.descriptionDouane,
-    hs_code: input.hsCode,
-    description_produit: input.descriptionProduit,
-  });
-  if ("error" in resultatProduit) return resultatProduit;
-
-  const supabase = createClient();
-  const nomLocal = input.descriptionProduit.trim();
+  const nomLocal = entree.nomLocal.trim();
   const nomNormalise = normaliserNomReferentiel(nomLocal);
-  const nouveauxSynonymes = input.synonymes
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
 
   const { data: existant } = await supabase
     .from("douane_produits_referentiel")
-    .select("id, synonymes")
+    .select("id")
     .eq("nom_normalise", nomNormalise)
     .maybeSingle();
 
-  if (existant) {
-    const synonymesFusionnes = Array.from(
-      new Set([...(existant.synonymes ?? []), ...nouveauxSynonymes])
-    );
-    const { error } = await supabase
-      .from("douane_produits_referentiel")
-      .update({
-        type_produit: input.typeProduit.trim(),
-        description_douane: input.descriptionDouane.trim(),
-        hs_code: input.hsCode,
-        synonymes: synonymesFusionnes,
-        actif: true,
-      })
-      .eq("id", existant.id);
-    if (error) return { error: "Produit corrigé, mais référentiel non mis à jour : " + error.message };
-  } else {
-    const { error } = await supabase.from("douane_produits_referentiel").insert({
-      nom_local: nomLocal,
-      nom_normalise: nomNormalise,
-      type_produit: input.typeProduit.trim(),
-      description_douane: input.descriptionDouane.trim(),
-      hs_code: input.hsCode,
-      synonymes: nouveauxSynonymes,
-    });
-    if (error) return { error: "Produit corrigé, mais référentiel non mis à jour : " + error.message };
-  }
+  const champs = {
+    type_produit: entree.typeProduit.trim(),
+    description_douane: entree.descriptionDouane.trim(),
+    hs_code: entree.hsCode,
+  };
 
+  const { error } = existant
+    ? await supabase
+        .from("douane_produits_referentiel")
+        .update({ ...champs, actif: true })
+        .eq("id", existant.id)
+    : await supabase.from("douane_produits_referentiel").insert({
+        nom_local: nomLocal,
+        nom_normalise: nomNormalise,
+        synonymes: [],
+        ...champs,
+      });
+
+  if (error) return { error: error.message };
   revalidatePath("/gestion-douaniere/referentiel");
   return { success: true };
+}
+
+/**
+ * "Relancer" (ExtractionTable) : reclassifie ce produit à partir de son nom
+ * actuel (corrigé au préalable via "Modifier" si besoin) — relance juste la
+ * recherche de HS code, pas de formulaire séparé. Met à jour la ligne ET le
+ * référentiel interne en une seule action, pour que la correction soit
+ * "réglée pour toujours".
+ */
+export async function relancerHsCode(
+  produitId: string
+): Promise<{ error: string } | { success: true; hsCode: string; source: "referentiel" | "ia" }> {
+  const supabase = createClient();
+
+  const { data: produit } = await supabase
+    .from("douane_produits")
+    .select("description_produit")
+    .eq("id", produitId)
+    .maybeSingle();
+  if (!produit) return { error: "Produit introuvable." };
+
+  const resultat = await reclassifierProduit(supabase, produit.description_produit);
+  if ("error" in resultat) return resultat;
+
+  const resultatProduit = await mettreAJourProduit(produitId, {
+    type_produit: resultat.type_produit,
+    description_douane: resultat.description_douane,
+    hs_code: resultat.hs_code,
+  });
+  if ("error" in resultatProduit) return resultatProduit;
+
+  const resultatReferentiel = await upsertReferentiel(supabase, {
+    nomLocal: produit.description_produit,
+    typeProduit: resultat.type_produit,
+    descriptionDouane: resultat.description_douane,
+    hsCode: resultat.hs_code,
+  });
+  if ("error" in resultatReferentiel) {
+    return { error: "HS code mis à jour, mais référentiel non enregistré : " + resultatReferentiel.error };
+  }
+
+  revalidatePath("/gestion-douaniere");
+  return { success: true, hsCode: resultat.hs_code, source: resultat.source };
 }
