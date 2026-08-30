@@ -70,6 +70,29 @@ export async function traiterLot(
   return { traites, erreurs };
 }
 
+/**
+ * Corrige la description brute (saisie agent) directement depuis l'écran
+ * douane — évite de repasser par la fiche colis juste pour fixer une faute
+ * de saisie avant de relancer l'analyse IA.
+ */
+export async function corrigerDescriptionColis(
+  commandeId: string,
+  description: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("commandes")
+    .update({ description: description.trim() || null })
+    .eq("id", commandeId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/gestion-douaniere");
+  revalidatePath(`/gestion-douaniere/${commandeId}`);
+  revalidatePath(`/commandes/${commandeId}`);
+  return { success: true };
+}
+
 export async function reanalyserColis(
   commandeId: string
 ): Promise<{ error: string } | { success: true }> {

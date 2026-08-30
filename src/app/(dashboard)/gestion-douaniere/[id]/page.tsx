@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ExtractionTable, type ProduitLigne } from "@/components/douane/ExtractionTable";
+import { DescriptionBruteCard } from "@/components/douane/DescriptionBruteCard";
 import { ValiderColisButton } from "@/components/douane/ValiderColisButton";
 import { ReanalyserButton } from "@/components/douane/ReanalyserButton";
 import { HistoriqueExtraction } from "@/components/douane/HistoriqueExtraction";
@@ -98,10 +99,11 @@ export default async function DetailDouanePage({ params }: { params: { id: strin
         )}
       </div>
 
-      <div className="mb-6 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
-        <p className="mb-1 text-sm font-medium text-slate-700">Description brute (saisie agent)</p>
-        <p className="text-sm text-slate-600">{colis.description || "(aucune description)"}</p>
-      </div>
+      <DescriptionBruteCard
+        commandeId={colis.id}
+        description={colis.description}
+        aUneExtraction={!!extraction}
+      />
 
       {!extraction ? (
         <div className="mb-6 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
