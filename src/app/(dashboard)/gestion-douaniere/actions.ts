@@ -302,3 +302,83 @@ export async function mettreAJourProduit(
   revalidatePath("/gestion-douaniere");
   return { success: true };
 }
+
+function normaliserNomReferentiel(nom: string): string {
+  return nom.trim().toLowerCase();
+}
+
+type CorrectionReferentiel = {
+  typeProduit: string;
+  descriptionDouane: string;
+  hsCode: string | null;
+  descriptionProduit: string;
+  synonymes: string;
+};
+
+/**
+ * Corrige une ligne de produit ET enregistre la correction dans le
+ * référentiel interne (douane_produits_referentiel) : la prochaine fois que
+ * ce même produit local (nom_normalise) apparaît dans une description brute,
+ * rechercherReferentiel() le retrouvera directement et l'IA n'aura plus à le
+ * redeviner — "réglé une fois pour toutes", comme demandé.
+ */
+export async function corrigerEtReferencer(
+  produitId: string,
+  input: CorrectionReferentiel
+): Promise<{ error: string } | { success: true }> {
+  if (!input.descriptionProduit.trim() || !input.typeProduit.trim() || !input.descriptionDouane.trim()) {
+    return { error: "Nom local, type de produit et description douane sont requis." };
+  }
+
+  const resultatProduit = await mettreAJourProduit(produitId, {
+    type_produit: input.typeProduit,
+    description_douane: input.descriptionDouane,
+    hs_code: input.hsCode,
+    description_produit: input.descriptionProduit,
+  });
+  if ("error" in resultatProduit) return resultatProduit;
+
+  const supabase = createClient();
+  const nomLocal = input.descriptionProduit.trim();
+  const nomNormalise = normaliserNomReferentiel(nomLocal);
+  const nouveauxSynonymes = input.synonymes
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  const { data: existant } = await supabase
+    .from("douane_produits_referentiel")
+    .select("id, synonymes")
+    .eq("nom_normalise", nomNormalise)
+    .maybeSingle();
+
+  if (existant) {
+    const synonymesFusionnes = Array.from(
+      new Set([...(existant.synonymes ?? []), ...nouveauxSynonymes])
+    );
+    const { error } = await supabase
+      .from("douane_produits_referentiel")
+      .update({
+        type_produit: input.typeProduit.trim(),
+        description_douane: input.descriptionDouane.trim(),
+        hs_code: input.hsCode,
+        synonymes: synonymesFusionnes,
+        actif: true,
+      })
+      .eq("id", existant.id);
+    if (error) return { error: "Produit corrigé, mais référentiel non mis à jour : " + error.message };
+  } else {
+    const { error } = await supabase.from("douane_produits_referentiel").insert({
+      nom_local: nomLocal,
+      nom_normalise: nomNormalise,
+      type_produit: input.typeProduit.trim(),
+      description_douane: input.descriptionDouane.trim(),
+      hs_code: input.hsCode,
+      synonymes: nouveauxSynonymes,
+    });
+    if (error) return { error: "Produit corrigé, mais référentiel non mis à jour : " + error.message };
+  }
+
+  revalidatePath("/gestion-douaniere/referentiel");
+  return { success: true };
+}
