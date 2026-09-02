@@ -9,7 +9,9 @@ const montantFormatter = new Intl.NumberFormat("fr-FR", {
  * Message "Notif retrait (perso)" — même construction utilisée par la fiche
  * colis et la liste de colis (évite que les deux dérivent l'un de l'autre).
  * Formaté avec le markdown WhatsApp (*gras*) et des sauts de ligne pour
- * rester lisible sur un téléphone plutôt qu'un simple paragraphe.
+ * rester lisible sur un téléphone plutôt qu'un simple paragraphe. Pas
+ * d'emoji : mal rendus (glyphes cassés en losange) sur certains clients
+ * WhatsApp Desktop — le gras + les sauts de ligne suffisent à organiser.
  */
 export function construireTexteRetrait(params: {
   clientNom: string;
@@ -24,15 +26,15 @@ export function construireTexteRetrait(params: {
   return [
     `Bonjour ${clientNom}, votre colis *#${numero}* chez ${BRAND.nom} est prêt pour le retrait !`,
     "",
-    description ? `📦 *Contenu* : ${description}` : null,
-    poidsKg !== null ? `⚖️ *Poids* : ${poidsKg} kg` : null,
-    `💰 *Montant* : ${montantFormatter.format(montantTotal)}`,
+    description ? `*Contenu :* ${description}` : null,
+    poidsKg !== null ? `*Poids :* ${poidsKg} kg` : null,
+    `*Montant :* ${montantFormatter.format(montantTotal)}`,
     "",
-    `📍 *Adresse de retrait*`,
+    `*Adresse de retrait :*`,
     BRAND.retrait.adresse,
-    `🕐 ${BRAND.retrait.horaires}`,
+    `*Horaires :* ${BRAND.retrait.horaires}`,
     "",
-    `🚚 ${BRAND.retrait.livraisonDomicile}`,
+    BRAND.retrait.livraisonDomicile,
   ]
     .filter((ligne) => ligne !== null)
     .join("\n");
