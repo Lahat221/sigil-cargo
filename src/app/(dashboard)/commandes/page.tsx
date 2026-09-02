@@ -29,7 +29,7 @@ export default async function CommandesPage({
   let query = supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, montant_total, description, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom)"
+      "id, numero, statut, poids_kg, montant_total, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom)"
     )
     .order("created_at", { ascending: false });
 

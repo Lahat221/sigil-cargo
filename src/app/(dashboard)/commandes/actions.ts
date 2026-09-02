@@ -7,6 +7,24 @@ import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
 
+/**
+ * Résout à la demande l'URL signée d'un fichier commandes-media — utilisé
+ * par NotifRetraitButton sur la LISTE de colis (contrairement à la fiche
+ * colis, la liste ne pré-génère pas d'URL signée par ligne pour chaque
+ * vidéo : trop coûteux si beaucoup de colis en ont une).
+ */
+export async function signerUrlMedia(
+  path: string
+): Promise<{ error: string } | { url: string }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.storage
+    .from("commandes-media")
+    .createSignedUrl(path, 3600);
+
+  if (error || !data) return { error: error?.message ?? "URL introuvable." };
+  return { url: data.signedUrl };
+}
+
 export async function changerStatut(
   commandeId: string,
   nouveauStatut: StatutCommande

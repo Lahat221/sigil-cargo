@@ -7,6 +7,7 @@ export type CommandeListItem = {
   poids_kg: number | null;
   montant_total: number;
   description: string | null;
+  video_urls: string[] | null;
   code_barre_colis: string | null;
   created_at: string;
   clients: {

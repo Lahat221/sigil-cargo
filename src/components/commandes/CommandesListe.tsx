@@ -5,6 +5,7 @@ import Link from "next/link";
 import { StatutBadge } from "./StatutBadge";
 import { SupprimerCommandeButton } from "./SupprimerCommandeButton";
 import { NotifButtons } from "./NotifButtons";
+import { NotifRetraitButton } from "./NotifRetraitButton";
 import type { CommandeListItem } from "./types";
 import { BRAND } from "@/lib/brand";
 
@@ -15,6 +16,18 @@ const montantFormatter = new Intl.NumberFormat("fr-FR", {
 
 function formatPoids(poids: number | null) {
   return poids !== null ? `${poids.toLocaleString("fr-FR")} kg` : "—";
+}
+
+function texteRetrait(c: CommandeListItem): string {
+  if (!BRAND.retrait) return "";
+  return [
+    `Bonjour ${c.clients?.nom ?? ""}, votre colis #${c.numero} chez ${BRAND.nom} est prêt pour le retrait.`,
+    c.description ? `Contenu : ${c.description}` : null,
+    `Adresse de retrait : ${BRAND.retrait.adresse}, de ${BRAND.retrait.horaires}.`,
+    BRAND.retrait.livraisonDomicile,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function CommandesListe({
@@ -133,6 +146,14 @@ export function CommandesListe({
                         montantTotal={c.montant_total}
                         description={c.description}
                       />
+                      {BRAND.retrait && (
+                        <NotifRetraitButton
+                          clientTelephone={c.clients?.telephone ?? null}
+                          clientTelephonePays={c.clients?.telephone_pays ?? null}
+                          videoPath={c.video_urls?.[0] ?? null}
+                          texte={texteRetrait(c)}
+                        />
+                      )}
                       <SupprimerCommandeButton
                         commandeId={c.id}
                         numero={c.numero}
@@ -204,6 +225,14 @@ export function CommandesListe({
                         montantTotal={c.montant_total}
                         description={c.description}
                       />
+                {BRAND.retrait && (
+                  <NotifRetraitButton
+                    clientTelephone={c.clients?.telephone ?? null}
+                    clientTelephonePays={c.clients?.telephone_pays ?? null}
+                    videoPath={c.video_urls?.[0] ?? null}
+                    texte={texteRetrait(c)}
+                  />
+                )}
                 <SupprimerCommandeButton commandeId={c.id} numero={c.numero} />
               </div>
             </div>

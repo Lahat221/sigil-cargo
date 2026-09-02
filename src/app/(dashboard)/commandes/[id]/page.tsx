@@ -184,10 +184,7 @@ export default async function CommandeDetailPage({
           <NotifRetraitButton
             clientTelephone={commande.clients?.telephone ?? null}
             clientTelephonePays={commande.clients?.telephone_pays ?? null}
-            videoUrl={videoItems[0]?.url ?? null}
-            videoFilename={
-              videoItems[0] ? videoItems[0].path.split("/").pop() ?? "video.mp4" : "video.mp4"
-            }
+            videoPath={videoItems[0]?.path ?? null}
             texte={[
               `Bonjour ${commande.clients?.nom ?? ""}, votre colis #${commande.numero} chez ${BRAND.nom} est prêt pour le retrait.`,
               commande.description ? `Contenu : ${commande.description}` : null,
