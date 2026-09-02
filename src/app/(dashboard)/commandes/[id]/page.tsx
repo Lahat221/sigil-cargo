@@ -179,6 +179,22 @@ export default async function CommandeDetailPage({
             .filter(Boolean)
             .join("\n")}
         />
+        {BRAND.retrait && (
+          <PartagerWhatsAppButton
+            label="Notif retrait (WhatsApp perso)"
+            clientTelephone={commande.clients?.telephone ?? null}
+            clientTelephonePays={commande.clients?.telephone_pays ?? null}
+            texte={[
+              `Bonjour ${commande.clients?.nom ?? ""}, votre colis #${commande.numero} chez ${BRAND.nom} est prêt pour le retrait.`,
+              commande.description ? `Contenu : ${commande.description}` : null,
+              `Adresse de retrait : ${BRAND.retrait.adresse}, de ${BRAND.retrait.horaires}.`,
+              BRAND.retrait.livraisonDomicile,
+              videoItems[0] ? `Vidéo du colis : ${videoItems[0].url}` : null,
+            ]
+              .filter(Boolean)
+              .join("\n")}
+          />
+        )}
         <SupprimerCommandeButton
           commandeId={commande.id}
           numero={commande.numero}

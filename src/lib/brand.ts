@@ -90,6 +90,16 @@ export type BrandConfig = {
     logoPath: string | null;
     cachetPath: string | null;
   };
+  // Infos de retrait colis (bouton "Notif retrait" — WhatsApp perso, cf.
+  // commandes/[id]/page.tsx) : adresse/horaires du point de retrait physique
+  // + l'option livraison à domicile si le tenant la propose. null tant
+  // qu'un tenant n'a pas de point de retrait fixe configuré — le bouton ne
+  // s'affiche alors pas.
+  retrait: {
+    adresse: string;
+    horaires: string;
+    livraisonDomicile: string;
+  } | null;
 };
 
 const SIGIL_CARGO: BrandConfig = {
@@ -144,6 +154,11 @@ const SIGIL_CARGO: BrandConfig = {
     couleurSecondaire: "#96461E",
     logoPath: "/colle-agro-logo.jpg",
     cachetPath: "/colle-agro-cachet.jpg",
+  },
+  retrait: {
+    adresse: "2 rue Jean Baptiste Croibier, Vénissieux",
+    horaires: "17h à 20h30",
+    livraisonDomicile: "Livraison à domicile disponible sur Lyon : 14 €",
   },
 };
 
@@ -223,6 +238,10 @@ const AMI_CHINE_DAKAR: BrandConfig = {
     logoPath: "/mn-logistics-logo.jpeg",
     cachetPath: null,
   },
+  // Pas de point de retrait physique connu pour M.N pour l'instant — le
+  // bouton "Notif retrait (WhatsApp perso)" ne s'affiche donc pas. À
+  // renseigner si besoin plus tard.
+  retrait: null,
 };
 
 const BRANDS: Record<string, BrandConfig> = {
