@@ -8,6 +8,7 @@ import { NotifButtons } from "@/components/commandes/NotifButtons";
 import { PartagerWhatsAppButton } from "@/components/commandes/PartagerMediaButton";
 import { PartagerFichierButton } from "@/components/commandes/PartagerFichierButton";
 import { PartagerVideoWhatsAppButton } from "@/components/commandes/PartagerVideoWhatsAppButton";
+import { NotifRetraitButton } from "@/components/commandes/NotifRetraitButton";
 import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
@@ -180,16 +181,18 @@ export default async function CommandeDetailPage({
             .join("\n")}
         />
         {BRAND.retrait && (
-          <PartagerWhatsAppButton
-            label="Notif retrait (WhatsApp perso)"
+          <NotifRetraitButton
             clientTelephone={commande.clients?.telephone ?? null}
             clientTelephonePays={commande.clients?.telephone_pays ?? null}
+            videoUrl={videoItems[0]?.url ?? null}
+            videoFilename={
+              videoItems[0] ? videoItems[0].path.split("/").pop() ?? "video.mp4" : "video.mp4"
+            }
             texte={[
               `Bonjour ${commande.clients?.nom ?? ""}, votre colis #${commande.numero} chez ${BRAND.nom} est prêt pour le retrait.`,
               commande.description ? `Contenu : ${commande.description}` : null,
               `Adresse de retrait : ${BRAND.retrait.adresse}, de ${BRAND.retrait.horaires}.`,
               BRAND.retrait.livraisonDomicile,
-              videoItems[0] ? `Vidéo du colis : ${videoItems[0].url}` : null,
             ]
               .filter(Boolean)
               .join("\n")}
