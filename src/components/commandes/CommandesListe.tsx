@@ -148,6 +148,7 @@ export function CommandesListe({
                       />
                       {BRAND.retrait && (
                         <NotifRetraitButton
+                          clientNom={c.clients?.nom ?? ""}
                           clientTelephone={c.clients?.telephone ?? null}
                           clientTelephonePays={c.clients?.telephone_pays ?? null}
                           videoPath={c.video_urls?.[0] ?? null}
@@ -227,6 +228,7 @@ export function CommandesListe({
                       />
                 {BRAND.retrait && (
                   <NotifRetraitButton
+                    clientNom={c.clients?.nom ?? ""}
                     clientTelephone={c.clients?.telephone ?? null}
                     clientTelephonePays={c.clients?.telephone_pays ?? null}
                     videoPath={c.video_urls?.[0] ?? null}

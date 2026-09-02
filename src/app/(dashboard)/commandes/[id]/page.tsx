@@ -182,6 +182,7 @@ export default async function CommandeDetailPage({
         />
         {BRAND.retrait && (
           <NotifRetraitButton
+            clientNom={commande.clients?.nom ?? ""}
             clientTelephone={commande.clients?.telephone ?? null}
             clientTelephonePays={commande.clients?.telephone_pays ?? null}
             videoPath={videoItems[0]?.path ?? null}
