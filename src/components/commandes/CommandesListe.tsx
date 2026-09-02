@@ -8,6 +8,7 @@ import { NotifButtons } from "./NotifButtons";
 import { NotifRetraitButton } from "./NotifRetraitButton";
 import type { CommandeListItem } from "./types";
 import { BRAND } from "@/lib/brand";
+import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -19,15 +20,13 @@ function formatPoids(poids: number | null) {
 }
 
 function texteRetrait(c: CommandeListItem): string {
-  if (!BRAND.retrait) return "";
-  return [
-    `Bonjour ${c.clients?.nom ?? ""}, votre colis #${c.numero} chez ${BRAND.nom} est prêt pour le retrait.`,
-    c.description ? `Contenu : ${c.description}` : null,
-    `Adresse de retrait : ${BRAND.retrait.adresse}, de ${BRAND.retrait.horaires}.`,
-    BRAND.retrait.livraisonDomicile,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return construireTexteRetrait({
+    clientNom: c.clients?.nom ?? "",
+    numero: c.numero,
+    description: c.description,
+    poidsKg: c.poids_kg,
+    montantTotal: c.montant_total,
+  });
 }
 
 export function CommandesListe({

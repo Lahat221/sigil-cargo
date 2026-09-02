@@ -9,6 +9,7 @@ import { PartagerWhatsAppButton } from "@/components/commandes/PartagerMediaButt
 import { PartagerFichierButton } from "@/components/commandes/PartagerFichierButton";
 import { PartagerVideoWhatsAppButton } from "@/components/commandes/PartagerVideoWhatsAppButton";
 import { NotifRetraitButton } from "@/components/commandes/NotifRetraitButton";
+import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
 import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
@@ -185,15 +186,14 @@ export default async function CommandeDetailPage({
             clientNom={commande.clients?.nom ?? ""}
             clientTelephone={commande.clients?.telephone ?? null}
             clientTelephonePays={commande.clients?.telephone_pays ?? null}
-            videoPath={videoItems[0]?.path ?? null}
-            texte={[
-              `Bonjour ${commande.clients?.nom ?? ""}, votre colis #${commande.numero} chez ${BRAND.nom} est prêt pour le retrait.`,
-              commande.description ? `Contenu : ${commande.description}` : null,
-              `Adresse de retrait : ${BRAND.retrait.adresse}, de ${BRAND.retrait.horaires}.`,
-              BRAND.retrait.livraisonDomicile,
-            ]
-              .filter(Boolean)
-              .join("\n")}
+            videoUrl={videoItems[0]?.url ?? null}
+            texte={construireTexteRetrait({
+              clientNom: commande.clients?.nom ?? "",
+              numero: commande.numero,
+              description: commande.description,
+              poidsKg: commande.poids_kg,
+              montantTotal: commande.montant_total,
+            })}
           />
         )}
         <SupprimerCommandeButton

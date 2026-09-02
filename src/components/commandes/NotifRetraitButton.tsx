@@ -15,40 +15,45 @@ function formatNumeroWhatsApp(
 
 /**
  * Message de retrait + vidéo EN PIÈCE JOINTE (pas un lien) quand c'est
- * possible : Web Share API (navigator.share avec un fichier) ouvre le
- * partage natif du téléphone, WhatsApp y apparaît comme destination et
- * envoie la vidéo elle-même. Contrepartie inévitable : contrairement à un
- * lien wa.me, le partage natif ne permet pas de pré-sélectionner le contact
- * — l'agent choisit WhatsApp puis le client dans la liste qui s'affiche.
+ * possible : Web Share API (navigator.share avec un fichier ET le texte
+ * dans le même appel) ouvre le partage natif du téléphone, WhatsApp y
+ * apparaît comme destination et envoie la vidéo + le texte ensemble.
+ * Contrepartie inévitable : contrairement à un lien wa.me, le partage
+ * natif ne permet pas de pré-sélectionner le contact — l'agent choisit
+ * WhatsApp puis le client dans la liste qui s'affiche.
  *
- * Le texte s'ouvre TOUJOURS en premier, de façon synchrone, dès le clic —
- * un window.open() appelé après un await (le temps de récupérer la vidéo)
- * perd l'autorisation du navigateur et se fait bloquer silencieusement en
- * tant que popup, d'où le bouton qui ne semblait "rien faire". La vidéo est
- * ensuite tentée séparément, sans jamais bloquer/retarder l'ouverture du
- * texte : dans le pire cas (partage natif non supporté, ex. ordinateur de
- * bureau, ou fenêtre d'autorisation expirée), la vidéo s'ouvre dans un
- * nouvel onglet pour un enregistrement manuel plutôt que rien du tout.
+ * IMPORTANT (leçon du premier essai qui ne marchait pas) : un clic ne
+ * donne au navigateur qu'UNE seule autorisation "geste utilisateur", et
+ * window.open() ET navigator.share() la consomment chacun. Appeler les
+ * deux dans le même clic (même l'un après l'autre, même sans await entre
+ * les deux) fait échouer silencieusement le second — d'où "ça marche
+ * [le texte s'ouvre] mais y'a aucune vidéo" quand on les avait combinés.
+ * Solution : quand il y a une vidéo, UN SEUL appel natif (navigator.share
+ * avec files + text) — jamais de window.open à côté. Sans vidéo, on garde
+ * le simple window.open (aucun conflit, c'est le seul appel).
  *
- * videoPath (chemin storage brut, pas une URL déjà signée) est résolu à la
- * demande au clic — utilisable aussi bien depuis la fiche colis que depuis
- * la liste de colis (qui ne pré-génère pas d'URL signée par ligne pour
- * rester rapide).
+ * videoUrl (déjà résolue, ex. fiche colis qui l'a déjà pour l'affichage)
+ * évite un aller-retour réseau supplémentaire avant navigator.share — sur
+ * la liste de colis (qui ne pré-génère pas d'URL signée par ligne), on
+ * passe videoPath à la place et il est résolu à la demande.
  */
 export function NotifRetraitButton({
   clientNom,
   texte,
-  videoPath,
+  videoPath = null,
+  videoUrl = null,
   clientTelephone,
   clientTelephonePays,
 }: {
   clientNom: string;
   texte: string;
-  videoPath: string | null;
+  videoPath?: string | null;
+  videoUrl?: string | null;
   clientTelephone: string | null;
   clientTelephonePays: string | null;
 }) {
   const [loading, setLoading] = useState(false);
+  const hasVideo = !!(videoUrl || videoPath);
 
   if (!clientTelephone) return null;
 
@@ -57,44 +62,56 @@ export function NotifRetraitButton({
     window.open(`https://wa.me/${numeroWa}?text=${encodeURIComponent(texte)}`, "_blank");
   }
 
-  async function partagerVideo(path: string) {
+  async function envoyerAvecVideo() {
     setLoading(true);
     try {
-      const resultat = await signerUrlMedia(path);
-      if ("error" in resultat) return;
+      let resolvedUrl: string | null = videoUrl;
+      if (!resolvedUrl && videoPath) {
+        const resultat = await signerUrlMedia(videoPath);
+        resolvedUrl = "error" in resultat ? null : resultat.url;
+      }
+      if (!resolvedUrl) {
+        ouvrirWhatsAppTexte();
+        return;
+      }
 
       const nav = navigator as Navigator & {
         canShare?: (data: { files: File[] }) => boolean;
       };
       if (nav.share) {
-        const res = await fetch(resultat.url);
+        const res = await fetch(resolvedUrl);
         const blob = await res.blob();
-        const filename = path.split("/").pop() ?? "video.mp4";
+        const filename = (videoPath ?? resolvedUrl).split("/").pop()?.split("?")[0] ?? "video.mp4";
         const file = new File([blob], filename, { type: blob.type || "video/mp4" });
         if (!nav.canShare || nav.canShare({ files: [file] })) {
-          await nav.share({ files: [file] });
+          await nav.share({ files: [file], text: texte });
           return;
         }
       }
-      // Pas de partage natif disponible ou fenêtre d'autorisation expirée :
-      // la vidéo s'ouvre à part pour un enregistrement manuel avant envoi.
-      window.open(resultat.url, "_blank");
+      // Pas de partage natif disponible (ex. ordinateur de bureau) : au
+      // moins un des deux doit encore atteindre le client, le texte passe
+      // en priorité (le lien direct vers le bon numéro), la vidéo s'ouvre
+      // à part pour un enregistrement manuel avant envoi.
+      ouvrirWhatsAppTexte();
+      window.open(resolvedUrl, "_blank");
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
+      ouvrirWhatsAppTexte();
     } finally {
       setLoading(false);
     }
   }
 
   function notifier() {
-    const confirmation = videoPath
+    const confirmation = hasVideo
       ? `Envoyer le message de retrait et la vidéo à ${clientNom || "ce client"} ?`
       : `Envoyer le message de retrait à ${clientNom || "ce client"} ?\n\n${texte}`;
     if (!confirm(confirmation)) return;
 
-    ouvrirWhatsAppTexte();
-    if (videoPath) {
-      void partagerVideo(videoPath);
+    if (hasVideo) {
+      void envoyerAvecVideo();
+    } else {
+      ouvrirWhatsAppTexte();
     }
   }
 
@@ -106,7 +123,7 @@ export function NotifRetraitButton({
       className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-green-700 transition-colors hover:bg-green-50 disabled:opacity-50"
     >
       <IconWhatsApp size={14} />
-      {loading ? "Vidéo en cours..." : "Notif retrait (perso)"}
+      {loading ? "..." : "Notif retrait (perso)"}
     </button>
   );
 }
