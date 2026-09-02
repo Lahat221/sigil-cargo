@@ -9,6 +9,7 @@ import { PartagerWhatsAppButton } from "@/components/commandes/PartagerMediaButt
 import { PartagerFichierButton } from "@/components/commandes/PartagerFichierButton";
 import { PartagerVideoWhatsAppButton } from "@/components/commandes/PartagerVideoWhatsAppButton";
 import { NotifRetraitButton } from "@/components/commandes/NotifRetraitButton";
+import { PartagerVideoLazyButton } from "@/components/commandes/PartagerVideoLazyButton";
 import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
 import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
@@ -186,7 +187,6 @@ export default async function CommandeDetailPage({
             clientNom={commande.clients?.nom ?? ""}
             clientTelephone={commande.clients?.telephone ?? null}
             clientTelephonePays={commande.clients?.telephone_pays ?? null}
-            videoUrl={videoItems[0]?.url ?? null}
             texte={construireTexteRetrait({
               clientNom: commande.clients?.nom ?? "",
               numero: commande.numero,
@@ -195,6 +195,9 @@ export default async function CommandeDetailPage({
               montantTotal: commande.montant_total,
             })}
           />
+        )}
+        {BRAND.retrait && videoItems[0] && (
+          <PartagerVideoLazyButton videoPath={videoItems[0].path} />
         )}
         <SupprimerCommandeButton
           commandeId={commande.id}

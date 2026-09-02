@@ -6,6 +6,7 @@ import { StatutBadge } from "./StatutBadge";
 import { SupprimerCommandeButton } from "./SupprimerCommandeButton";
 import { NotifButtons } from "./NotifButtons";
 import { NotifRetraitButton } from "./NotifRetraitButton";
+import { PartagerVideoLazyButton } from "./PartagerVideoLazyButton";
 import type { CommandeListItem } from "./types";
 import { BRAND } from "@/lib/brand";
 import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
@@ -150,9 +151,11 @@ export function CommandesListe({
                           clientNom={c.clients?.nom ?? ""}
                           clientTelephone={c.clients?.telephone ?? null}
                           clientTelephonePays={c.clients?.telephone_pays ?? null}
-                          videoPath={c.video_urls?.[0] ?? null}
                           texte={texteRetrait(c)}
                         />
+                      )}
+                      {BRAND.retrait && c.video_urls?.[0] && (
+                        <PartagerVideoLazyButton videoPath={c.video_urls[0]} />
                       )}
                       <SupprimerCommandeButton
                         commandeId={c.id}
@@ -230,9 +233,11 @@ export function CommandesListe({
                     clientNom={c.clients?.nom ?? ""}
                     clientTelephone={c.clients?.telephone ?? null}
                     clientTelephonePays={c.clients?.telephone_pays ?? null}
-                    videoPath={c.video_urls?.[0] ?? null}
                     texte={texteRetrait(c)}
                   />
+                )}
+                {BRAND.retrait && c.video_urls?.[0] && (
+                  <PartagerVideoLazyButton videoPath={c.video_urls[0]} />
                 )}
                 <SupprimerCommandeButton commandeId={c.id} numero={c.numero} />
               </div>
