@@ -21,6 +21,9 @@ const {
   destinataireEmail: DESTINATAIRE_EMAIL,
 } = BRAND.identite;
 
+// Cachet de l'expéditeur (COLLE AGRO) imprimé en bas de la déclaration.
+const CACHET_PATH = BRAND.factureExportateur.cachetPath;
+
 export default async function DeclarationPage({
   searchParams,
 }: {
@@ -218,6 +221,25 @@ export default async function DeclarationPage({
               <div className="print:hidden">
                 <ValiderDeclarationButton projetId={projetId} dejaValidee={declarationValidee} />
               </div>
+            </div>
+          )}
+
+          {BRAND.moduleFranceActif && sections.some((s) => s.lignes.length > 0) && (
+            <div className="bloc-print flex flex-wrap items-end justify-between gap-6 rounded-xl border border-slate-200/70 bg-white p-5 shadow-sm">
+              <p className="max-w-xl text-sm leading-relaxed text-slate-700">
+                <span className="font-semibold">NB :</span> Concernant les vêtements et autres
+                produits, ceux-ci ne disposent pas de facture car la plupart sont déjà utilisés ou
+                de type traditionnel. Un inventaire chiffré a donc été établi afin d&apos;en estimer
+                la valeur.
+              </p>
+              {CACHET_PATH && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={CACHET_PATH}
+                  alt={`Cachet ${BRAND.factureExportateur.nom}`}
+                  className="h-28 w-auto shrink-0 object-contain"
+                />
+              )}
             </div>
           )}
         </>
