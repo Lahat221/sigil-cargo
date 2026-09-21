@@ -15,7 +15,7 @@ export default async function GestionDouaniereLayout({
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <DouaneSousNav />
         <DouaneFiltreDepart projets={projets ?? []} />
       </div>

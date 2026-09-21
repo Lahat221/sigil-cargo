@@ -4,6 +4,7 @@ import { regrouperParSection, poidsTotalUnique } from "@/lib/douane/sections";
 import { ValeurSectionInput } from "@/components/douane/ValeurSectionInput";
 import { DeclarationXlsxButton } from "@/components/douane/DeclarationXlsxButton";
 import { ValiderDeclarationButton } from "@/components/douane/ValiderDeclarationButton";
+import { ImprimerButton } from "@/components/douane/ImprimerButton";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
@@ -66,14 +67,38 @@ export default async function DeclarationPage({
   const declarationValidee = expeditionFrance?.declaration_dakar_validee ?? false;
 
   return (
-    <div className="max-w-5xl">
+    <div className="declaration-print max-w-5xl">
+      <style>{`
+        @media print {
+          @page { size: A4; margin: 12mm; }
+          html, body { background: #fff !important; }
+          /* Les bandes navy / or sont du fond : sans ça le navigateur les
+             retire à l'impression et le texte blanc devient invisible. */
+          .declaration-print, .declaration-print * {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .declaration-print { max-width: none; }
+          .declaration-print .bloc-print {
+            box-shadow: none !important;
+            border-radius: 6px !important;
+            break-inside: avoid-page;
+          }
+          .declaration-print .section-print { break-inside: auto; }
+          .declaration-print .section-print > div:first-child { break-after: avoid; }
+          .declaration-print thead { display: table-header-group; }
+          .declaration-print tr { break-inside: avoid; }
+          .declaration-print table { font-size: 10.5px; }
+          .declaration-print .overflow-x-auto { overflow: visible !important; }
+        }
+      `}</style>
       {!projetId ? (
         <p className="rounded-xl border border-slate-200/70 bg-white p-4 text-sm text-slate-500 shadow-sm">
           Aucun départ trouvé.
         </p>
       ) : (
         <>
-          <div className="mb-6 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm">
+          <div className="bloc-print mb-6 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm">
             <div className="bg-navy px-5 py-3">
               <h1 className="text-center text-lg font-bold tracking-wide text-white">
                 {BRAND.nom} — DÉCLARATION DE MARCHANDISE
@@ -96,15 +121,18 @@ export default async function DeclarationPage({
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 px-5 py-3">
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 print:text-slate-600">
                 {projet?.nom} · {lignes.filter((l) => l.typeProduit !== null).length} lignes produit
               </p>
-              <DeclarationXlsxButton projetId={projetId} />
+              <div className="flex flex-wrap items-center gap-2 print:hidden">
+                <ImprimerButton />
+                <DeclarationXlsxButton projetId={projetId} />
+              </div>
             </div>
           </div>
 
           {sections.every((s) => s.lignes.length === 0) && (
-            <p className="rounded-xl border border-slate-200/70 bg-white p-4 text-sm text-slate-500 shadow-sm">
+            <p className="rounded-xl border border-slate-200/70 bg-white p-4 text-sm text-slate-500 shadow-sm print:hidden">
               Aucun produit traité pour ce départ — traitez d&apos;abord les colis depuis le tableau
               de bord.
             </p>
@@ -117,11 +145,11 @@ export default async function DeclarationPage({
             return (
               <div
                 key={section.cle}
-                className="mb-6 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm"
+                className="bloc-print section-print mb-6 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-navy px-4 py-2.5">
                   <h2 className="font-semibold text-white">{section.nom}</h2>
-                  <div className="flex items-center gap-2 rounded-md bg-white/10 px-2 py-1">
+                  <div className="flex items-center gap-2 rounded-md bg-white/10 px-2 py-1 print:hidden">
                     <span className="text-xs text-white/70">Valeur estimée</span>
                     <ValeurSectionInput
                       projetId={projetId}
@@ -129,6 +157,10 @@ export default async function DeclarationPage({
                       valeurInitiale={valeurs.get(section.cle) ?? null}
                     />
                   </div>
+                  {/* À l'impression le champ de saisie est remplacé par sa valeur en texte. */}
+                  <p className="hidden text-sm font-medium text-white print:block">
+                    Valeur estimée : {(valeurs.get(section.cle) ?? 0).toLocaleString("fr-FR")} FCFA
+                  </p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
@@ -157,7 +189,7 @@ export default async function DeclarationPage({
                             <td className="px-3 py-2 text-right">
                               {l.quantite} {l.unite}
                             </td>
-                            <td className="px-3 py-2 text-right text-slate-400">
+                            <td className="px-3 py-2 text-right text-slate-400 print:text-slate-700">
                               {afficherPoids && l.poidsKg !== null ? `${l.poidsKg} kg` : ""}
                             </td>
                           </tr>
@@ -171,7 +203,7 @@ export default async function DeclarationPage({
           })}
 
           {sections.some((s) => s.lignes.length > 0) && (
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gold-gradient px-5 py-3 shadow-sm">
+            <div className="bloc-print mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gold-gradient px-5 py-3 shadow-sm">
               <div className="flex flex-wrap items-center gap-6">
                 <p className="font-semibold text-navy">
                   TOTAL :{" "}
@@ -183,7 +215,9 @@ export default async function DeclarationPage({
                   POIDS TOTAL : <span className="text-lg">{poidsTotal.toFixed(2)} KG</span>
                 </p>
               </div>
-              <ValiderDeclarationButton projetId={projetId} dejaValidee={declarationValidee} />
+              <div className="print:hidden">
+                <ValiderDeclarationButton projetId={projetId} dejaValidee={declarationValidee} />
+              </div>
             </div>
           )}
         </>
