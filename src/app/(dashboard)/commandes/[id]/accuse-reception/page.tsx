@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PrintButton } from "@/components/commandes/PrintButton";
+import { ImageImprimanteButton } from "@/components/commandes/ImageImprimanteButton";
 import { MarquerVerifieButton } from "@/components/commandes/MarquerVerifieButton";
 import { BRAND } from "@/lib/brand";
 
@@ -37,20 +38,26 @@ export default async function AccuseReceptionPage({
         <h1 className="text-xl font-bold text-ink">
           Accusé de réception — Colis #{commande.numero}
         </h1>
-        <Suspense fallback={null}>
-          <PrintButton />
-        </Suspense>
+        <div className="flex items-center gap-2 print:hidden">
+          <ImageImprimanteButton
+            selector=".accuse"
+            filenamePrefix={`accuse-reception-colis-${commande.numero}`}
+          />
+          <Suspense fallback={null}>
+            <PrintButton />
+          </Suspense>
+        </div>
       </div>
 
-      <div className="accuse rounded-lg border-2 border-slate-900 bg-white p-6 shadow-lg print:border-0 print:shadow-none">
-        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+      <div className="accuse rounded-lg border-2 border-slate-900 bg-white p-6 shadow-lg print:border-0 print:p-0 print:shadow-none">
+        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500 print:text-[10px]">
           {BRAND.nom}
         </p>
-        <h2 className="mb-4 text-xl font-bold text-slate-900">
+        <h2 className="mb-4 text-xl font-bold text-slate-900 print:mb-2 print:text-sm">
           Accusé de réception de colis
         </h2>
 
-        <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+        <div className="mb-4 grid grid-cols-2 gap-3 text-sm print:mb-2 print:grid-cols-1 print:gap-1 print:text-[11px]">
           <div>
             <p className="text-slate-500">Colis</p>
             <p className="font-semibold text-slate-900">#{commande.numero}</p>
@@ -63,7 +70,7 @@ export default async function AccuseReceptionPage({
           </div>
         </div>
 
-        <div className="mb-4 border-t border-slate-200 pt-3 text-sm">
+        <div className="mb-4 border-t border-slate-200 pt-3 text-sm print:mb-2 print:pt-2 print:text-[11px]">
           <p className="text-slate-500">Client</p>
           <p className="font-medium text-slate-900">
             {commande.clients?.nom ?? "—"}
@@ -71,7 +78,7 @@ export default async function AccuseReceptionPage({
           </p>
         </div>
 
-        <div className="mb-4 border-t border-slate-200 pt-3 text-sm">
+        <div className="mb-4 border-t border-slate-200 pt-3 text-sm print:mb-2 print:pt-2 print:text-[11px]">
           <p className="text-slate-500">Déposé par</p>
           <p className="font-medium text-slate-900">
             {deposantEstClient
@@ -82,7 +89,7 @@ export default async function AccuseReceptionPage({
           </p>
         </div>
 
-        <div className="mb-4 border-t border-slate-200 pt-3 text-sm">
+        <div className="mb-4 border-t border-slate-200 pt-3 text-sm print:mb-2 print:pt-2 print:text-[11px]">
           <p className="text-slate-500">Contenu déclaré</p>
           <p className="font-medium text-slate-900">
             {commande.description || "—"}
@@ -98,7 +105,7 @@ export default async function AccuseReceptionPage({
           </p>
         </div>
 
-        <div className="mb-5 border-t border-slate-200 pt-3 text-sm">
+        <div className="mb-5 border-t border-slate-200 pt-3 text-sm print:mb-3 print:pt-2 print:text-[11px]">
           {commande.contenu_verifie ? (
             <p className="text-slate-700">
               Nous confirmons avoir reçu ET vérifié ce colis, conformément à la
@@ -118,13 +125,13 @@ export default async function AccuseReceptionPage({
           )}
         </div>
 
-        <div className="mt-8 grid grid-cols-2 gap-6 text-center text-xs text-slate-500">
+        <div className="mt-8 grid grid-cols-2 gap-6 text-center text-xs text-slate-500 print:mt-4 print:grid-cols-1 print:gap-4 print:text-[10px]">
           <div>
-            <div className="mb-1 h-16 border-b border-slate-400" />
+            <div className="mb-1 h-16 border-b border-slate-400 print:h-10" />
             Signature du déposant
           </div>
           <div>
-            <div className="mb-1 h-16 border-b border-slate-400" />
+            <div className="mb-1 h-16 border-b border-slate-400 print:h-10" />
             Signature de l&apos;agent {BRAND.nom}
           </div>
         </div>
@@ -132,8 +139,19 @@ export default async function AccuseReceptionPage({
 
       <style>{`
         @media print {
-          @page { size: A4; margin: 15mm; }
-          .accuse { border: none !important; }
+          /* Mini imprimante thermique — rouleau continu 58mm, comme
+             l'étiquette colis (même matériel à la réception). */
+          @page {
+            size: 58mm auto;
+            margin: 2mm;
+          }
+          .accuse {
+            max-width: none !important;
+            width: 54mm;
+            border: none !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
         }
       `}</style>
     </div>
