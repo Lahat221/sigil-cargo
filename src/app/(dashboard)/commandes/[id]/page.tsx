@@ -152,7 +152,7 @@ export default async function CommandeDetailPage({
           className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100"
         >
           <IconPrinter size={14} />
-          Imprimer
+          Étiquette colis
         </Link>
         <NotifButtons
           commandeId={commande.id}

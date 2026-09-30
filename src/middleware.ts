@@ -7,7 +7,10 @@ import { updateSession } from "@/lib/supabase/middleware";
 // être listée ici explicitement pour rester accessible sans connexion
 // (sinon le favicon/icône PWA redirige vers /login pour un visiteur non
 // authentifié, au lieu de s'afficher).
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest", "/api/twilio", "/icon"];
+// /colis/[id] : page de suivi public (QR code sur l'étiquette) — montre le
+// contenu/vidéo d'un colis sans connexion, volontairement en dehors du
+// groupe (dashboard).
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest", "/api/twilio", "/icon", "/colis"];
 
 function moduleSlug(pathname: string) {
   return pathname.split("/")[1] || null;

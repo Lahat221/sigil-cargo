@@ -134,7 +134,7 @@ export function CommandesListe({
                         target="_blank"
                         className="text-sm text-slate-600 hover:underline"
                       >
-                        Imprimer
+                        Étiquette colis
                       </Link>
                       <NotifButtons
                         commandeId={c.id}
@@ -216,7 +216,7 @@ export function CommandesListe({
                   target="_blank"
                   className="text-sm text-slate-600 hover:underline"
                 >
-                  Imprimer
+                  Étiquette colis
                 </Link>
                 <NotifButtons
                         commandeId={c.id}

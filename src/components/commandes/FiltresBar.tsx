@@ -29,6 +29,9 @@ export function FiltresBar({
       } else {
         params.delete(key);
       }
+      // Tout changement de filtre repart de la page 1 — sinon on peut se
+      // retrouver sur une page qui n'existe plus pour le nouveau résultat.
+      params.delete("page");
       sessionStorage.setItem(STORAGE_KEY, params.toString());
       startTransition(() => {
         router.push(`${pathname}?${params.toString()}`);
@@ -70,7 +73,9 @@ export function FiltresBar({
   const aDesFiltres =
     !!searchParams.get("q") ||
     !!searchParams.get("statut") ||
-    !!searchParams.get("projet");
+    !!searchParams.get("projet") ||
+    !!searchParams.get("debut") ||
+    !!searchParams.get("fin");
 
   return (
     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -107,6 +112,22 @@ export function FiltresBar({
           </option>
         ))}
       </select>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="date"
+          value={searchParams.get("debut") ?? ""}
+          onChange={(e) => setParam("debut", e.target.value)}
+          className="rounded-md border border-slate-300 px-2 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+        />
+        <span className="text-slate-400">→</span>
+        <input
+          type="date"
+          value={searchParams.get("fin") ?? ""}
+          onChange={(e) => setParam("fin", e.target.value)}
+          className="rounded-md border border-slate-300 px-2 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+        />
+      </div>
 
       {aDesFiltres && (
         <button
