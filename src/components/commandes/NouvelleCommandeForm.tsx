@@ -49,6 +49,10 @@ export function NouvelleCommandeForm({
   const [adresseLivraison, setAdresseLivraison] = useState("");
   const [description, setDescription] = useState("");
   const [remarqueInterne, setRemarqueInterne] = useState("");
+  const [deposantEstClient, setDeposantEstClient] = useState(true);
+  const [livreurNom, setLivreurNom] = useState("");
+  const [livreurTelephone, setLivreurTelephone] = useState("");
+  const [contenuVerifie, setContenuVerifie] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [videos, setVideos] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<Blob | null>(null);
@@ -115,9 +119,9 @@ export function NouvelleCommandeForm({
       setError("Sélectionne un produit.");
       return;
     }
-    // Le poids reste obligatoire en fret aérien (il fixe le prix) ; en
-    // groupage conteneur, un lot réel n'a souvent pas de pesée individuelle
-    // (seul le volume compte pour la facturation).
+    // Poids optionnel dans tous les cas — souvent pas le temps de peser au
+    // moment du dépôt (rempli plus tard via la fiche colis). En groupage
+    // conteneur c'est de toute façon le volume qui fixe le prix.
     let poids: number | null = null;
     if (poidsKg.trim()) {
       poids = parseFloat(poidsKg);
@@ -125,9 +129,6 @@ export function NouvelleCommandeForm({
         setError("Indique un poids valide.");
         return;
       }
-    } else if (!enModeConteneur) {
-      setError("Indique un poids valide.");
-      return;
     }
     let prix: number | null = null;
     let volume: number | null = null;
@@ -205,6 +206,9 @@ export function NouvelleCommandeForm({
         adresseLivraison,
         description,
         remarqueInterne,
+        livreurNom: deposantEstClient ? "" : livreurNom,
+        livreurTelephone: deposantEstClient ? "" : livreurTelephone,
+        contenuVerifie,
         photoPaths,
         videoPaths,
         noteVocalePath,
@@ -216,7 +220,10 @@ export function NouvelleCommandeForm({
         return;
       }
 
-      router.push("/commandes");
+      // Direction l'accusé de réception (prêt à imprimer/signer) plutôt que
+      // la liste — les infos du colis qu'on vient de saisir y sont reprises
+      // automatiquement, pas besoin de les retaper.
+      router.push(`/commandes/${commandeId}/accuse-reception?print=1`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inattendue.");
@@ -273,13 +280,12 @@ export function NouvelleCommandeForm({
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            Poids (kg){enModeConteneur && " (optionnel)"}
+            Poids (kg) (optionnel)
           </label>
           <input
             type="number"
             step="0.001"
             min="0"
-            required={!enModeConteneur}
             value={poidsKg}
             onChange={(e) => setPoidsKg(e.target.value)}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
@@ -399,6 +405,60 @@ export function NouvelleCommandeForm({
           rows={2}
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
         />
+      </div>
+
+      <div className="rounded-md border border-slate-200 p-3">
+        <p className="mb-2 text-sm font-medium text-slate-700">
+          Déposé par (pour l&apos;accusé de réception)
+        </p>
+        <label className="mb-2 flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={deposantEstClient}
+            onChange={(e) => setDeposantEstClient(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          Le client dépose lui-même son colis
+        </label>
+        {!deposantEstClient && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Nom du livreur
+              </label>
+              <input
+                type="text"
+                value={livreurNom}
+                onChange={(e) => setLivreurNom(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Téléphone du livreur
+              </label>
+              <input
+                type="text"
+                value={livreurTelephone}
+                onChange={(e) => setLivreurTelephone(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+        <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={contenuVerifie}
+            onChange={(e) => setContenuVerifie(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          Contenu vérifié maintenant
+        </label>
+        <p className="mt-1 text-xs text-slate-400">
+          Laisse décoché si pas le temps — l&apos;accusé l&apos;indiquera, et tu
+          pourras marquer le contenu comme vérifié plus tard.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

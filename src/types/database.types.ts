@@ -150,6 +150,11 @@ export interface Database {
           adresse_livraison: string | null;
           description: string | null;
           remarque_interne: string | null;
+          // Accusé de réception : qui a physiquement déposé le colis, si
+          // différent du client (ex. un tiers/livreur).
+          livreur_nom: string | null;
+          livreur_telephone: string | null;
+          contenu_verifie: boolean;
           code_barre_colis: string | null;
           pesee_faite: boolean;
           emballage_fait: boolean;
@@ -182,6 +187,9 @@ export interface Database {
           adresse_livraison?: string | null;
           description?: string | null;
           remarque_interne?: string | null;
+          livreur_nom?: string | null;
+          livreur_telephone?: string | null;
+          contenu_verifie?: boolean;
           code_barre_colis?: string | null;
           pesee_faite?: boolean;
           emballage_fait?: boolean;

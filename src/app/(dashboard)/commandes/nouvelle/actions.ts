@@ -47,6 +47,9 @@ type CreateCommandeInput = {
   adresseLivraison: string;
   description: string;
   remarqueInterne: string;
+  livreurNom: string;
+  livreurTelephone: string;
+  contenuVerifie: boolean;
   photoPaths: string[];
   videoPaths: string[];
   noteVocalePath: string | null;
@@ -90,6 +93,9 @@ export async function createCommande(
     adresse_livraison: input.adresseLivraison.trim() || null,
     description: input.description.trim() || null,
     remarque_interne: input.remarqueInterne.trim() || null,
+    livreur_nom: input.livreurNom.trim() || null,
+    livreur_telephone: input.livreurTelephone.trim() || null,
+    contenu_verifie: input.contenuVerifie,
     code_barre_colis: codeBarreColis,
     photo_urls: input.photoPaths.length > 0 ? input.photoPaths : null,
     video_urls: input.videoPaths.length > 0 ? input.videoPaths : null,

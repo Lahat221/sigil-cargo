@@ -25,6 +25,28 @@ export async function signerUrlMedia(
   return { url: data.signedUrl };
 }
 
+/**
+ * Marque le contenu comme vérifié directement depuis l'accusé de
+ * réception — évite de rouvrir le formulaire d'édition complet juste pour
+ * ça quand l'agent revient vérifier un colis plus tard (souvent pas le
+ * temps de le faire au moment du dépôt).
+ */
+export async function marquerContenuVerifie(
+  commandeId: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("commandes")
+    .update({ contenu_verifie: true })
+    .eq("id", commandeId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/commandes/${commandeId}`);
+  revalidatePath(`/commandes/${commandeId}/accuse-reception`);
+  return { success: true };
+}
+
 export async function changerStatut(
   commandeId: string,
   nouveauStatut: StatutCommande
@@ -64,6 +86,9 @@ type UpdateCommandeInput = {
   adresseLivraison: string;
   description: string;
   remarqueInterne: string;
+  livreurNom: string;
+  livreurTelephone: string;
+  contenuVerifie: boolean;
   photoPaths: string[];
   videoPaths: string[];
   noteVocalePath: string | null;
@@ -98,6 +123,9 @@ export async function updateCommande(
       adresse_livraison: input.adresseLivraison.trim() || null,
       description: input.description.trim() || null,
       remarque_interne: input.remarqueInterne.trim() || null,
+      livreur_nom: input.livreurNom.trim() || null,
+      livreur_telephone: input.livreurTelephone.trim() || null,
+      contenu_verifie: input.contenuVerifie,
       photo_urls: input.photoPaths.length > 0 ? input.photoPaths : null,
       video_urls: input.videoPaths.length > 0 ? input.videoPaths : null,
       note_vocale_url: input.noteVocalePath,

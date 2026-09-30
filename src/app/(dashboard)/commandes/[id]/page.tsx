@@ -154,6 +154,14 @@ export default async function CommandeDetailPage({
           <IconPrinter size={14} />
           Étiquette colis
         </Link>
+        <Link
+          href={`/commandes/${commande.id}/accuse-reception`}
+          target="_blank"
+          className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100"
+        >
+          <IconFileText size={14} />
+          Accusé de réception
+        </Link>
         <NotifButtons
           commandeId={commande.id}
           numero={commande.numero}

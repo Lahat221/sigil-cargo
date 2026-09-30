@@ -35,6 +35,9 @@ export function EditCommandeForm({
   initialAdresseLivraison,
   initialDescription,
   initialRemarqueInterne,
+  initialLivreurNom,
+  initialLivreurTelephone,
+  initialContenuVerifie,
   existingPhotos,
   existingVideos,
   existingVoiceNote,
@@ -54,6 +57,9 @@ export function EditCommandeForm({
   initialAdresseLivraison: string;
   initialDescription: string;
   initialRemarqueInterne: string;
+  initialLivreurNom: string;
+  initialLivreurTelephone: string;
+  initialContenuVerifie: boolean;
   existingPhotos: ExistingMedia[];
   existingVideos: ExistingMedia[];
   existingVoiceNote: ExistingMedia | null;
@@ -89,6 +95,12 @@ export function EditCommandeForm({
   const [remarqueInterne, setRemarqueInterne] = useState(
     initialRemarqueInterne
   );
+  const [deposantEstClient, setDeposantEstClient] = useState(
+    !initialLivreurNom && !initialLivreurTelephone
+  );
+  const [livreurNom, setLivreurNom] = useState(initialLivreurNom);
+  const [livreurTelephone, setLivreurTelephone] = useState(initialLivreurTelephone);
+  const [contenuVerifie, setContenuVerifie] = useState(initialContenuVerifie);
   const [keptPhotos, setKeptPhotos] = useState(existingPhotos);
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [keptVideos, setKeptVideos] = useState(existingVideos);
@@ -150,9 +162,9 @@ export function EditCommandeForm({
       setError("Le nom et le téléphone du client sont requis.");
       return;
     }
-    // Le poids reste obligatoire en fret aérien (il fixe le prix) ; en
-    // groupage conteneur, un lot réel n'a souvent pas de pesée individuelle
-    // (seul le volume compte pour la facturation).
+    // Poids optionnel dans tous les cas — souvent pas le temps de peser au
+    // moment du dépôt (rempli plus tard). En groupage conteneur c'est de
+    // toute façon le volume qui fixe le prix.
     let poids: number | null = null;
     if (poidsKg.trim()) {
       poids = parseFloat(poidsKg);
@@ -160,9 +172,6 @@ export function EditCommandeForm({
         setError("Indique un poids valide.");
         return;
       }
-    } else if (!enModeConteneur) {
-      setError("Indique un poids valide.");
-      return;
     }
     let prix: number | null = null;
     let volume: number | null = null;
@@ -239,6 +248,9 @@ export function EditCommandeForm({
         adresseLivraison,
         description,
         remarqueInterne,
+        livreurNom: deposantEstClient ? "" : livreurNom,
+        livreurTelephone: deposantEstClient ? "" : livreurTelephone,
+        contenuVerifie,
         photoPaths,
         videoPaths,
         noteVocalePath,
@@ -305,13 +317,12 @@ export function EditCommandeForm({
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            Poids (kg){enModeConteneur && " (optionnel)"}
+            Poids (kg) (optionnel)
           </label>
           <input
             type="number"
             step="0.001"
             min="0"
-            required={!enModeConteneur}
             value={poidsKg}
             onChange={(e) => setPoidsKg(e.target.value)}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
@@ -431,6 +442,56 @@ export function EditCommandeForm({
           rows={2}
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
         />
+      </div>
+
+      <div className="rounded-md border border-slate-200 p-3">
+        <p className="mb-2 text-sm font-medium text-slate-700">
+          Déposé par (pour l&apos;accusé de réception)
+        </p>
+        <label className="mb-2 flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={deposantEstClient}
+            onChange={(e) => setDeposantEstClient(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          Le client dépose lui-même son colis
+        </label>
+        {!deposantEstClient && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Nom du livreur
+              </label>
+              <input
+                type="text"
+                value={livreurNom}
+                onChange={(e) => setLivreurNom(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Téléphone du livreur
+              </label>
+              <input
+                type="text"
+                value={livreurTelephone}
+                onChange={(e) => setLivreurTelephone(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+        <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={contenuVerifie}
+            onChange={(e) => setContenuVerifie(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          Contenu vérifié
+        </label>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
