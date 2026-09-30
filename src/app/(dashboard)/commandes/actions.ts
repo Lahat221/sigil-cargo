@@ -66,6 +66,33 @@ export async function changerStatut(
   return { success: true };
 }
 
+/**
+ * Changement de statut groupé — sélection de plusieurs colis dans la liste
+ * (CommandesListe) plutôt qu'un par un. Un seul update multi-lignes : le
+ * trigger trg_log_statut (historique) se déclenche normalement une fois
+ * par ligne modifiée, comme pour changerStatut().
+ */
+export async function changerStatutMasse(
+  commandeIds: string[],
+  nouveauStatut: StatutCommande
+): Promise<{ error: string } | { success: true; nbMisAJour: number }> {
+  if (commandeIds.length === 0) return { success: true, nbMisAJour: 0 };
+
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("commandes")
+    .update({ statut: nouveauStatut })
+    .in("id", commandeIds)
+    .select("id");
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/commandes");
+  revalidatePath("/commandes/pipeline");
+  return { success: true, nbMisAJour: data?.length ?? 0 };
+}
+
 type UpdateCommandeInput = {
   clientId: string | null;
   nouveauClient: {

@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { StatutBadge } from "./StatutBadge";
+import { StatutBadge, STATUT_LABELS } from "./StatutBadge";
 import { SupprimerCommandeButton } from "./SupprimerCommandeButton";
 import { NotifButtons } from "./NotifButtons";
 import { NotifRetraitButton } from "./NotifRetraitButton";
 import { PartagerVideoLazyButton } from "./PartagerVideoLazyButton";
+import { changerStatutMasse } from "@/app/(dashboard)/commandes/actions";
 import type { CommandeListItem } from "./types";
+import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
 import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
+
+const STATUTS_ORDONNES = Object.keys(STATUT_LABELS) as StatutCommande[];
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -36,10 +41,42 @@ export function CommandesListe({
   commandes: CommandeListItem[];
 }) {
   const [vue, setVue] = useState<"table" | "cartes">("table");
+  const [selectionnes, setSelectionnes] = useState<Set<string>>(new Set());
+  const [statutMasse, setStatutMasse] = useState<StatutCommande>(
+    STATUTS_ORDONNES[0]
+  );
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   useEffect(() => {
     if (window.innerWidth < 768) setVue("cartes");
   }, []);
+
+  function basculerSelection(id: string) {
+    setSelectionnes((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function basculerToutSelectionner() {
+    setSelectionnes((prev) =>
+      prev.size === commandes.length
+        ? new Set()
+        : new Set(commandes.map((c) => c.id))
+    );
+  }
+
+  function appliquerStatutMasse() {
+    const ids = Array.from(selectionnes);
+    startTransition(async () => {
+      await changerStatutMasse(ids, statutMasse);
+      setSelectionnes(new Set());
+      router.refresh();
+    });
+  }
 
   if (commandes.length === 0) {
     return (
@@ -51,27 +88,65 @@ export function CommandesListe({
 
   return (
     <div>
-      <div className="mb-3 flex justify-end gap-1">
-        <button
-          onClick={() => setVue("table")}
-          className={`rounded-md px-3 py-1 text-sm ${
-            vue === "table"
-              ? "bg-navy text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          Tableau
-        </button>
-        <button
-          onClick={() => setVue("cartes")}
-          className={`rounded-md px-3 py-1 text-sm ${
-            vue === "cartes"
-              ? "bg-navy text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          Cartes
-        </button>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        {selectionnes.size > 0 ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-navy/20 bg-navy/5 px-3 py-1.5">
+            <span className="text-sm font-medium text-navy">
+              {selectionnes.size} colis sélectionné
+              {selectionnes.size > 1 ? "s" : ""}
+            </span>
+            <select
+              value={statutMasse}
+              onChange={(e) =>
+                setStatutMasse(e.target.value as StatutCommande)
+              }
+              className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+            >
+              {STATUTS_ORDONNES.map((s) => (
+                <option key={s} value={s}>
+                  {STATUT_LABELS[s]}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={appliquerStatutMasse}
+              disabled={isPending}
+              className="rounded-md bg-navy px-3 py-1 text-sm font-medium text-white hover:bg-navy/90 disabled:opacity-50"
+            >
+              {isPending ? "..." : "Appliquer"}
+            </button>
+            <button
+              onClick={() => setSelectionnes(new Set())}
+              className="text-sm text-slate-500 hover:underline"
+            >
+              Annuler la sélection
+            </button>
+          </div>
+        ) : (
+          <div />
+        )}
+        <div className="flex gap-1">
+          <button
+            onClick={() => setVue("table")}
+            className={`rounded-md px-3 py-1 text-sm ${
+              vue === "table"
+                ? "bg-navy text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            Tableau
+          </button>
+          <button
+            onClick={() => setVue("cartes")}
+            className={`rounded-md px-3 py-1 text-sm ${
+              vue === "cartes"
+                ? "bg-navy text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            Cartes
+          </button>
+        </div>
       </div>
 
       {vue === "table" ? (
@@ -79,6 +154,17 @@ export function CommandesListe({
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
+                <th className="px-4 py-3 font-medium">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectionnes.size === commandes.length &&
+                      commandes.length > 0
+                    }
+                    onChange={basculerToutSelectionner}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">N°</th>
                 <th className="px-4 py-3 font-medium">Client</th>
                 <th className="px-4 py-3 font-medium">Projet</th>
@@ -91,6 +177,14 @@ export function CommandesListe({
             <tbody className="divide-y divide-slate-100">
               {commandes.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectionnes.has(c.id)}
+                      onChange={() => basculerSelection(c.id)}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/commandes/${c.id}`}
@@ -175,13 +269,21 @@ export function CommandesListe({
               key={c.id}
               className="rounded-xl border border-slate-200/70 bg-white shadow-sm p-4 transition-shadow hover:shadow-sm"
             >
-              <Link href={`/commandes/${c.id}`}>
-                <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2 flex items-center justify-between">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectionnes.has(c.id)}
+                    onChange={() => basculerSelection(c.id)}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
                   <span className="font-semibold text-slate-900">
                     #{c.numero}
                   </span>
-                  <StatutBadge statut={c.statut} />
-                </div>
+                </label>
+                <StatutBadge statut={c.statut} />
+              </div>
+              <Link href={`/commandes/${c.id}`}>
                 <p className="text-sm text-slate-700">
                   {c.clients?.nom ?? "—"}
                 </p>

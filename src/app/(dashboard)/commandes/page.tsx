@@ -12,7 +12,7 @@ import type { StatutCommande } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
 
-const PAR_PAGE = 50;
+const PAR_PAGE = 20;
 
 export default async function CommandesPage({
   searchParams,
