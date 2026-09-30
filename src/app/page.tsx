@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Logo } from "@/components/layout/Logo";
@@ -8,9 +9,15 @@ export const dynamic = "force-dynamic";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
 
-function premierNumero(tel: string): string | null {
-  const premier = tel.split(/[-/]/)[0]?.trim();
-  const digits = premier?.replace(/[^\d+]/g, "");
+// Numéro WhatsApp pour le dépôt de colis à Dakar — dernier numéro de la
+// liste (celui réellement utilisé sur l'affiche "Fret Aérien Express"
+// fournie par le tenant, contrairement au premier qui est un autre contact
+// expéditeur). À public/affiche-prochain-depart.png : remplacer ce fichier
+// suffit pour changer le visuel à chaque nouveau départ, aucun code à toucher.
+function dernierNumero(tel: string): string | null {
+  const parties = tel.split(/[-/]/);
+  const dernier = parties[parties.length - 1]?.trim();
+  const digits = dernier?.replace(/[^\d+]/g, "");
   return digits && digits.length >= 6 ? digits : null;
 }
 
@@ -49,7 +56,7 @@ export default async function HomePage() {
 
   const contactTel = BRAND.identite.expediteurTel.includes("RENSEIGNER")
     ? null
-    : premierNumero(BRAND.identite.expediteurTel);
+    : dernierNumero(BRAND.identite.expediteurTel);
 
   return (
     <div className="min-h-screen bg-navy-gradient text-white">
@@ -64,6 +71,20 @@ export default async function HomePage() {
       </header>
 
       <main className="px-6 pb-16 sm:px-10">
+        {/* Affiche du prochain départ — visuel mis en avant, remplacer le
+            fichier public/affiche-prochain-depart.png pour la mettre à jour
+            (dates/tarifs/destinations) sans toucher au code. */}
+        <section className="mx-auto max-w-lg pt-8 sm:pt-12">
+          <Image
+            src="/affiche-prochain-depart.png"
+            alt="Affiche du prochain départ SIGIL CARGO"
+            width={1024}
+            height={1536}
+            priority
+            className="w-full rounded-2xl shadow-2xl"
+          />
+        </section>
+
         {/* Hero */}
         <section className="mx-auto max-w-3xl pt-10 text-center sm:pt-16">
           <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">
