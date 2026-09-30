@@ -34,19 +34,25 @@ export default async function ProjetsPage() {
         .order("created_at", { ascending: false }),
       supabase
         .from("commandes")
-        .select("projet_id, statut, montant_total, poids_kg"),
+        .select("projet_id, statut, montant_total, poids_kg, destination"),
       supabase.from("charges").select("projet_id, montant"),
     ]);
 
   const statsParProjet = new Map<
     string,
-    { nbCommandes: number; ca: number; poids: number; depenses: number }
+    {
+      nbCommandes: number;
+      ca: number;
+      poids: number;
+      depenses: number;
+      parDestination: Map<string, { nb: number; poids: number }>;
+    }
   >();
 
   function stats(projetId: string) {
     let s = statsParProjet.get(projetId);
     if (!s) {
-      s = { nbCommandes: 0, ca: 0, poids: 0, depenses: 0 };
+      s = { nbCommandes: 0, ca: 0, poids: 0, depenses: 0, parDestination: new Map() };
       statsParProjet.set(projetId, s);
     }
     return s;
@@ -58,6 +64,12 @@ export default async function ProjetsPage() {
     if (c.statut !== "annulee") {
       s.ca += c.montant_total;
       s.poids += c.poids_kg ?? 0;
+      if (c.destination) {
+        const d = s.parDestination.get(c.destination) ?? { nb: 0, poids: 0 };
+        d.nb += 1;
+        d.poids += c.poids_kg ?? 0;
+        s.parDestination.set(c.destination, d);
+      }
     }
   }
   for (const ch of charges ?? []) {
@@ -112,9 +124,13 @@ export default async function ProjetsPage() {
                     ca: 0,
                     poids: 0,
                     depenses: 0,
+                    parDestination: new Map<string, { nb: number; poids: number }>(),
                   };
                   const benefice = s.ca - s.depenses;
                   const revientKg = s.poids > 0 ? s.depenses / s.poids : null;
+                  const destinations = Array.from(
+                    s.parDestination.entries()
+                  ).sort((a, b) => b[1].nb - a[1].nb);
 
                   return (
                     <tr key={p.id} className="hover:bg-slate-50">
@@ -129,6 +145,18 @@ export default async function ProjetsPage() {
                           <span className="ml-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-normal text-slate-500">
                             {p.mode_fret === "conteneur" ? "Conteneur · m³" : "Aérien · kg"}
                           </span>
+                        )}
+                        {destinations.length > 0 && (
+                          <p className="mt-1 text-[11px] font-normal text-slate-400">
+                            {destinations
+                              .map(
+                                ([ville, d]) =>
+                                  `${ville} : ${d.nb} colis${
+                                    d.poids > 0 ? ` (${d.poids.toLocaleString("fr-FR")} kg)` : ""
+                                  }`
+                              )
+                              .join(" · ")}
+                          </p>
                         )}
                       </td>
                       <td className="px-3 py-2.5">

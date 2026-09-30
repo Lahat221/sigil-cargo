@@ -19,7 +19,7 @@ export default async function EtiquetteCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, poids_kg, mode_fret, volume_m3, code_barre_colis, clients(nom), projets(nom)"
+      "id, numero, poids_kg, mode_fret, volume_m3, code_barre_colis, destination, clients(nom), projets(nom)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -65,6 +65,12 @@ export default async function EtiquetteCommandePage({
         <p className="mb-2 text-2xl font-black text-slate-900">
           #{commande.numero}
         </p>
+
+        {commande.destination && (
+          <p className="mb-2 rounded-md bg-slate-900 py-1 text-base font-extrabold uppercase tracking-wide text-white">
+            {commande.destination}
+          </p>
+        )}
 
         <div className="mb-2 space-y-0.5 text-xs text-slate-700">
           <p>
@@ -113,6 +119,8 @@ export default async function EtiquetteCommandePage({
             width: 54mm;
             border: none !important;
             padding: 0 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
         }
       `}</style>

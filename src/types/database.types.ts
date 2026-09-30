@@ -148,6 +148,10 @@ export interface Database {
           statut: StatutCommande;
           paye: boolean;
           adresse_livraison: string | null;
+          // Ville de destination du colis (Paris/Lyon/Marseille, etc.) —
+          // distinct de adresse_livraison (adresse précise du destinataire).
+          // Plusieurs destinations peuvent coexister au sein d'un même projet.
+          destination: string | null;
           description: string | null;
           remarque_interne: string | null;
           // Accusé de réception : qui a physiquement déposé le colis, si
@@ -185,6 +189,7 @@ export interface Database {
           statut?: StatutCommande;
           paye?: boolean;
           adresse_livraison?: string | null;
+          destination?: string | null;
           description?: string | null;
           remarque_interne?: string | null;
           livreur_nom?: string | null;

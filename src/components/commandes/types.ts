@@ -6,6 +6,7 @@ export type CommandeListItem = {
   statut: StatutCommande;
   poids_kg: number | null;
   montant_total: number;
+  destination: string | null;
   description: string | null;
   video_urls: string[] | null;
   code_barre_colis: string | null;

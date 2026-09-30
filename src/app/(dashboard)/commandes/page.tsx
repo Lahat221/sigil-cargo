@@ -21,6 +21,7 @@ export default async function CommandesPage({
     q?: string;
     statut?: string;
     projet?: string;
+    destination?: string;
     debut?: string;
     fin?: string;
     page?: string;
@@ -40,7 +41,7 @@ export default async function CommandesPage({
 
   const page = Math.max(1, Number(searchParams.page) || 1);
   const SELECT_COLONNES =
-    "id, numero, statut, poids_kg, montant_total, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom)";
+    "id, numero, statut, poids_kg, montant_total, destination, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom)";
 
   const q = searchParams.q?.trim();
   let clientIds: string[] = [];
@@ -71,6 +72,9 @@ export default async function CommandesPage({
     }
     if (searchParams.projet) {
       q2 = q2.eq("projet_id", searchParams.projet);
+    }
+    if (searchParams.destination) {
+      q2 = q2.eq("destination", searchParams.destination);
     }
     if (searchParams.debut) {
       q2 = q2.gte("created_at", `${searchParams.debut}T00:00:00`);

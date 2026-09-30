@@ -9,6 +9,7 @@ import type { ClientMatch } from "@/app/(dashboard)/commandes/nouvelle/actions";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 import { VideoPreviewList } from "./VideoPreviewList";
 import { BRAND } from "@/lib/brand";
+import { DESTINATIONS } from "@/lib/commandes/destinations";
 
 const MAX_PHOTOS = 5;
 const MAX_VIDEOS = 4;
@@ -33,6 +34,7 @@ export function EditCommandeForm({
   initialEnveloppe,
   initialNombrePaquets,
   initialAdresseLivraison,
+  initialDestination,
   initialDescription,
   initialRemarqueInterne,
   initialLivreurNom,
@@ -55,6 +57,7 @@ export function EditCommandeForm({
   initialEnveloppe: boolean;
   initialNombrePaquets: number;
   initialAdresseLivraison: string;
+  initialDestination: string;
   initialDescription: string;
   initialRemarqueInterne: string;
   initialLivreurNom: string;
@@ -91,6 +94,7 @@ export function EditCommandeForm({
   const [adresseLivraison, setAdresseLivraison] = useState(
     initialAdresseLivraison
   );
+  const [destination, setDestination] = useState(initialDestination);
   const [description, setDescription] = useState(initialDescription);
   const [remarqueInterne, setRemarqueInterne] = useState(
     initialRemarqueInterne
@@ -246,6 +250,7 @@ export function EditCommandeForm({
         enveloppe,
         nombrePaquets,
         adresseLivraison,
+        destination,
         description,
         remarqueInterne,
         livreurNom: deposantEstClient ? "" : livreurNom,
@@ -406,6 +411,24 @@ export function EditCommandeForm({
         <span className="font-semibold text-slate-900">
           {montantEstime !== null ? montantFormatter.format(montantEstime) : "—"}
         </span>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Destination
+        </label>
+        <select
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+        >
+          <option value="">— Non précisée —</option>
+          {DESTINATIONS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>

@@ -39,6 +39,7 @@ type CommandeDetail = {
   nombre_paquets: number;
   montant_total: number;
   adresse_livraison: string | null;
+  destination: string | null;
   description: string | null;
   remarque_interne: string | null;
   code_barre_colis: string | null;
@@ -67,7 +68,7 @@ export default async function CommandeDetailPage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, montant_total, adresse_livraison, description, remarque_interne, code_barre_colis, photo_urls, video_urls, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
+      "id, numero, statut, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, montant_total, adresse_livraison, destination, description, remarque_interne, code_barre_colis, photo_urls, video_urls, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
     )
     .eq("id", params.id)
     .maybeSingle<CommandeDetail>();
@@ -224,6 +225,12 @@ export default async function CommandeDetailPage({
           <p className="text-slate-500">Projet</p>
           <p className="font-medium text-slate-900">
             {commande.projets?.nom ?? "—"}
+          </p>
+        </div>
+        <div>
+          <p className="text-slate-500">Destination</p>
+          <p className="font-medium text-slate-900">
+            {commande.destination ?? "—"}
           </p>
         </div>
         <div>

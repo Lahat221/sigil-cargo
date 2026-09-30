@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { STATUT_LABELS } from "./StatutBadge";
 import { IconX } from "@/components/ui/Icons";
+import { DESTINATIONS } from "@/lib/commandes/destinations";
 import type { StatutCommande } from "@/types/database.types";
 
 const STATUTS = Object.keys(STATUT_LABELS) as StatutCommande[];
@@ -74,6 +75,7 @@ export function FiltresBar({
     !!searchParams.get("q") ||
     !!searchParams.get("statut") ||
     !!searchParams.get("projet") ||
+    !!searchParams.get("destination") ||
     !!searchParams.get("debut") ||
     !!searchParams.get("fin");
 
@@ -109,6 +111,19 @@ export function FiltresBar({
         {projets.map((p) => (
           <option key={p.id} value={p.id}>
             {p.nom}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={searchParams.get("destination") ?? ""}
+        onChange={(e) => setParam("destination", e.target.value)}
+        className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+      >
+        <option value="">Toutes destinations</option>
+        {DESTINATIONS.map((d) => (
+          <option key={d} value={d}>
+            {d}
           </option>
         ))}
       </select>

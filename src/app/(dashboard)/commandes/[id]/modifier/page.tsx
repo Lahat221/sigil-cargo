@@ -15,7 +15,7 @@ export default async function ModifierCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, projet_id, produit_id, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, adresse_livraison, description, remarque_interne, livreur_nom, livreur_telephone, contenu_verifie, photo_urls, video_urls, note_vocale_url, clients(id, nom, telephone, adresse)"
+      "id, projet_id, produit_id, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, adresse_livraison, destination, description, remarque_interne, livreur_nom, livreur_telephone, contenu_verifie, photo_urls, video_urls, note_vocale_url, clients(id, nom, telephone, adresse)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -81,6 +81,7 @@ export default async function ModifierCommandePage({
         initialEnveloppe={commande.enveloppe}
         initialNombrePaquets={commande.nombre_paquets}
         initialAdresseLivraison={commande.adresse_livraison ?? ""}
+        initialDestination={commande.destination ?? ""}
         initialDescription={commande.description ?? ""}
         initialRemarqueInterne={commande.remarque_interne ?? ""}
         initialLivreurNom={commande.livreur_nom ?? ""}

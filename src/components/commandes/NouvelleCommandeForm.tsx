@@ -8,6 +8,7 @@ import { ClientField, type ClientSelection } from "./ClientField";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 import { VideoPreviewList } from "./VideoPreviewList";
 import { BRAND } from "@/lib/brand";
+import { DESTINATIONS } from "@/lib/commandes/destinations";
 
 const MAX_PHOTOS = 5;
 const MAX_VIDEOS = 4;
@@ -47,6 +48,7 @@ export function NouvelleCommandeForm({
   const [enveloppe, setEnveloppe] = useState(false);
   const [nombrePaquets, setNombrePaquets] = useState(1);
   const [adresseLivraison, setAdresseLivraison] = useState("");
+  const [destination, setDestination] = useState("");
   const [description, setDescription] = useState("");
   const [remarqueInterne, setRemarqueInterne] = useState("");
   const [deposantEstClient, setDeposantEstClient] = useState(true);
@@ -204,6 +206,7 @@ export function NouvelleCommandeForm({
         enveloppe,
         nombrePaquets,
         adresseLivraison,
+        destination,
         description,
         remarqueInterne,
         livreurNom: deposantEstClient ? "" : livreurNom,
@@ -369,6 +372,24 @@ export function NouvelleCommandeForm({
         <span className="font-semibold text-slate-900">
           {montantEstime !== null ? montantFormatter.format(montantEstime) : "—"}
         </span>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Destination
+        </label>
+        <select
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+        >
+          <option value="">— Non précisée —</option>
+          {DESTINATIONS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>

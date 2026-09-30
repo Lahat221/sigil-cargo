@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { StatutBadge, STATUT_LABELS } from "@/components/commandes/StatutBadge";
 import { DashboardFiltres } from "@/components/dashboard/DashboardFiltres";
 import { BarChart } from "@/components/dashboard/BarChart";
+import { KpiCard } from "@/components/dashboard/KpiCard";
+import { MontantsSensibles } from "@/components/dashboard/MontantsSensibles";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
@@ -144,6 +146,16 @@ export default async function TableauDeBordPage({
 
   const poidsTotal = actives.reduce((sum, c) => sum + (c.poids_kg ?? 0), 0);
 
+  // Indicateurs "par kg" du projet/de la période filtrée — permettent de
+  // voir en un coup d'œil le revient, le prix de vente moyen et la marge
+  // réelle par kilo, pas seulement les totaux bruts.
+  const coutParKg = poidsTotal > 0 ? totalDepenses / poidsTotal : null;
+  const prixVenteParKg = poidsTotal > 0 ? chiffreAffaires / poidsTotal : null;
+  const margeParKg =
+    coutParKg !== null && prixVenteParKg !== null
+      ? prixVenteParKg - coutParKg
+      : null;
+
   const jours = joursDeLaPeriode(debut, fin);
   const caParJourMap = new Map<string, number>();
   for (const c of actives) {
@@ -181,31 +193,6 @@ export default async function TableauDeBordPage({
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
-          label="Chiffre d'affaires"
-          valeur={montantFormatter.format(chiffreAffaires)}
-          sousTitre={`${actives.length} commande(s)`}
-          couleur="bg-green-50 text-green-600"
-          icone="€"
-        />
-        <KpiCard
-          label="Dépenses"
-          valeur={montantFormatter.format(totalDepenses)}
-          sousTitre={`${(charges ?? []).length} charge(s)`}
-          couleur="bg-red-50 text-red-600"
-          icone="−"
-        />
-        <KpiCard
-          label="Bénéfice"
-          valeur={montantFormatter.format(benefice)}
-          sousTitre="CA − dépenses"
-          couleur={
-            benefice >= 0
-              ? "bg-green-50 text-green-600"
-              : "bg-red-50 text-red-600"
-          }
-          icone={benefice >= 0 ? "↑" : "↓"}
-        />
-        <KpiCard
           label="Poids total"
           valeur={`${poidsTotal.toLocaleString("fr-FR")} kg`}
           sousTitre="colis actifs"
@@ -228,6 +215,64 @@ export default async function TableauDeBordPage({
           petit
         />
       </div>
+
+      <MontantsSensibles
+        cartes={[
+          {
+            label: "Chiffre d'affaires",
+            valeur: montantFormatter.format(chiffreAffaires),
+            sousTitre: `${actives.length} commande(s)`,
+            couleur: "bg-green-50 text-green-600",
+            icone: "€",
+          },
+          {
+            label: "Dépenses",
+            valeur: montantFormatter.format(totalDepenses),
+            sousTitre: `${(charges ?? []).length} charge(s)`,
+            couleur: "bg-red-50 text-red-600",
+            icone: "−",
+          },
+          {
+            label: "Bénéfice",
+            valeur: montantFormatter.format(benefice),
+            sousTitre: "CA − dépenses",
+            couleur:
+              benefice >= 0
+                ? "bg-green-50 text-green-600"
+                : "bg-red-50 text-red-600",
+            icone: benefice >= 0 ? "↑" : "↓",
+          },
+          {
+            label: "Revient / kg",
+            valeur:
+              coutParKg !== null ? `${montantFormatter.format(coutParKg)}/kg` : "—",
+            sousTitre: "dépenses ÷ poids expédié",
+            couleur: "bg-red-50 text-red-600",
+            icone: "⌀",
+          },
+          {
+            label: "Prix de vente moyen / kg",
+            valeur:
+              prixVenteParKg !== null
+                ? `${montantFormatter.format(prixVenteParKg)}/kg`
+                : "—",
+            sousTitre: "CA ÷ poids expédié",
+            couleur: "bg-blue-50 text-blue-600",
+            icone: "⌀",
+          },
+          {
+            label: "Marge / kg",
+            valeur:
+              margeParKg !== null ? `${montantFormatter.format(margeParKg)}/kg` : "—",
+            sousTitre: "prix de vente − revient",
+            couleur:
+              margeParKg === null || margeParKg >= 0
+                ? "bg-green-50 text-green-600"
+                : "bg-red-50 text-red-600",
+            icone: "⌀",
+          },
+        ]}
+      />
 
       <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200/70 bg-white shadow-sm p-5">
@@ -327,44 +372,6 @@ export default async function TableauDeBordPage({
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-function KpiCard({
-  label,
-  valeur,
-  sousTitre,
-  couleur,
-  icone,
-  petit,
-}: {
-  label: string;
-  valeur: string;
-  sousTitre: string;
-  couleur: string;
-  icone: string;
-  petit?: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm text-slate-500">{label}</p>
-        <span
-          className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${couleur}`}
-        >
-          {icone}
-        </span>
-      </div>
-      <p
-        className={`font-bold text-navy ${
-          petit ? "truncate text-lg" : "text-2xl"
-        }`}
-        title={valeur}
-      >
-        {valeur}
-      </p>
-      <p className="mt-1 text-xs text-slate-400">{sousTitre}</p>
     </div>
   );
 }

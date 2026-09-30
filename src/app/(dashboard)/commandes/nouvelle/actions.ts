@@ -45,6 +45,7 @@ type CreateCommandeInput = {
   enveloppe: boolean;
   nombrePaquets: number;
   adresseLivraison: string;
+  destination: string;
   description: string;
   remarqueInterne: string;
   livreurNom: string;
@@ -91,6 +92,7 @@ export async function createCommande(
     enveloppe: input.enveloppe,
     nombre_paquets: input.nombrePaquets,
     adresse_livraison: input.adresseLivraison.trim() || null,
+    destination: input.destination.trim() || null,
     description: input.description.trim() || null,
     remarque_interne: input.remarqueInterne.trim() || null,
     livreur_nom: input.livreurNom.trim() || null,

@@ -168,6 +168,7 @@ export function CommandesListe({
                 <th className="px-4 py-3 font-medium">N°</th>
                 <th className="px-4 py-3 font-medium">Client</th>
                 <th className="px-4 py-3 font-medium">Projet</th>
+                <th className="px-4 py-3 font-medium">Destination</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3 font-medium">Poids</th>
                 <th className="px-4 py-3 font-medium">Montant</th>
@@ -198,6 +199,9 @@ export function CommandesListe({
                   </td>
                   <td className="px-4 py-3 text-slate-700">
                     {c.projets?.nom ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">
+                    {c.destination ?? "—"}
                   </td>
                   <td className="px-4 py-3">
                     <StatutBadge statut={c.statut} />
@@ -289,6 +293,7 @@ export function CommandesListe({
                 </p>
                 <p className="mb-3 text-xs text-slate-500">
                   {c.projets?.nom ?? "—"}
+                  {c.destination && ` · ${c.destination}`}
                 </p>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-600">
