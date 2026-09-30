@@ -10,6 +10,7 @@ import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 import { VideoPreviewList } from "./VideoPreviewList";
 import { BRAND } from "@/lib/brand";
 import { DESTINATIONS } from "@/lib/commandes/destinations";
+import { TARIFS_PAR_DESTINATION } from "@/lib/commandes/tarifsParDestination";
 
 const MAX_PHOTOS = 5;
 const MAX_VIDEOS = 4;
@@ -117,7 +118,20 @@ export function EditCommandeForm({
   function handleProduitChange(id: string) {
     setProduitId(id);
     const p = produits.find((p) => p.id === id);
-    if (p) setPrixParKg(p.prix_par_kg.toString());
+    if (p) {
+      const tarifDestination = destination
+        ? TARIFS_PAR_DESTINATION[destination]
+        : undefined;
+      setPrixParKg((tarifDestination ?? p.prix_par_kg).toString());
+    }
+  }
+
+  function handleDestinationChange(value: string) {
+    setDestination(value);
+    if (!enModeConteneur) {
+      const tarif = TARIFS_PAR_DESTINATION[value];
+      if (tarif !== undefined) setPrixParKg(tarif.toString());
+    }
   }
 
   const modeFret =
@@ -419,13 +433,15 @@ export function EditCommandeForm({
         </label>
         <select
           value={destination}
-          onChange={(e) => setDestination(e.target.value)}
+          onChange={(e) => handleDestinationChange(e.target.value)}
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
         >
           <option value="">— Non précisée —</option>
           {DESTINATIONS.map((d) => (
             <option key={d} value={d}>
               {d}
+              {TARIFS_PAR_DESTINATION[d] !== undefined &&
+                ` — ${montantFormatter.format(TARIFS_PAR_DESTINATION[d])}/kg`}
             </option>
           ))}
         </select>
