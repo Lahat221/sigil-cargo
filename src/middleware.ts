@@ -10,7 +10,9 @@ import { updateSession } from "@/lib/supabase/middleware";
 // /colis/[id] : page de suivi public (QR code sur l'étiquette) — montre le
 // contenu/vidéo d'un colis sans connexion, volontairement en dehors du
 // groupe (dashboard).
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest", "/api/twilio", "/icon", "/colis"];
+// /suivi : recherche publique d'un colis par numéro + téléphone (page
+// d'accueil publique, voir src/app/page.tsx).
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest", "/api/twilio", "/icon", "/colis", "/suivi"];
 
 function moduleSlug(pathname: string) {
   return pathname.split("/")[1] || null;
@@ -19,7 +21,12 @@ function moduleSlug(pathname: string) {
 export async function middleware(request: NextRequest) {
   const { supabaseResponse, user, profile } = await updateSession(request);
   const { pathname } = request.nextUrl;
-  const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+  // "/" exactement (pas de startsWith : tout chemin commence par "/", ça
+  // rendrait sinon TOUT le site public) — page d'accueil vitrine, publique
+  // pour un visiteur non connecté, qui redirige un agent déjà connecté vers
+  // le tableau de bord (cf. src/app/page.tsx).
+  const isPublicPath =
+    pathname === "/" || PUBLIC_PATHS.some((path) => pathname.startsWith(path));
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();
