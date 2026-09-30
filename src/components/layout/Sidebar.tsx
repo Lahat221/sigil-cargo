@@ -20,6 +20,7 @@ import {
   IconSettings,
   IconMenu,
   IconX,
+  IconGlobe,
 } from "@/components/ui/Icons";
 
 function NavLink({
@@ -259,6 +260,20 @@ export function Sidebar({
               >
                 Tableau de bord
               </NavLink>
+              {/* Ouvre dans un nouvel onglet — la page d'accueil publique
+                  (src/app/page.tsx) reste consultable connecté, juste avec
+                  un bouton "Tableau de bord" à la place de "Connexion". */}
+              <a
+                href="/"
+                target="_blank"
+                rel="noreferrer"
+                className="group flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-white/70 transition-all duration-150 hover:translate-x-0.5 hover:bg-white/5 hover:text-white"
+              >
+                <span className="shrink-0 text-white/50 transition-transform duration-150 group-hover:scale-110 group-hover:text-white">
+                  <IconGlobe size={17} />
+                </span>
+                Voir le site public
+              </a>
             </div>
           )}
 

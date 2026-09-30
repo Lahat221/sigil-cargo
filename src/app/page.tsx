@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Logo } from "@/components/layout/Logo";
@@ -16,12 +15,14 @@ function premierNumero(tel: string): string | null {
 }
 
 export default async function HomePage() {
-  // Page vitrine publique — un agent déjà connecté n'a rien à faire ici,
-  // direction le tableau de bord comme avant (seul un visiteur anonyme
-  // atterrit sur cette page, cf. le cas spécial "/" dans middleware.ts).
+  // Page vitrine publique — accessible aussi à un agent déjà connecté
+  // (lien "Voir le site public" dans la sidebar, cf. Sidebar.tsx) : on
+  // adapte juste le bouton d'en-tête ("Tableau de bord" au lieu de
+  // "Connexion") plutôt que de rediriger, sinon ce lien ne mènerait jamais
+  // à la page pour un agent connecté.
   const supabase = createClient();
   const { data: auth } = await supabase.auth.getUser();
-  if (auth.user) redirect("/tableau-de-bord");
+  const estConnecte = !!auth.user;
 
   const admin = createAdminClient();
   const { data: projets } = await admin
@@ -55,10 +56,10 @@ export default async function HomePage() {
       <header className="flex items-center justify-between px-6 py-5 sm:px-10">
         <Logo size={40} tagline />
         <Link
-          href="/login"
+          href={estConnecte ? "/tableau-de-bord" : "/login"}
           className="rounded-md border border-white/20 px-4 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
         >
-          Connexion
+          {estConnecte ? "Tableau de bord" : "Connexion"}
         </Link>
       </header>
 
