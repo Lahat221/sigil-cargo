@@ -125,6 +125,30 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["produits"]["Insert"]>;
         Relationships: [];
       };
+      publicites: {
+        Row: {
+          id: string;
+          type: "affiche_depart" | "publicite" | "reseau_social";
+          titre: string;
+          image_path: string | null;
+          lien: string | null;
+          actif: boolean;
+          ordre: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          type: "affiche_depart" | "publicite" | "reseau_social";
+          titre: string;
+          image_path?: string | null;
+          lien?: string | null;
+          actif?: boolean;
+          ordre?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["publicites"]["Insert"]>;
+        Relationships: [];
+      };
       commandes: {
         Row: {
           id: string;

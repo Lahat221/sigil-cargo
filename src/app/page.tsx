@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Logo } from "@/components/layout/Logo";
@@ -12,8 +11,7 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
 // Numéro WhatsApp pour le dépôt de colis à Dakar — dernier numéro de la
 // liste (celui réellement utilisé sur l'affiche "Fret Aérien Express"
 // fournie par le tenant, contrairement au premier qui est un autre contact
-// expéditeur). À public/affiche-prochain-depart.png : remplacer ce fichier
-// suffit pour changer le visuel à chaque nouveau départ, aucun code à toucher.
+// expéditeur).
 function dernierNumero(tel: string): string | null {
   const parties = tel.split(/[-/]/);
   const dernier = parties[parties.length - 1]?.trim();
@@ -43,6 +41,29 @@ export default async function HomePage() {
     .select("projet_id, destination")
     .neq("statut", "annulee");
 
+  // Module Publicités (cf. /publicites) : affiche de départ, publicités et
+  // réseaux sociaux gérés depuis l'appli, affichés automatiquement ici.
+  const { data: publicitesActives } = await admin
+    .from("publicites")
+    .select("*")
+    .eq("actif", true)
+    .order("ordre", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  function urlImage(path: string) {
+    return admin.storage.from("publicites-media").getPublicUrl(path).data.publicUrl;
+  }
+
+  const affiche = (publicitesActives ?? []).find(
+    (p) => p.type === "affiche_depart" && p.image_path
+  );
+  const publicitesBannieres = (publicitesActives ?? []).filter(
+    (p) => p.type === "publicite" && p.image_path
+  );
+  const reseauxSociaux = (publicitesActives ?? []).filter(
+    (p) => p.type === "reseau_social" && p.lien
+  );
+
   const destinationsParProjet = new Map<string, Map<string, number>>();
   for (const c of commandesActives ?? []) {
     if (!c.destination) continue;
@@ -71,19 +92,29 @@ export default async function HomePage() {
       </header>
 
       <main className="px-6 pb-16 sm:px-10">
-        {/* Affiche du prochain départ — visuel mis en avant, remplacer le
-            fichier public/affiche-prochain-depart.png pour la mettre à jour
-            (dates/tarifs/destinations) sans toucher au code. */}
-        <section className="mx-auto max-w-lg pt-8 sm:pt-12">
-          <Image
-            src="/affiche-prochain-depart.png"
-            alt="Affiche du prochain départ SIGIL CARGO"
-            width={1024}
-            height={1536}
-            priority
-            className="w-full rounded-2xl shadow-2xl"
-          />
-        </section>
+        {/* Affiche du prochain départ — gérée depuis le module Publicités
+            (/publicites), aucun code à toucher pour la mettre à jour. */}
+        {affiche && (
+          <section className="mx-auto max-w-lg pt-8 sm:pt-12">
+            {affiche.lien ? (
+              <a href={affiche.lien} target="_blank" rel="noreferrer">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={urlImage(affiche.image_path!)}
+                  alt={affiche.titre}
+                  className="w-full rounded-2xl shadow-2xl"
+                />
+              </a>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={urlImage(affiche.image_path!)}
+                alt={affiche.titre}
+                className="w-full rounded-2xl shadow-2xl"
+              />
+            )}
+          </section>
+        )}
 
         {/* Hero */}
         <section className="mx-auto max-w-3xl pt-10 text-center sm:pt-16">
@@ -159,6 +190,35 @@ export default async function HomePage() {
           </section>
         )}
 
+        {/* Publicités — bannières gérées depuis /publicites */}
+        {publicitesBannieres.length > 0 && (
+          <section className="mx-auto mt-16 max-w-3xl">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {publicitesBannieres.map((p) => {
+                const img = (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={urlImage(p.image_path!)}
+                    alt={p.titre}
+                    className="w-full rounded-xl shadow-lg"
+                  />
+                );
+                return (
+                  <div key={p.id}>
+                    {p.lien ? (
+                      <a href={p.lien} target="_blank" rel="noreferrer">
+                        {img}
+                      </a>
+                    ) : (
+                      img
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Nos services */}
         <section className="mx-auto mt-16 max-w-3xl">
           <h2 className="mb-4 text-center text-xl font-bold">Nos services</h2>
@@ -203,6 +263,22 @@ export default async function HomePage() {
             >
               Contacter sur WhatsApp
             </a>
+          )}
+
+          {reseauxSociaux.length > 0 && (
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+              {reseauxSociaux.map((r) => (
+                <a
+                  key={r.id}
+                  href={r.lien!}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-white/20 px-4 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                >
+                  {r.titre}
+                </a>
+              ))}
+            </div>
           )}
         </section>
       </main>

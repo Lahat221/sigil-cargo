@@ -122,7 +122,16 @@ const NAV_ITEMS: NavItem[] = [
       { href: "/notifications-whatsapp/nouvelle", label: "Nouvelle campagne", icon: <IconPlus size={15} /> },
     ],
   },
-  { slug: "publicites", href: "/publicites", label: "Publicités", icon: <IconMegaphone size={17} />, groupe: "clients" },
+  {
+    slug: "publicites",
+    href: "/publicites",
+    label: "Publicités",
+    icon: <IconMegaphone size={17} />,
+    groupe: "clients",
+    sousItems: [
+      { href: "/publicites/nouveau", label: "Ajouter", icon: <IconPlus size={15} /> },
+    ],
+  },
   {
     slug: "charges-depenses",
     href: "/charges-depenses",

@@ -4,7 +4,6 @@ import { IconArrowRight } from "@/components/ui/Icons";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 const MODULES: Record<string, string> = {
-  publicites: "Publicités",
   chat: "Chat",
   parametres: "Paramètres",
 };
