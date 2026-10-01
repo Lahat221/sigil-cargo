@@ -69,7 +69,17 @@ type NavItem = {
   icon: React.ReactNode;
   tabIcon?: React.ReactNode;
   sousItems?: SousItem[];
+  groupe: string;
 };
+
+// Regroupement par thème (au lieu d'une seule liste plate "Gestion
+// commerciale") — l'ordre ici fixe l'ordre d'affichage des groupes.
+const GROUPES = [
+  { cle: "colis", label: "Colis & Fret" },
+  { cle: "clients", label: "Clients & Communication" },
+  { cle: "finances", label: "Finances" },
+  { cle: "douane", label: "Douane" },
+] as const;
 
 const NAV_ITEMS: NavItem[] = [
   {
@@ -78,6 +88,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Colis",
     icon: <IconStore size={17} />,
     tabIcon: <IconStore size={20} />,
+    groupe: "colis",
     sousItems: [
       { href: "/commandes/nouvelle", label: "Nouveau colis", icon: <IconPlus size={15} /> },
       { href: "/commandes/pipeline", label: "Suivi de colis", icon: <IconGrid size={15} /> },
@@ -89,43 +100,55 @@ const NAV_ITEMS: NavItem[] = [
     label: "Projets Fret Aérien",
     icon: <IconFolder size={17} />,
     tabIcon: <IconFolder size={20} />,
+    groupe: "colis",
   },
-  { slug: "publicites", href: "/publicites", label: "Publicités", icon: <IconMegaphone size={17} /> },
   {
     slug: "clients",
     href: "/clients",
     label: "Clients",
     icon: <IconUsers size={17} />,
     tabIcon: <IconUsers size={20} />,
+    groupe: "clients",
   },
-  {
-    slug: "charges-depenses",
-    href: "/charges-depenses",
-    label: "Charges & Dépenses",
-    icon: <IconInvoice size={17} />,
-  },
+  { slug: "chat", href: "/chat", label: "Chat", icon: <IconChat size={17} />, tabIcon: <IconChat size={20} />, groupe: "clients" },
   {
     slug: "notifications-whatsapp",
     href: "/notifications-whatsapp",
     label: "Campagne de Communication",
     icon: <IconSend size={17} />,
     tabIcon: <IconSend size={20} />,
+    groupe: "clients",
     sousItems: [
       { href: "/notifications-whatsapp/nouvelle", label: "Nouvelle campagne", icon: <IconPlus size={15} /> },
     ],
   },
-  { slug: "chat", href: "/chat", label: "Chat", icon: <IconChat size={17} />, tabIcon: <IconChat size={20} /> },
+  { slug: "publicites", href: "/publicites", label: "Publicités", icon: <IconMegaphone size={17} />, groupe: "clients" },
+  {
+    slug: "charges-depenses",
+    href: "/charges-depenses",
+    label: "Charges & Dépenses",
+    icon: <IconInvoice size={17} />,
+    groupe: "finances",
+  },
   {
     slug: "gestion-douaniere",
     href: "/gestion-douaniere",
     label: "Gestion Douanière",
     icon: <IconShieldCheck size={17} />,
+    groupe: "douane",
     sousItems: [
       { href: "/gestion-douaniere/referentiel", label: "Référentiel produits", icon: <IconFolder size={15} /> },
     ],
   },
-  { slug: "parametres", href: "/parametres", label: "Paramètres", icon: <IconSettings size={17} /> },
 ];
+
+const PARAMETRES_ITEM: NavItem = {
+  slug: "parametres",
+  href: "/parametres",
+  label: "Paramètres",
+  icon: <IconSettings size={17} />,
+  groupe: "systeme",
+};
 
 function estAutorise(slug: string, modulesAutorises: string[] | null) {
   return modulesAutorises === null || modulesAutorises.includes(slug);
@@ -199,6 +222,7 @@ export function Sidebar({
 
   const tableauAutorise = estAutorise("tableau-de-bord", modulesAutorises);
   const itemsAutorises = NAV_ITEMS.filter((item) => estAutorise(item.slug, modulesAutorises));
+  const parametresAutorise = estAutorise(PARAMETRES_ITEM.slug, modulesAutorises);
 
   const accueilHref = tableauAutorise
     ? "/tableau-de-bord"
@@ -277,35 +301,53 @@ export function Sidebar({
             </div>
           )}
 
-          <div>
-            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted2">
-              Gestion commerciale
-            </p>
-            <div className="space-y-1">
-              {itemsAutorises.map((item) => (
-                <div key={item.slug}>
-                  <NavLink
-                    href={item.href}
-                    active={pathname.startsWith(item.href)}
-                    icon={item.icon}
-                  >
-                    {item.label}
-                  </NavLink>
-                  {item.sousItems?.map((sous) => (
-                    <NavLink
-                      key={sous.href}
-                      href={sous.href}
-                      active={pathname.startsWith(sous.href)}
-                      indent
-                      icon={sous.icon}
-                    >
-                      {sous.label}
-                    </NavLink>
+          {GROUPES.map((groupe) => {
+            const items = itemsAutorises.filter((item) => item.groupe === groupe.cle);
+            if (items.length === 0) return null;
+            return (
+              <div key={groupe.cle}>
+                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted2">
+                  {groupe.label}
+                </p>
+                <div className="space-y-1">
+                  {items.map((item) => (
+                    <div key={item.slug}>
+                      <NavLink
+                        href={item.href}
+                        active={pathname.startsWith(item.href)}
+                        icon={item.icon}
+                      >
+                        {item.label}
+                      </NavLink>
+                      {item.sousItems?.map((sous) => (
+                        <NavLink
+                          key={sous.href}
+                          href={sous.href}
+                          active={pathname.startsWith(sous.href)}
+                          indent
+                          icon={sous.icon}
+                        >
+                          {sous.label}
+                        </NavLink>
+                      ))}
+                    </div>
                   ))}
                 </div>
-              ))}
+              </div>
+            );
+          })}
+
+          {parametresAutorise && (
+            <div className="border-t border-line pt-3">
+              <NavLink
+                href={PARAMETRES_ITEM.href}
+                active={pathname.startsWith(PARAMETRES_ITEM.href)}
+                icon={PARAMETRES_ITEM.icon}
+              >
+                {PARAMETRES_ITEM.label}
+              </NavLink>
             </div>
-          </div>
+          )}
         </nav>
 
         <div className="border-t border-line px-5 py-3 text-center text-[10px] text-white/30">
