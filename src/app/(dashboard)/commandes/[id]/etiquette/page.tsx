@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PrintButton } from "@/components/commandes/PrintButton";
 import { ImageImprimanteButton } from "@/components/commandes/ImageImprimanteButton";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
+import { chargerParametresSite } from "@/lib/parametres";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +14,8 @@ export const dynamic = "force-dynamic";
 // Réduit la taille d'un texte en capitales/gras (Montserrat, ~0,85 em par
 // lettre) pour qu'il tienne sur une ligne — évite qu'un mot comme
 // "MARSEILLE" se coupe en deux.
-function tailleAjustee(nbLettres: number, max: number, min: number) {
-  const taille = Math.floor(192 / (Math.max(nbLettres, 1) * 0.85));
+function tailleAjustee(nbLettres: number, max: number, min: number, facteur = 0.85) {
+  const taille = Math.floor(192 / (Math.max(nbLettres, 1) * facteur));
   return Math.max(min, Math.min(max, taille));
 }
 
@@ -32,7 +33,7 @@ export default async function EtiquetteCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, poids_kg, mode_fret, volume_m3, nombre_paquets, code_barre_colis, destination, clients(nom), projets(nom)"
+      "id, numero, poids_kg, mode_fret, volume_m3, nombre_paquets, destination, clients(nom), projets(nom)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -48,6 +49,14 @@ export default async function EtiquetteCommandePage({
   const host = headersList.get("host");
   const urlColis = `${proto}://${host}/colis/${commande.id}`;
   const qrDataUrl = await QRCode.toDataURL(urlColis, { width: 160, margin: 1 });
+
+  // Site affiché en bas de l'étiquette (réglable dans Paramètres → Site
+  // public), à défaut l'adresse avec laquelle l'appli est ouverte.
+  const site = await chargerParametresSite(supabase);
+  const siteAffiche = (site.siteWeb || host || "")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "");
+  const tailleSite = tailleAjustee(siteAffiche.length, 16, 9, 0.62);
 
   // Une étiquette par paquet déclaré (ex. 3 paquets → 1/3, 2/3, 3/3), pas
   // une seule étiquette pour tout le colis — chaque paquet physique doit
@@ -126,8 +135,11 @@ export default async function EtiquetteCommandePage({
               <p>Scanner : photos &amp; vidéo du colis</p>
             </div>
 
-            {commande.code_barre_colis && (
-              <p className="et-code">{commande.code_barre_colis}</p>
+            {siteAffiche && (
+              <div className="et-site">
+                <p>Suivi du colis &amp; infos</p>
+                <strong style={styleTaille(tailleSite)}>{siteAffiche}</strong>
+              </div>
             )}
           </div>
         ))}
@@ -216,14 +228,20 @@ export default async function EtiquetteCommandePage({
           color: #64748b;
           margin: 0;
         }
-        .et-code {
+        .et-site {
           border-top: 1px solid #cbd5e1;
           padding-top: calc(5 * var(--u));
-          font-family: ui-monospace, monospace;
-          font-size: calc(10 * var(--u));
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          margin: 0;
+        }
+        .et-site p {
+          font-size: calc(9 * var(--u));
+          color: #64748b;
+          margin: 0 0 calc(2 * var(--u));
+        }
+        .et-site strong {
+          display: block;
+          font-weight: 800;
+          line-height: 1.1;
+          overflow-wrap: anywhere;
         }
         @media print {
           /* Mini imprimante thermique — rouleau continu 58mm, hauteur libre

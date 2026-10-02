@@ -75,6 +75,21 @@ export function SiteForm({ initial }: { initial: ParametresSite }) {
           className={INPUT_CLASS}
         />
       </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Adresse du site web (imprimée sur les étiquettes)
+        </label>
+        <input
+          value={valeurs.siteWeb}
+          onChange={(e) => maj("siteWeb", e.target.value)}
+          placeholder="www.sigilcargo.com"
+          className={INPUT_CLASS}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Affichée en bas de chaque étiquette colis pour le suivi et les
+          informations. Vide : l&apos;adresse utilisée pour ouvrir l&apos;appli.
+        </p>
+      </div>
       <MessageForm message={message} />
       <button type="submit" disabled={isPending} className={BOUTON_PRIMAIRE}>
         {isPending ? "Enregistrement..." : "Enregistrer"}

@@ -10,6 +10,8 @@ export type ParametresSite = {
   adresse: string;
   horaires: string;
   email: string;
+  // Adresse du site imprimée sur les étiquettes colis (suivi / infos).
+  siteWeb: string;
 };
 
 export const CLES_SITE = {
@@ -17,6 +19,7 @@ export const CLES_SITE = {
   adresse: "contact_adresse",
   horaires: "contact_horaires",
   email: "contact_email",
+  siteWeb: "site_web",
 } as const;
 
 function dernierNumero(tel: string): string {
@@ -31,6 +34,7 @@ export function defautsSite(): ParametresSite {
     adresse: BRAND.retrait?.adresse ?? "",
     horaires: BRAND.retrait?.horaires ?? "",
     email: "",
+    siteWeb: "",
   };
 }
 
@@ -54,5 +58,6 @@ export async function chargerParametresSite(
     adresse: lire(CLES_SITE.adresse, defauts.adresse),
     horaires: lire(CLES_SITE.horaires, defauts.horaires),
     email: lire(CLES_SITE.email, defauts.email),
+    siteWeb: lire(CLES_SITE.siteWeb, defauts.siteWeb),
   };
 }

@@ -208,6 +208,7 @@ export async function sauvegarderParametresSite(
       { cle: CLES_SITE.adresse, valeur: valeurs.adresse.trim() },
       { cle: CLES_SITE.horaires, valeur: valeurs.horaires.trim() },
       { cle: CLES_SITE.email, valeur: valeurs.email.trim() },
+      { cle: CLES_SITE.siteWeb, valeur: valeurs.siteWeb.trim() },
     ]);
   if (error) return { error: error.message };
 
