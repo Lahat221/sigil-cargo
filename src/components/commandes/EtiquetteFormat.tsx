@@ -8,8 +8,11 @@ const STORAGE_KEY = "etiquette-format";
 
 // Règles d'impression selon le support. Le gabarit de l'étiquette est conçu
 // sur 204 unités de large (--u, voir page.tsx) et ~460 de haut.
-//  - rouleau : mini imprimante thermique, rouleau continu 58 mm, hauteur
-//    libre (la page s'adapte à la longueur du contenu).
+//  - rouleau : mini imprimante thermique 58 mm. Pas de `size` dans @page :
+//    Chrome ignore `58mm auto` (invalide) et garde le papier choisi dans la
+//    boîte d'impression ; l'étiquette prend donc toute la largeur utile du
+//    papier (marges 1,5 mm). --u suit la largeur, et la hauteur si le papier
+//    est une étiquette de longueur fixe (une étiquette par page, sans débord).
 //  - feuille : l'étiquette remplit toute la page (A4, A5, A6, PDF...) avec
 //    de petites marges ; --u s'adapte à la largeur ET à la hauteur utiles
 //    pour ne jamais déborder sur une 2e page, et le contenu est réparti
@@ -17,10 +20,11 @@ const STORAGE_KEY = "etiquette-format";
 const CSS_PAR_FORMAT: Record<Format, string> = {
   rouleau: `
     @media print {
-      @page { size: 58mm auto; margin: 2mm; }
+      @page { margin: 1.5mm; }
       .etiquette {
-        --u: 1px;
-        width: 54mm;
+        --u: min(calc(100vw / 204), calc(100vh / 460));
+        box-sizing: border-box;
+        width: 100%;
         border: none !important;
         border-radius: 0;
         box-shadow: none;
@@ -49,7 +53,7 @@ const CSS_PAR_FORMAT: Record<Format, string> = {
 };
 
 export function EtiquetteFormat() {
-  const [format, setFormat] = useState<Format>("feuille");
+  const [format, setFormat] = useState<Format>("rouleau");
 
   useEffect(() => {
     try {
@@ -89,8 +93,8 @@ export function EtiquetteFormat() {
       <div className="mb-5 flex flex-wrap items-center gap-2 print:hidden">
         <span className="text-sm text-ink-muted">Impression :</span>
         <div className="flex gap-1 rounded-lg bg-white/5 p-1">
+          {bouton("rouleau", "Rouleau 58 mm (thermique)")}
           {bouton("feuille", "Feuille entière")}
-          {bouton("rouleau", "Rouleau 58 mm")}
         </div>
       </div>
     </>

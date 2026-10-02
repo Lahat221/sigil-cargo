@@ -73,7 +73,7 @@ export default async function EtiquetteCommandePage({
   const paquets = Array.from({ length: totalPaquets }, (_, i) => i + 1);
 
   return (
-    <div className="mx-auto max-w-md p-8">
+    <div className="mx-auto max-w-md p-8 print:m-0 print:max-w-none print:p-0">
       <div className="mb-6 flex items-center justify-between print:hidden">
         <h1 className="text-xl font-bold text-ink">
           Étiquette — Colis #{commande.numero}
@@ -247,6 +247,16 @@ export default async function EtiquetteCommandePage({
           overflow-wrap: anywhere;
         }
         @media print {
+          /* L'appli entoure le contenu de marges (padding du <main>, ~70px en
+             bas) : à l'impression elles mangent la largeur utile du rouleau
+             (54 mm) et décalent/rognent l'étiquette — on les neutralise. */
+          html, body { margin: 0 !important; padding: 0 !important; }
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: none !important;
+          }
+          .animate-page-in { animation: none !important; }
           .etiquette {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
