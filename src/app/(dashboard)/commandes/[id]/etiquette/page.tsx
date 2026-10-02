@@ -9,6 +9,19 @@ import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND 
 
 export const dynamic = "force-dynamic";
 
+// Largeur utile du rouleau ≈ 192 unités (voir --u dans le CSS ci-dessous).
+// Réduit la taille d'un texte en capitales/gras (Montserrat, ~0,85 em par
+// lettre) pour qu'il tienne sur une ligne — évite qu'un mot comme
+// "MARSEILLE" se coupe en deux.
+function tailleAjustee(nbLettres: number, max: number, min: number) {
+  const taille = Math.floor(192 / (Math.max(nbLettres, 1) * 0.85));
+  return Math.max(min, Math.min(max, taille));
+}
+
+function styleTaille(taille: number) {
+  return { fontSize: `calc(${taille} * var(--u))` };
+}
+
 export default async function EtiquetteCommandePage({
   params,
 }: {
@@ -39,6 +52,13 @@ export default async function EtiquetteCommandePage({
   // Une étiquette par paquet déclaré (ex. 3 paquets → 1/3, 2/3, 3/3), pas
   // une seule étiquette pour tout le colis — chaque paquet physique doit
   // pouvoir être identifié séparément.
+  const nomClient = commande.clients?.nom ?? "—";
+  const motLePlusLong = Math.max(...nomClient.split(/\s+/).map((m) => m.length));
+  const tailleNom = tailleAjustee(motLePlusLong, 28, 14);
+  const tailleNumero = tailleAjustee(String(commande.numero).length + 1, 58, 30);
+  const tailleDestination = commande.destination
+    ? tailleAjustee(commande.destination.length, 30, 14)
+    : 0;
   const totalPaquets = Math.max(1, commande.nombre_paquets);
   const paquets = Array.from({ length: totalPaquets }, (_, i) => i + 1);
 
@@ -62,73 +82,149 @@ export default async function EtiquetteCommandePage({
 
       <div className="space-y-6 print:space-y-0">
         {paquets.map((paquet) => (
-          /* Aperçu écran plus large que le rouleau réel (58mm) pour rester
-             lisible ici — .etiquette impose la largeur/police réelles à
-             l'impression via le bloc @media print ci-dessous. */
-          <div
-            key={paquet}
-            className="etiquette mx-auto max-w-xs rounded-lg border-2 border-slate-900 bg-white p-4 text-center shadow-lg print:border-0 print:shadow-none"
-          >
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              {BRAND.nom}
-            </p>
+          <div key={paquet} className="etiquette">
+            <p className="et-marque">{BRAND.nom}</p>
 
-            <h2 className="mb-1 break-words text-lg font-extrabold leading-tight text-slate-900">
-              {commande.clients?.nom ?? "—"}
+            <h2 className="et-nom" style={styleTaille(tailleNom)}>
+              {nomClient}
             </h2>
 
-            <p className="mb-1 text-2xl font-black text-slate-900">
+            <p className="et-numero" style={styleTaille(tailleNumero)}>
               #{commande.numero}
             </p>
 
-            {totalPaquets > 1 && (
-              <p className="mb-2 text-sm font-bold text-slate-600">
-                Paquet {paquet} / {totalPaquets}
-              </p>
-            )}
-
             {commande.destination && (
-              <p className="mb-2 rounded-md bg-slate-900 py-1 text-base font-extrabold uppercase tracking-wide text-white">
+              <p className="et-destination" style={styleTaille(tailleDestination)}>
                 {commande.destination}
               </p>
             )}
 
-            <div className="mb-2 space-y-0.5 text-xs text-slate-700">
-              <p>
-                {[
-                  commande.poids_kg !== null ? `${commande.poids_kg} kg` : null,
-                  commande.mode_fret === "conteneur" && commande.volume_m3 !== null
-                    ? `${commande.volume_m3} m³`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || "—"}
+            {totalPaquets > 1 && (
+              <p className="et-paquet">
+                Paquet {paquet}/{totalPaquets}
               </p>
-              {commande.projets?.nom && <p>{commande.projets.nom}</p>}
-            </div>
+            )}
 
-            <div className="my-2 flex flex-col items-center gap-1 border-t border-dashed border-slate-300 pt-2">
+            <p className="et-meta">
+              {[
+                commande.poids_kg !== null ? `${commande.poids_kg} kg` : null,
+                commande.mode_fret === "conteneur" && commande.volume_m3 !== null
+                  ? `${commande.volume_m3} m³`
+                  : null,
+                commande.projets?.nom ?? null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+
+            <div className="et-qr">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={qrDataUrl}
                 alt="QR code — voir le contenu et la vidéo du colis"
-                className="h-24 w-24"
               />
-              <p className="text-[10px] leading-tight text-slate-500">
-                Scanner : photos &amp; vidéo du colis
-              </p>
+              <p>Scanner : photos &amp; vidéo du colis</p>
             </div>
 
             {commande.code_barre_colis && (
-              <p className="border-t border-slate-300 pt-2 font-mono text-xs font-bold tracking-widest text-slate-900">
-                {commande.code_barre_colis}
-              </p>
+              <p className="et-code">{commande.code_barre_colis}</p>
             )}
           </div>
         ))}
       </div>
 
       <style>{`
+        /* Toutes les tailles passent par --u : 1px sur le rouleau réel (58mm,
+           54mm utiles ≈ 204px), 1.6px à l'écran pour un aperçu fidèle de la
+           mise en page. Nom, numéro et destination sont volontairement très
+           grands pour être lisibles de loin. */
+        .etiquette {
+          --u: 1.6px;
+          width: calc(204 * var(--u));
+          margin: 0 auto;
+          padding: calc(10 * var(--u));
+          background: #fff;
+          color: #0f172a;
+          text-align: center;
+          border: 2px solid #0f172a;
+          border-radius: 8px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+        }
+        .et-marque {
+          font-size: calc(8 * var(--u));
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+          margin: 0 0 calc(4 * var(--u));
+        }
+        .et-nom {
+          font-size: calc(28 * var(--u));
+          font-weight: 900;
+          line-height: 1.05;
+          text-transform: uppercase;
+          overflow-wrap: break-word;
+          margin: 0 0 calc(6 * var(--u));
+        }
+        .et-numero {
+          font-size: calc(58 * var(--u));
+          font-weight: 900;
+          line-height: 1;
+          margin: 0 0 calc(6 * var(--u));
+        }
+        .et-destination {
+          font-size: calc(30 * var(--u));
+          font-weight: 900;
+          line-height: 1.1;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+          overflow-wrap: break-word;
+          background: #0f172a;
+          color: #fff;
+          border-radius: calc(5 * var(--u));
+          padding: calc(5 * var(--u)) calc(4 * var(--u));
+          margin: 0 0 calc(6 * var(--u));
+        }
+        .et-paquet {
+          font-size: calc(20 * var(--u));
+          font-weight: 800;
+          margin: 0 0 calc(6 * var(--u));
+        }
+        .et-meta {
+          font-size: calc(11 * var(--u));
+          color: #334155;
+          margin: 0 0 calc(6 * var(--u));
+        }
+        .et-meta:empty {
+          display: none;
+        }
+        .et-qr {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: calc(2 * var(--u));
+          border-top: 1px dashed #cbd5e1;
+          padding-top: calc(6 * var(--u));
+          margin-bottom: calc(6 * var(--u));
+        }
+        .et-qr img {
+          width: calc(92 * var(--u));
+          height: calc(92 * var(--u));
+        }
+        .et-qr p {
+          font-size: calc(9 * var(--u));
+          color: #64748b;
+          margin: 0;
+        }
+        .et-code {
+          border-top: 1px solid #cbd5e1;
+          padding-top: calc(5 * var(--u));
+          font-family: ui-monospace, monospace;
+          font-size: calc(10 * var(--u));
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          margin: 0;
+        }
         @media print {
           /* Mini imprimante thermique — rouleau continu 58mm, hauteur libre
              (le rouleau se découpe selon la longueur du contenu, pas une
@@ -138,9 +234,11 @@ export default async function EtiquetteCommandePage({
             margin: 2mm;
           }
           .etiquette {
-            max-width: none !important;
+            --u: 1px;
             width: 54mm;
             border: none !important;
+            border-radius: 0;
+            box-shadow: none;
             padding: 0 !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
