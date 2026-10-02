@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { PrintButton } from "@/components/commandes/PrintButton";
+import { EtiquetteFormat } from "@/components/commandes/EtiquetteFormat";
 import { ImageImprimanteButton } from "@/components/commandes/ImageImprimanteButton";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 import { chargerParametresSite } from "@/lib/parametres";
@@ -88,6 +89,8 @@ export default async function EtiquetteCommandePage({
           </Suspense>
         </div>
       </div>
+
+      <EtiquetteFormat />
 
       <div className="space-y-6 print:space-y-0">
         {paquets.map((paquet) => (
@@ -244,20 +247,7 @@ export default async function EtiquetteCommandePage({
           overflow-wrap: anywhere;
         }
         @media print {
-          /* Mini imprimante thermique — rouleau continu 58mm, hauteur libre
-             (le rouleau se découpe selon la longueur du contenu, pas une
-             hauteur fixe comme une étiquette 100x150mm). */
-          @page {
-            size: 58mm auto;
-            margin: 2mm;
-          }
           .etiquette {
-            --u: 1px;
-            width: 54mm;
-            border: none !important;
-            border-radius: 0;
-            box-shadow: none;
-            padding: 0 !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
             break-after: page;
