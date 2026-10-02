@@ -5,7 +5,6 @@ import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND 
 
 const MODULES: Record<string, string> = {
   chat: "Chat",
-  parametres: "Paramètres",
 };
 
 export default function ModuleBientotPage({

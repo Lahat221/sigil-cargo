@@ -9,8 +9,7 @@ import type { ClientMatch } from "@/app/(dashboard)/commandes/nouvelle/actions";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 import { VideoPreviewList } from "./VideoPreviewList";
 import { BRAND } from "@/lib/brand";
-import { DESTINATIONS } from "@/lib/commandes/destinations";
-import { TARIFS_PAR_DESTINATION } from "@/lib/commandes/tarifsParDestination";
+import type { Destination } from "@/lib/commandes/destinations";
 
 const MAX_PHOTOS = 5;
 const MAX_VIDEOS = 4;
@@ -46,6 +45,7 @@ export function EditCommandeForm({
   existingVoiceNote,
   produits,
   projets,
+  destinations,
 }: {
   commandeId: string;
   initialClient: ClientMatch;
@@ -69,6 +69,7 @@ export function EditCommandeForm({
   existingVoiceNote: ExistingMedia | null;
   produits: Produit[];
   projets: Projet[];
+  destinations: Destination[];
 }) {
   const router = useRouter();
 
@@ -115,21 +116,30 @@ export function EditCommandeForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // La destination déjà enregistrée reste proposée même si elle a été
+  // désactivée depuis (sinon elle serait perdue à la prochaine sauvegarde).
+  const optionsDestination: Destination[] =
+    initialDestination && !destinations.some((d) => d.nom === initialDestination)
+      ? [...destinations, { nom: initialDestination, tarif_par_kg: null }]
+      : destinations;
+
+  function tarifDestination(nom: string): number | undefined {
+    return destinations.find((d) => d.nom === nom)?.tarif_par_kg ?? undefined;
+  }
+
   function handleProduitChange(id: string) {
     setProduitId(id);
     const p = produits.find((p) => p.id === id);
     if (p) {
-      const tarifDestination = destination
-        ? TARIFS_PAR_DESTINATION[destination]
-        : undefined;
-      setPrixParKg((tarifDestination ?? p.prix_par_kg).toString());
+      const tarif = destination ? tarifDestination(destination) : undefined;
+      setPrixParKg((tarif ?? p.prix_par_kg).toString());
     }
   }
 
   function handleDestinationChange(value: string) {
     setDestination(value);
     if (!enModeConteneur) {
-      const tarif = TARIFS_PAR_DESTINATION[value];
+      const tarif = tarifDestination(value);
       if (tarif !== undefined) setPrixParKg(tarif.toString());
     }
   }
@@ -427,25 +437,27 @@ export function EditCommandeForm({
         </span>
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Destination
-        </label>
-        <select
-          value={destination}
-          onChange={(e) => handleDestinationChange(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
-        >
-          <option value="">— Non précisée —</option>
-          {DESTINATIONS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-              {TARIFS_PAR_DESTINATION[d] !== undefined &&
-                ` — ${montantFormatter.format(TARIFS_PAR_DESTINATION[d])}/kg`}
-            </option>
-          ))}
-        </select>
-      </div>
+      {optionsDestination.length > 0 && (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            Destination
+          </label>
+          <select
+            value={destination}
+            onChange={(e) => handleDestinationChange(e.target.value)}
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+          >
+            <option value="">— Non précisée —</option>
+            {optionsDestination.map((d) => (
+              <option key={d.nom} value={d.nom}>
+                {d.nom}
+                {d.tarif_par_kg !== null &&
+                  ` — ${montantFormatter.format(d.tarif_par_kg)}/kg`}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">

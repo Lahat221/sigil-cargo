@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FiltresBar } from "@/components/commandes/FiltresBar";
+import { chargerDestinations } from "@/lib/commandes/destinations";
 import { CommandesListe } from "@/components/commandes/CommandesListe";
 import { Pagination } from "@/components/commandes/Pagination";
 import { ExportCommandesButton } from "@/components/commandes/ExportCommandesButton";
@@ -33,6 +34,8 @@ export default async function CommandesPage({
     .from("projets")
     .select("id, nom")
     .order("created_at", { ascending: false });
+
+  const destinations = await chargerDestinations(supabase, { inclureInactives: true });
 
   let commandes: CommandeListItem[] = [];
   let commandesExport: CommandeListItem[] = [];
@@ -141,7 +144,7 @@ export default async function CommandesPage({
       </div>
 
       <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
-        <FiltresBar projets={projets ?? []} />
+        <FiltresBar projets={projets ?? []} destinations={destinations} />
 
         {loadError ? (
           <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

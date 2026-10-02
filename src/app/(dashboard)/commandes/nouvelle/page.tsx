@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NouvelleCommandeForm } from "@/components/commandes/NouvelleCommandeForm";
+import { chargerDestinations } from "@/lib/commandes/destinations";
 
 export const dynamic = "force-dynamic";
 
 export default async function NouvelleCommandePage() {
   const supabase = createClient();
 
-  const [{ data: produits }, { data: projets }] = await Promise.all([
+  const [{ data: produits }, { data: projets }, destinations] = await Promise.all([
     supabase
       .from("produits")
       .select("id, nom, prix_par_kg")
@@ -18,6 +19,7 @@ export default async function NouvelleCommandePage() {
       .select("id, nom, mode_fret")
       .eq("statut", "actif")
       .order("created_at", { ascending: false }),
+    chargerDestinations(supabase),
   ]);
 
   return (
@@ -41,7 +43,11 @@ export default async function NouvelleCommandePage() {
         </p>
       )}
 
-      <NouvelleCommandeForm produits={produits ?? []} projets={projets ?? []} />
+      <NouvelleCommandeForm
+        produits={produits ?? []}
+        projets={projets ?? []}
+        destinations={destinations}
+      />
     </div>
   );
 }

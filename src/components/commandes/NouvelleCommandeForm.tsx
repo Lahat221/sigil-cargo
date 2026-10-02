@@ -8,8 +8,7 @@ import { ClientField, type ClientSelection } from "./ClientField";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 import { VideoPreviewList } from "./VideoPreviewList";
 import { BRAND } from "@/lib/brand";
-import { DESTINATIONS } from "@/lib/commandes/destinations";
-import { TARIFS_PAR_DESTINATION } from "@/lib/commandes/tarifsParDestination";
+import type { Destination } from "@/lib/commandes/destinations";
 
 const MAX_PHOTOS = 5;
 const MAX_VIDEOS = 4;
@@ -28,9 +27,11 @@ const DEFAULT_PRIX_PAR_M3 = BRAND.slug === "ami-chine-dakar" ? "170000" : "";
 export function NouvelleCommandeForm({
   produits,
   projets,
+  destinations,
 }: {
   produits: Produit[];
   projets: Projet[];
+  destinations: Destination[];
 }) {
   const router = useRouter();
 
@@ -81,14 +82,16 @@ export function NouvelleCommandeForm({
     return poids * prix + (enveloppe ? 15 : 0);
   }, [enModeConteneur, volumeM3, prixParM3, poidsKg, prixParKg, enveloppe]);
 
+  function tarifDestination(nom: string): number | undefined {
+    return destinations.find((d) => d.nom === nom)?.tarif_par_kg ?? undefined;
+  }
+
   function handleProduitChange(id: string) {
     setProduitId(id);
     const p = produits.find((p) => p.id === id);
     if (p) {
-      const tarifDestination = destination
-        ? TARIFS_PAR_DESTINATION[destination]
-        : undefined;
-      setPrixParKg((tarifDestination ?? p.prix_par_kg).toString());
+      const tarif = destination ? tarifDestination(destination) : undefined;
+      setPrixParKg((tarif ?? p.prix_par_kg).toString());
     }
   }
 
@@ -98,7 +101,7 @@ export function NouvelleCommandeForm({
   function handleDestinationChange(value: string) {
     setDestination(value);
     if (!enModeConteneur) {
-      const tarif = TARIFS_PAR_DESTINATION[value];
+      const tarif = tarifDestination(value);
       if (tarif !== undefined) setPrixParKg(tarif.toString());
     }
   }
@@ -391,25 +394,27 @@ export function NouvelleCommandeForm({
         </span>
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Destination
-        </label>
-        <select
-          value={destination}
-          onChange={(e) => handleDestinationChange(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
-        >
-          <option value="">— Non précisée —</option>
-          {DESTINATIONS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-              {TARIFS_PAR_DESTINATION[d] !== undefined &&
-                ` — ${montantFormatter.format(TARIFS_PAR_DESTINATION[d])}/kg`}
-            </option>
-          ))}
-        </select>
-      </div>
+      {destinations.length > 0 && (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            Destination
+          </label>
+          <select
+            value={destination}
+            onChange={(e) => handleDestinationChange(e.target.value)}
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+          >
+            <option value="">— Non précisée —</option>
+            {destinations.map((d) => (
+              <option key={d.nom} value={d.nom}>
+                {d.nom}
+                {d.tarif_par_kg !== null &&
+                  ` — ${montantFormatter.format(d.tarif_par_kg)}/kg`}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">

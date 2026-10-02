@@ -125,6 +125,40 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["produits"]["Insert"]>;
         Relationships: [];
       };
+      destinations: {
+        Row: {
+          id: string;
+          nom: string;
+          tarif_par_kg: number | null;
+          actif: boolean;
+          ordre: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          nom: string;
+          tarif_par_kg?: number | null;
+          actif?: boolean;
+          ordre?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["destinations"]["Insert"]>;
+        Relationships: [];
+      };
+      parametres: {
+        Row: {
+          cle: string;
+          valeur: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          cle: string;
+          valeur?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["parametres"]["Insert"]>;
+        Relationships: [];
+      };
       publicites: {
         Row: {
           id: string;

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { STATUT_LABELS } from "./StatutBadge";
 import { IconX } from "@/components/ui/Icons";
-import { DESTINATIONS } from "@/lib/commandes/destinations";
+import type { Destination } from "@/lib/commandes/destinations";
 import type { StatutCommande } from "@/types/database.types";
 
 const STATUTS = Object.keys(STATUT_LABELS) as StatutCommande[];
@@ -13,8 +13,10 @@ const STORAGE_KEY = "commandes-filtres";
 
 export function FiltresBar({
   projets,
+  destinations,
 }: {
   projets: { id: string; nom: string }[];
+  destinations: Destination[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -115,18 +117,20 @@ export function FiltresBar({
         ))}
       </select>
 
-      <select
-        value={searchParams.get("destination") ?? ""}
-        onChange={(e) => setParam("destination", e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
-      >
-        <option value="">Toutes destinations</option>
-        {DESTINATIONS.map((d) => (
-          <option key={d} value={d}>
-            {d}
-          </option>
-        ))}
-      </select>
+      {destinations.length > 0 && (
+        <select
+          value={searchParams.get("destination") ?? ""}
+          onChange={(e) => setParam("destination", e.target.value)}
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+        >
+          <option value="">Toutes destinations</option>
+          {destinations.map((d) => (
+            <option key={d.nom} value={d.nom}>
+              {d.nom}
+            </option>
+          ))}
+        </select>
+      )}
 
       <div className="flex items-center gap-2">
         <input

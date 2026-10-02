@@ -13,21 +13,11 @@ import {
   IconSparkles,
 } from "@/components/ui/Icons";
 import { BRAND } from "@/lib/brand";
+import { chargerParametresSite } from "@/lib/parametres";
 
 export const dynamic = "force-dynamic";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
-
-// Numéro WhatsApp pour le dépôt de colis à Dakar — dernier numéro de la
-// liste (celui réellement utilisé sur l'affiche "Fret Aérien Express"
-// fournie par le tenant, contrairement au premier qui est un autre contact
-// expéditeur).
-function dernierNumero(tel: string): string | null {
-  const parties = tel.split(/[-/]/);
-  const dernier = parties[parties.length - 1]?.trim();
-  const digits = dernier?.replace(/[^\d+]/g, "");
-  return digits && digits.length >= 6 ? digits : null;
-}
 
 export default async function HomePage() {
   // Page vitrine publique — accessible aussi à un agent déjà connecté
@@ -85,9 +75,10 @@ export default async function HomePage() {
     m.set(c.destination, (m.get(c.destination) ?? 0) + 1);
   }
 
-  const contactTel = BRAND.identite.expediteurTel.includes("RENSEIGNER")
-    ? null
-    : dernierNumero(BRAND.identite.expediteurTel);
+  // Infos de contact modifiables depuis Paramètres → Site public.
+  const site = await chargerParametresSite(admin);
+  const chiffresWhatsapp = site.whatsapp.replace(/\D/g, "");
+  const contactTel = chiffresWhatsapp.length >= 6 ? chiffresWhatsapp : null;
 
   const anneeCourante = new Date().getFullYear();
 
@@ -354,21 +345,29 @@ export default async function HomePage() {
                   Contact
                 </p>
                 <h2 className="text-2xl font-bold">Nous contacter</h2>
-                {BRAND.retrait && (
+                {(site.adresse || site.horaires) && (
                   <div className="mt-4 flex items-start gap-2 text-sm text-white/70">
                     <IconMapPin size={16} className="mt-0.5 shrink-0 text-gold-1" />
                     <span>
-                      {BRAND.retrait.adresse}
-                      <br />
-                      {BRAND.retrait.horaires}
+                      {site.adresse}
+                      {site.adresse && site.horaires && <br />}
+                      {site.horaires}
                     </span>
                   </div>
+                )}
+                {site.email && (
+                  <a
+                    href={`mailto:${site.email}`}
+                    className="mt-3 inline-block text-sm text-white/70 underline-offset-2 hover:text-white hover:underline"
+                  >
+                    {site.email}
+                  </a>
                 )}
               </div>
               <div className="flex flex-col items-center justify-center gap-3 border-t border-white/10 bg-black/10 p-8 sm:border-t-0 sm:border-l sm:p-10">
                 {contactTel ? (
                   <a
-                    href={`https://wa.me/${contactTel.replace(/\D/g, "")}`}
+                    href={`https://wa.me/${contactTel}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 rounded-lg bg-gold-gradient px-6 py-3 text-sm font-semibold text-navy shadow-lg shadow-gold-2/20 transition-all hover:-translate-y-0.5 hover:shadow-xl"

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EditCommandeForm } from "@/components/commandes/EditCommandeForm";
+import { chargerDestinations } from "@/lib/commandes/destinations";
 
 export const dynamic = "force-dynamic";
 
@@ -22,12 +23,13 @@ export default async function ModifierCommandePage({
 
   if (!commande || !commande.clients) notFound();
 
-  const [{ data: produits }, { data: projets }] = await Promise.all([
+  const [{ data: produits }, { data: projets }, destinations] = await Promise.all([
     supabase.from("produits").select("id, nom, prix_par_kg").order("nom"),
     supabase
       .from("projets")
       .select("id, nom, mode_fret")
       .order("created_at", { ascending: false }),
+    chargerDestinations(supabase),
   ]);
 
   const existingPhotos = [];
@@ -92,6 +94,7 @@ export default async function ModifierCommandePage({
         existingVoiceNote={existingVoiceNote}
         produits={produits ?? []}
         projets={projets ?? []}
+        destinations={destinations}
       />
     </div>
   );
