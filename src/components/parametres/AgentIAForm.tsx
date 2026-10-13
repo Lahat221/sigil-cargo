@@ -28,6 +28,7 @@ export function AgentIAForm({
 }) {
   const [actif, setActif] = useState(initial.actif);
   const [consignes, setConsignes] = useState(initial.consignes);
+  const [contacts, setContacts] = useState(initial.contacts);
   const [message, setMessage] = useState<{ type: "ok" | "erreur"; texte: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -44,7 +45,7 @@ export function AgentIAForm({
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
-      const r = await sauvegarderReglagesIA({ actif, consignes });
+      const r = await sauvegarderReglagesIA({ actif, consignes, contacts });
       setMessage(
         "error" in r
           ? { type: "erreur", texte: r.error }
@@ -61,7 +62,7 @@ export function AgentIAForm({
   function handleTest() {
     setTestResultat(null);
     startTest(async () => {
-      setTestResultat(await testerAgentIA(testMessage, testTelephone, consignes));
+      setTestResultat(await testerAgentIA(testMessage, testTelephone, consignes, contacts));
     });
   }
 
@@ -95,6 +96,25 @@ export function AgentIAForm({
             </span>
           </span>
         </label>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            Numéros à communiquer aux clients
+          </label>
+          <textarea
+            value={contacts}
+            onChange={(e) => setContacts(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder={"France (WhatsApp) : +33 6 95 81 11 29\nDakar : +221 77 000 00 00"}
+            className={INPUT_CLASS}
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            L&apos;agent donne ces numéros quand un client veut plus d&apos;informations ou
+            parler à quelqu&apos;un, et jamais d&apos;autres. Vide : il donne le WhatsApp du
+            site (Paramètres → Site public).
+          </p>
+        </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">

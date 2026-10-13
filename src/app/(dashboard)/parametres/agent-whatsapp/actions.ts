@@ -11,10 +11,14 @@ type Resultat = { error: string } | { success: true };
 export async function sauvegarderReglagesIA(valeurs: {
   actif: boolean;
   consignes: string;
+  contacts: string;
 }): Promise<Resultat> {
   if (!(await getAdminCourant())) return { error: "Action réservée aux administrateurs." };
   if (valeurs.consignes.length > 3000) {
     return { error: "Les consignes sont limitées à 3000 caractères." };
+  }
+  if (valeurs.contacts.length > 500) {
+    return { error: "Les numéros de contact sont limités à 500 caractères." };
   }
   if (valeurs.actif && !process.env.ANTHROPIC_API_KEY) {
     return { error: "Clé Anthropic manquante : impossible d'activer l'agent." };
@@ -25,6 +29,7 @@ export async function sauvegarderReglagesIA(valeurs: {
     .upsert([
       { cle: CLES_IA.actif, valeur: valeurs.actif ? "1" : "0" },
       { cle: CLES_IA.consignes, valeur: valeurs.consignes.trim() },
+      { cle: CLES_IA.contacts, valeur: valeurs.contacts.trim() },
     ]);
   if (error) return { error: error.message };
 
@@ -36,7 +41,8 @@ export async function sauvegarderReglagesIA(valeurs: {
 export async function testerAgentIA(
   message: string,
   telephoneTest: string,
-  consignes: string
+  consignes: string,
+  contacts: string
 ): Promise<{ error: string } | { reponse: string; outils: string[]; transfert: boolean }> {
   if (!(await getAdminCourant())) return { error: "Action réservée aux administrateurs." };
   if (!message.trim()) return { error: "Écrivez un message à tester." };
@@ -49,6 +55,7 @@ export async function testerAgentIA(
       clientNom: null,
       messageTest: message.trim().slice(0, 1000),
       consignes,
+      contacts,
       simulation: true,
     });
     return { reponse: r.texte, outils: r.outils, transfert: r.transfert };

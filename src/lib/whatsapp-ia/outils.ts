@@ -298,7 +298,7 @@ async function demanderAEquipe(entree: Record<string, unknown>, ctx: ContexteOut
   await ctx.alerterProprietaire(
     `❓ Question sans réponse (l'IA reste active)\n${ctx.clientNom ?? ctx.telephone} (${ctx.telephone})\n${question}\n\nRépondez directement au client si besoin : l'IA se taira alors ${PAUSE_HUMAIN_H} h.`
   );
-  return { ok: true };
+  return { ok: true, note: "Donne aussi au client les contacts officiels pour plus d'informations." };
 }
 
 async function transferer(entree: Record<string, unknown>, ctx: ContexteOutils) {

@@ -5,9 +5,10 @@ import { chiffres } from "./telephone";
 export const CLES_IA = {
   actif: "ia_whatsapp_actif",
   consignes: "ia_whatsapp_consignes",
+  contacts: "ia_whatsapp_contacts",
 } as const;
 
-export type ReglagesIA = { actif: boolean; consignes: string };
+export type ReglagesIA = { actif: boolean; consignes: string; contacts: string };
 
 type Admin = SupabaseClient<Database>;
 
@@ -26,6 +27,7 @@ export async function chargerReglagesIA(supabase: Admin): Promise<ReglagesIA> {
     // Désactivé par défaut : l'équipe l'active explicitement dans Paramètres.
     actif: v.get(CLES_IA.actif) === "1",
     consignes: v.get(CLES_IA.consignes) ?? "",
+    contacts: v.get(CLES_IA.contacts) ?? "",
   };
 }
 
