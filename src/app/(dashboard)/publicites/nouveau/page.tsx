@@ -4,7 +4,12 @@ import type { Database } from "@/types/database.types";
 
 type TypePublicite = Database["public"]["Tables"]["publicites"]["Row"]["type"];
 
-const TYPES_VALIDES: TypePublicite[] = ["affiche_depart", "publicite", "reseau_social"];
+const TYPES_VALIDES: TypePublicite[] = [
+  "affiche_depart",
+  "publicite",
+  "reseau_social",
+  "temoignage",
+];
 
 export default function NouvellePublicitePage({
   searchParams,

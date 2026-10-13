@@ -38,6 +38,7 @@ export default async function ModifierPublicitePage({
         publiciteId={publicite.id}
         initialType={publicite.type}
         initialTitre={publicite.titre}
+        initialTexte={publicite.texte ?? ""}
         initialLien={publicite.lien ?? ""}
         initialImagePath={publicite.image_path}
         initialImageUrl={imageUrl}

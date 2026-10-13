@@ -115,6 +115,11 @@ export default async function TableauDeBordPage({
     .from("clients")
     .select("id", { count: "exact", head: true });
 
+  const { count: nbDevisNouveaux } = await supabase
+    .from("demandes_devis")
+    .select("id", { count: "exact", head: true })
+    .eq("statut", "nouvelle");
+
   let chargesQuery = supabase.from("charges").select("montant, date_charge");
   if (searchParams.projet) chargesQuery = chargesQuery.eq("projet_id", searchParams.projet);
   if (debut) chargesQuery = chargesQuery.gte("date_charge", debut.slice(0, 10));
@@ -188,6 +193,19 @@ export default async function TableauDeBordPage({
       <p className="mb-6 text-sm text-ink-muted">
         {BRAND.nom} · Vue d&apos;ensemble
       </p>
+
+      {(nbDevisNouveaux ?? 0) > 0 && (
+        <Link
+          href="/devis?statut=nouvelle"
+          className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-gold-1/40 bg-gold-1/10 px-4 py-3 text-sm transition-colors hover:bg-gold-1/15"
+        >
+          <span className="font-medium text-ink">
+            {nbDevisNouveaux} nouvelle{(nbDevisNouveaux ?? 0) > 1 ? "s" : ""} demande
+            {(nbDevisNouveaux ?? 0) > 1 ? "s" : ""} de devis à traiter
+          </span>
+          <span className="font-semibold text-gold-1">Voir →</span>
+        </Link>
+      )}
 
       <DashboardFiltres projets={projets ?? []} />
 

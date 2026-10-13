@@ -27,6 +27,12 @@ const SECTIONS: { type: TypePublicite; titre: string; description: string }[] = 
     titre: "Réseaux sociaux",
     description: "Liens TikTok, Facebook, Instagram... affichés en bas du site public.",
   },
+  {
+    type: "temoignage",
+    titre: "Témoignages clients",
+    description:
+      "Avis de vos clients affichés sur le site public (demandez leur accord).",
+  },
 ];
 
 export default async function PublicitesPage() {
@@ -109,6 +115,11 @@ export default async function PublicitesPage() {
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-slate-900">{p.titre}</p>
+                        {p.texte && (
+                          <p className="line-clamp-2 max-w-md text-xs text-slate-500">
+                            {p.texte}
+                          </p>
+                        )}
                         {p.lien && (
                           <a
                             href={p.lien}

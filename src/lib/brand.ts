@@ -60,6 +60,11 @@ export type BrandConfig = {
   // Description de la route pour le prompt IA de classification douanière
   // (src/lib/douane/prompt.ts) — influence le contexte que l'IA suppose.
   routeDescription: string;
+  // Trajet affiché sur le site public (cartes de départ) : ville de départ,
+  // et ville d'arrivée par défaut quand le tenant n'a pas de destinations
+  // configurées dans Paramètres → Tarifs.
+  villeDepart: string;
+  villeArriveeDefaut: string;
   // Identité figée sur la déclaration douanière (déclarationXlsx.ts et
   // l'écran Déclaration) — donnée métier réelle, pas juste un habillage.
   identite: {
@@ -133,6 +138,8 @@ const SIGIL_CARGO: BrandConfig = {
   moduleFranceActif: true,
   logoImagePath: null,
   routeDescription: "entre le Sénégal et la France",
+  villeDepart: "Dakar",
+  villeArriveeDefaut: "France",
   identite: {
     expediteurNom: "Aminata MBAYE",
     expediteurAdresse: "Pikine  Djidah Thiaroye, Dakar Senegal",
@@ -216,6 +223,8 @@ const AMI_CHINE_DAKAR: BrandConfig = {
   moduleFranceActif: false,
   logoImagePath: "/mn-logistics-logo.jpeg",
   routeDescription: "entre la Chine et le Sénégal",
+  villeDepart: "Chine",
+  villeArriveeDefaut: "Dakar",
   identite: {
     expediteurNom: "À RENSEIGNER (expéditeur Chine)",
     expediteurAdresse: "À RENSEIGNER",

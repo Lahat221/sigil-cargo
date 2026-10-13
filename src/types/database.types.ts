@@ -159,11 +159,47 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["parametres"]["Insert"]>;
         Relationships: [];
       };
+      demandes_devis: {
+        Row: {
+          id: string;
+          created_at: string;
+          type: "grand_colis" | "professionnel";
+          nom: string;
+          entreprise: string | null;
+          telephone: string;
+          email: string | null;
+          destination: string | null;
+          poids_estime: string | null;
+          description: string;
+          date_souhaitee: string | null;
+          statut: "nouvelle" | "en_cours" | "traitee";
+          note_interne: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          type?: "grand_colis" | "professionnel";
+          nom: string;
+          entreprise?: string | null;
+          telephone: string;
+          email?: string | null;
+          destination?: string | null;
+          poids_estime?: string | null;
+          description: string;
+          date_souhaitee?: string | null;
+          statut?: "nouvelle" | "en_cours" | "traitee";
+          note_interne?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["demandes_devis"]["Insert"]>;
+        Relationships: [];
+      };
       publicites: {
         Row: {
           id: string;
-          type: "affiche_depart" | "publicite" | "reseau_social";
+          type: "affiche_depart" | "publicite" | "reseau_social" | "temoignage";
           titre: string;
+          // Texte long : contenu d'un témoignage client (type "temoignage").
+          texte: string | null;
           image_path: string | null;
           lien: string | null;
           actif: boolean;
@@ -172,8 +208,9 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          type: "affiche_depart" | "publicite" | "reseau_social";
+          type: "affiche_depart" | "publicite" | "reseau_social" | "temoignage";
           titre: string;
+          texte?: string | null;
           image_path?: string | null;
           lien?: string | null;
           actif?: boolean;

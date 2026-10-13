@@ -8,18 +8,45 @@ import { BRAND } from "@/lib/brand";
 export type ParametresSite = {
   whatsapp: string;
   adresse: string;
+  // Adresse du point de dépôt (ville de départ, ex. Dakar).
+  adresseDakar: string;
   horaires: string;
   email: string;
   // Adresse du site imprimée sur les étiquettes colis (suivi / infos).
   siteWeb: string;
+  // Villes annoncées « bientôt » sur le site public (séparées par des virgules).
+  destinationsBientot: string;
+  // Chiffres cumulés depuis les débuts (y compris avant l'application) :
+  // le site affiche le plus élevé entre ces valeurs et le compte en direct.
+  chiffresKg: string;
+  chiffresClients: string;
+  chiffresDeparts: string;
+  // Règles de prix du calculateur du site public (nombres saisis en texte).
+  seuilPetitColisKg: string;
+  petitColisParKg: string;
+  forfaitEnveloppe: string;
+};
+
+export type ReglesPrix = {
+  seuilPetitColisKg: number;
+  petitColisParKg: number;
+  forfaitEnveloppe: number;
 };
 
 export const CLES_SITE = {
   whatsapp: "contact_whatsapp",
   adresse: "contact_adresse",
+  adresseDakar: "adresse_dakar",
   horaires: "contact_horaires",
   email: "contact_email",
   siteWeb: "site_web",
+  destinationsBientot: "destinations_bientot",
+  chiffresKg: "chiffres_kg",
+  chiffresClients: "chiffres_clients",
+  chiffresDeparts: "chiffres_departs",
+  seuilPetitColisKg: "prix_seuil_petit_colis_kg",
+  petitColisParKg: "prix_petit_colis_par_kg",
+  forfaitEnveloppe: "prix_forfait_enveloppe",
 } as const;
 
 function dernierNumero(tel: string): string {
@@ -28,13 +55,34 @@ function dernierNumero(tel: string): string {
   return parties[parties.length - 1]?.trim() ?? "";
 }
 
+// Adresse de dépôt par défaut : celle de l'expéditeur déjà utilisée sur les
+// déclarations douanières (vide tant que le tenant ne l'a pas renseignée).
+function adresseDepart(): string {
+  const brute = BRAND.identite.expediteurAdresse;
+  if (brute.includes("RENSEIGNER")) return "";
+  return brute
+    .replace(/\s+/g, " ")
+    .replace(/Dakar\s+Senegal/i, "Dakar, Sénégal")
+    .trim();
+}
+
 export function defautsSite(): ParametresSite {
   return {
     whatsapp: dernierNumero(BRAND.identite.expediteurTel),
     adresse: BRAND.retrait?.adresse ?? "",
+    adresseDakar: adresseDepart(),
     horaires: BRAND.retrait?.horaires ?? "",
     email: "",
     siteWeb: "",
+    destinationsBientot: "",
+    chiffresKg: "",
+    chiffresClients: "",
+    chiffresDeparts: "",
+    // Valeurs de l'affiche de départ SIGIL CARGO : colis de moins de 10 kg
+    // à 10 €/kg, enveloppe au forfait de 15 €.
+    seuilPetitColisKg: "10",
+    petitColisParKg: "10",
+    forfaitEnveloppe: "15",
   };
 }
 
@@ -56,8 +104,42 @@ export async function chargerParametresSite(
   return {
     whatsapp: lire(CLES_SITE.whatsapp, defauts.whatsapp),
     adresse: lire(CLES_SITE.adresse, defauts.adresse),
+    adresseDakar: lire(CLES_SITE.adresseDakar, defauts.adresseDakar),
     horaires: lire(CLES_SITE.horaires, defauts.horaires),
     email: lire(CLES_SITE.email, defauts.email),
     siteWeb: lire(CLES_SITE.siteWeb, defauts.siteWeb),
+    destinationsBientot: lire(CLES_SITE.destinationsBientot, defauts.destinationsBientot),
+    chiffresKg: lire(CLES_SITE.chiffresKg, defauts.chiffresKg),
+    chiffresClients: lire(CLES_SITE.chiffresClients, defauts.chiffresClients),
+    chiffresDeparts: lire(CLES_SITE.chiffresDeparts, defauts.chiffresDeparts),
+    seuilPetitColisKg: lire(CLES_SITE.seuilPetitColisKg, defauts.seuilPetitColisKg),
+    petitColisParKg: lire(CLES_SITE.petitColisParKg, defauts.petitColisParKg),
+    forfaitEnveloppe: lire(CLES_SITE.forfaitEnveloppe, defauts.forfaitEnveloppe),
   };
+}
+
+export function reglesPrix(site: ParametresSite): ReglesPrix {
+  const defauts = defautsSite();
+  const nombre = (valeur: string, repli: string) => {
+    const n = parseFloat(valeur.replace(",", "."));
+    return Number.isNaN(n) || n < 0 ? parseFloat(repli) : n;
+  };
+  return {
+    seuilPetitColisKg: nombre(site.seuilPetitColisKg, defauts.seuilPetitColisKg),
+    petitColisParKg: nombre(site.petitColisParKg, defauts.petitColisParKg),
+    forfaitEnveloppe: nombre(site.forfaitEnveloppe, defauts.forfaitEnveloppe),
+  };
+}
+
+export function listeDestinationsBientot(site: ParametresSite): string[] {
+  return site.destinationsBientot
+    .split(/[,\n]/)
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
+// Nombre saisi dans les paramètres (0 si vide ou invalide).
+export function nombreSaisi(valeur: string): number {
+  const n = parseFloat(valeur.replace(",", "."));
+  return Number.isNaN(n) || n < 0 ? 0 : n;
 }

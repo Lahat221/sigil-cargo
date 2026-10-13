@@ -9,6 +9,7 @@ type TypePublicite = Database["public"]["Tables"]["publicites"]["Row"]["type"];
 type PubliciteInput = {
   type: TypePublicite;
   titre: string;
+  texte: string;
   lien: string;
   imagePath: string | null;
   actif: boolean;
@@ -28,6 +29,7 @@ export async function createPublicite(
   const { error } = await supabase.from("publicites").insert({
     type: input.type,
     titre: input.titre.trim(),
+    texte: input.texte.trim() || null,
     lien: input.lien.trim() || null,
     image_path: input.imagePath,
     actif: input.actif,
@@ -50,6 +52,7 @@ export async function updatePublicite(
     .update({
       type: input.type,
       titre: input.titre.trim(),
+      texte: input.texte.trim() || null,
       lien: input.lien.trim() || null,
       image_path: input.imagePath,
       actif: input.actif,

@@ -23,7 +23,9 @@ export function LogoMark({ size = 32 }: { size?: number }) {
   }
 
   return (
-    <svg width={size} height={size} viewBox="0 0 120 120" aria-hidden="true">
+    // viewBox resserré sur le dessin (qui n'occupe que le centre du cadre
+    // 120x120) : l'icône apparaît ~1,5x plus grande pour une même taille.
+    <svg width={size} height={size} viewBox="20 18 80 80" aria-hidden="true">
       <defs>
         <linearGradient id="sigil-gold" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#F7D97A" />
@@ -53,9 +55,14 @@ export function LogoMark({ size = 32 }: { size?: number }) {
 export function Logo({
   tagline = false,
   size = 32,
+  texteClasse = "text-lg",
+  taglineClasse = "text-[10px]",
 }: {
   tagline?: boolean;
   size?: number;
+  /** Taille du nom (classes Tailwind) — à agrandir avec `size` pour un logo mis en avant. */
+  texteClasse?: string;
+  taglineClasse?: string;
 }) {
   const [premier, ...reste] = BRAND.nom.split(" ");
   const suite = reste.join(" ");
@@ -67,12 +74,14 @@ export function Logo({
         {/* Le logo est toujours affiché sur un fond sombre (sidebar ou
             carte de login bg-navy-2), quel que soit le tenant — texte
             volontairement fixe en blanc, pas theme-aware (text-ink). */}
-        <div className="text-lg font-extrabold tracking-wide text-white">
+        <div className={`${texteClasse} font-extrabold tracking-wide text-white`}>
           {premier}
           {suite && <span className="font-semibold text-gold-1"> {suite}</span>}
         </div>
         {tagline && (
-          <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-gold-1">
+          <div
+            className={`mt-1 ${taglineClasse} font-semibold uppercase tracking-[0.3em] text-gold-1`}
+          >
             {BRAND.tagline}
           </div>
         )}

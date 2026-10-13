@@ -201,14 +201,37 @@ export async function sauvegarderParametresSite(
 ): Promise<Resultat> {
   if (!(await getAdminCourant())) return NON_ADMIN;
 
+  for (const v of [valeurs.chiffresKg, valeurs.chiffresClients, valeurs.chiffresDeparts]) {
+    if (v.trim() === "") continue;
+    const n = parseFloat(v.replace(",", "."));
+    if (Number.isNaN(n) || n < 0) {
+      return { error: "Les chiffres cumulés doivent être des nombres positifs (ou vides)." };
+    }
+  }
+
+  for (const v of [valeurs.seuilPetitColisKg, valeurs.petitColisParKg, valeurs.forfaitEnveloppe]) {
+    const n = parseFloat(v.replace(",", "."));
+    if (Number.isNaN(n) || n < 0) {
+      return { error: "Les règles de prix doivent être des nombres positifs." };
+    }
+  }
+
   const { error } = await createAdminClient()
     .from("parametres")
     .upsert([
       { cle: CLES_SITE.whatsapp, valeur: valeurs.whatsapp.trim() },
       { cle: CLES_SITE.adresse, valeur: valeurs.adresse.trim() },
+      { cle: CLES_SITE.adresseDakar, valeur: valeurs.adresseDakar.trim() },
       { cle: CLES_SITE.horaires, valeur: valeurs.horaires.trim() },
       { cle: CLES_SITE.email, valeur: valeurs.email.trim() },
       { cle: CLES_SITE.siteWeb, valeur: valeurs.siteWeb.trim() },
+      { cle: CLES_SITE.destinationsBientot, valeur: valeurs.destinationsBientot.trim() },
+      { cle: CLES_SITE.chiffresKg, valeur: valeurs.chiffresKg.trim() },
+      { cle: CLES_SITE.chiffresClients, valeur: valeurs.chiffresClients.trim() },
+      { cle: CLES_SITE.chiffresDeparts, valeur: valeurs.chiffresDeparts.trim() },
+      { cle: CLES_SITE.seuilPetitColisKg, valeur: valeurs.seuilPetitColisKg.trim() },
+      { cle: CLES_SITE.petitColisParKg, valeur: valeurs.petitColisParKg.trim() },
+      { cle: CLES_SITE.forfaitEnveloppe, valeur: valeurs.forfaitEnveloppe.trim() },
     ]);
   if (error) return { error: error.message };
 

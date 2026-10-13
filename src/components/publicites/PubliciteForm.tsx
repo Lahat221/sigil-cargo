@@ -15,12 +15,14 @@ const TYPE_LABELS: Record<TypePublicite, string> = {
   affiche_depart: "Affiche de départ",
   publicite: "Publicité",
   reseau_social: "Réseau social",
+  temoignage: "Témoignage client",
 };
 
 export function PubliciteForm({
   publiciteId,
   initialType = "affiche_depart",
   initialTitre = "",
+  initialTexte = "",
   initialLien = "",
   initialImagePath = null,
   initialImageUrl = null,
@@ -30,6 +32,7 @@ export function PubliciteForm({
   publiciteId?: string;
   initialType?: TypePublicite;
   initialTitre?: string;
+  initialTexte?: string;
   initialLien?: string;
   initialImagePath?: string | null;
   initialImageUrl?: string | null;
@@ -40,6 +43,7 @@ export function PubliciteForm({
 
   const [type, setType] = useState<TypePublicite>(initialType);
   const [titre, setTitre] = useState(initialTitre);
+  const [texte, setTexte] = useState(initialTexte);
   const [lien, setLien] = useState(initialLien);
   const [imagePath, setImagePath] = useState(initialImagePath);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(initialImageUrl);
@@ -49,7 +53,8 @@ export function PubliciteForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const imageUtile = type !== "reseau_social";
+  const imageUtile = type !== "reseau_social" && type !== "temoignage";
+  const estTemoignage = type === "temoignage";
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -70,6 +75,10 @@ export function PubliciteForm({
 
     if (!titre.trim()) {
       setError("Le titre est requis.");
+      return;
+    }
+    if (estTemoignage && !texte.trim()) {
+      setError("Le texte du témoignage est requis.");
       return;
     }
     if (type === "reseau_social" && !lien.trim()) {
@@ -99,7 +108,8 @@ export function PubliciteForm({
       const input = {
         type,
         titre,
-        lien,
+        texte: estTemoignage ? texte : "",
+        lien: estTemoignage ? "" : lien,
         imagePath: imageUtile ? cheminImage : null,
         actif,
         ordre,
@@ -147,35 +157,57 @@ export function PubliciteForm({
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">
-          Titre
+          {estTemoignage ? "Nom du client" : "Titre"}
         </label>
         <input
           type="text"
           value={titre}
           onChange={(e) => setTitre(e.target.value)}
           placeholder={
-            type === "reseau_social" ? "Ex. TikTok" : "Ex. Départ 05/10/2026"
+            type === "reseau_social"
+              ? "Ex. TikTok"
+              : estTemoignage
+                ? "Ex. Aïssatou D., Lyon"
+                : "Ex. Départ 05/10/2026"
           }
           required
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
         />
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          {type === "reseau_social"
-            ? "Lien du profil"
-            : "Lien (optionnel — au clic sur l'image)"}
-        </label>
-        <input
-          type="url"
-          value={lien}
-          onChange={(e) => setLien(e.target.value)}
-          placeholder="https://..."
-          required={type === "reseau_social"}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
-        />
-      </div>
+      {estTemoignage && (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            Témoignage
+          </label>
+          <textarea
+            value={texte}
+            onChange={(e) => setTexte(e.target.value)}
+            rows={4}
+            required
+            placeholder="Ce que le client dit de votre service (avec son accord)"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+          />
+        </div>
+      )}
+
+      {!estTemoignage && (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            {type === "reseau_social"
+              ? "Lien du profil"
+              : "Lien (optionnel — au clic sur l'image)"}
+          </label>
+          <input
+            type="url"
+            value={lien}
+            onChange={(e) => setLien(e.target.value)}
+            placeholder="https://..."
+            required={type === "reseau_social"}
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+          />
+        </div>
+      )}
 
       {imageUtile && (
         <div>

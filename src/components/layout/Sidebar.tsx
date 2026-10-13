@@ -21,6 +21,7 @@ import {
   IconMenu,
   IconX,
   IconGlobe,
+  IconFileText,
 } from "@/components/ui/Icons";
 
 function NavLink({
@@ -111,6 +112,7 @@ const NAV_ITEMS: NavItem[] = [
     groupe: "clients",
   },
   { slug: "chat", href: "/chat", label: "Chat", icon: <IconChat size={17} />, tabIcon: <IconChat size={20} />, groupe: "clients" },
+  { slug: "devis", href: "/devis", label: "Demandes de devis", icon: <IconFileText size={17} />, groupe: "clients" },
   {
     slug: "notifications-whatsapp",
     href: "/notifications-whatsapp",

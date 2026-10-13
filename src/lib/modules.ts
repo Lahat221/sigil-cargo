@@ -6,6 +6,7 @@ export const MODULES_DISPONIBLES: { slug: string; label: string }[] = [
   { slug: "projets", label: "Projets" },
   { slug: "clients", label: "Clients" },
   { slug: "chat", label: "Chat" },
+  { slug: "devis", label: "Demandes de devis" },
   { slug: "notifications-whatsapp", label: "Campagne de Communication" },
   { slug: "publicites", label: "Publicités" },
   { slug: "charges-depenses", label: "Charges & Dépenses" },

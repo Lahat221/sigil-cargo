@@ -12,7 +12,8 @@ import { updateSession } from "@/lib/supabase/middleware";
 // groupe (dashboard).
 // /suivi : recherche publique d'un colis par numéro + téléphone (page
 // d'accueil publique, voir src/app/page.tsx).
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest", "/api/twilio", "/icon", "/colis", "/suivi"];
+// /legal : mentions légales, CGV et politique de confidentialité.
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/manifest.webmanifest", "/api/twilio", "/icon", "/colis", "/suivi", "/legal"];
 
 function moduleSlug(pathname: string) {
   return pathname.split("/")[1] || null;

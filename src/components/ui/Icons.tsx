@@ -367,3 +367,62 @@ export function IconSparkles({ className, size = 16 }: IconProps) {
     </svg>
   );
 }
+
+export function IconCalculator({ className, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01" />
+    </svg>
+  );
+}
+
+export function IconQuote({ className, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} fill="currentColor">
+      <path d="M4 17.5C4 12 6.5 8 11 6.5l.7 1.6C9.2 9.2 8 11 7.8 13H11v6H4v-1.5Zm9 0C13 12 15.5 8 20 6.5l.7 1.6C18.2 9.2 17 11 16.8 13H20v6h-7v-1.5Z" />
+    </svg>
+  );
+}
+
+export function IconChevronDown({ className, size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+export function IconChevronLeft({ className, size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="m15 6-6 6 6 6" />
+    </svg>
+  );
+}
+
+export function IconChevronRight({ className, size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+export function IconBoxPackage({ className, size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z" />
+      <path d="M3 7.5v9L12 21l9-4.5v-9M12 12v9" />
+    </svg>
+  );
+}
+
+export function IconCheckCircle({ className, size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12.5 2.5 2.5 4.5-5" />
+    </svg>
+  );
+}
