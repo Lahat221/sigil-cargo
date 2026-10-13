@@ -29,7 +29,8 @@ export default async function AgentWhatsAppPage() {
           tarifs et estimation, prochains départs, adresses, demandes de devis. Vous
           recevez une copie de chaque réponse et une alerte dès qu&apos;un humain doit
           intervenir. Dès que vous répondez vous-même à un client, l&apos;agent se tait
-          12 h sur cette conversation.
+          2 h sur cette conversation (4 h après un transfert) ; vous pouvez le
+          réactiver à tout moment depuis la conversation dans le Chat.
         </p>
         <AgentIAForm initial={reglages} prerequis={prerequis} />
       </section>

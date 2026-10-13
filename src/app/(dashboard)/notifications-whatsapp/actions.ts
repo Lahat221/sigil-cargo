@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
-import { mettreEnPause } from "@/lib/whatsapp-ia/reglages";
+import { PAUSE_HUMAIN_H, leverPause, mettreEnPause } from "@/lib/whatsapp-ia/reglages";
 
 function formatNumeroE164(
   telephone: string,
@@ -210,9 +210,9 @@ export async function envoyerReponseWhatsApp(
       media_type: mediaType || null,
     });
 
-    // Un humain a repris la conversation : l'agent IA se tait 12 h.
+    // Un humain a repris la conversation : l'agent IA se tait quelques heures.
     try {
-      await mettreEnPause(createAdminClient(), telephone, 12, "réponse depuis l'appli");
+      await mettreEnPause(createAdminClient(), telephone, PAUSE_HUMAIN_H, "réponse depuis l'appli");
     } catch {
       // Table absente tant que la migration n'est pas passée : sans effet.
     }
@@ -255,5 +255,18 @@ export async function supprimerCampagne(
   if (error) return { error: error.message };
 
   revalidatePath("/notifications-whatsapp");
+  return { success: true };
+}
+
+/** Rend la main à l'agent IA sur une conversation (lève la pause). */
+export async function reactiverAgentIA(
+  telephone: string
+): Promise<{ error: string } | { success: true }> {
+  try {
+    await leverPause(createAdminClient(), telephone);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Erreur inconnue." };
+  }
+  revalidatePath(`/chat/${encodeURIComponent(telephone)}`);
   return { success: true };
 }

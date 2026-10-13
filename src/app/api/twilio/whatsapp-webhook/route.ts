@@ -6,14 +6,12 @@ import { waitUntil } from "@vercel/functions";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import { RELAY_TEMPLATE_SID } from "@/lib/twilio/relais";
 import { traiterMessageEntrant } from "@/lib/whatsapp-ia/agent";
-import { mettreEnPause } from "@/lib/whatsapp-ia/reglages";
+import { PAUSE_HUMAIN_H, mettreEnPause } from "@/lib/whatsapp-ia/reglages";
 
 // L'agent IA répond après avoir rendu la main à Twilio (waitUntil) : on laisse
 // le temps aux appels Claude + outils.
 export const maxDuration = 60;
 
-// Quand un humain répond dans une conversation, l'IA se tait ce nombre d'heures.
-const PAUSE_IA_APRES_HUMAIN_H = 12;
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -205,7 +203,7 @@ export async function POST(request: NextRequest) {
         await mettreEnPause(
           supabase,
           state.client_telephone,
-          PAUSE_IA_APRES_HUMAIN_H,
+          PAUSE_HUMAIN_H,
           "réponse du propriétaire"
         );
         await relayerVersClient(

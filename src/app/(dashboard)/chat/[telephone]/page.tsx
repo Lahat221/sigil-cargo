@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ReplyForm } from "@/components/whatsapp/ReplyForm";
+import { PauseIABandeau } from "@/components/whatsapp/PauseIABandeau";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { pauseActive } from "@/lib/whatsapp-ia/reglages";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +41,8 @@ export default async function ConversationPage({
     : avecSource.data;
 
   if (!messages || messages.length === 0) notFound();
+
+  const pause = await pauseActive(createAdminClient(), telephone).catch(() => null);
 
   const avecClient = messages.find((m) => m.client_id);
   const clientId = avecClient?.client_id ?? null;
@@ -125,6 +130,7 @@ export default async function ConversationPage({
           ))}
         </div>
 
+        {pause && <PauseIABandeau telephone={telephone} jusqua={pause.jusqua} />}
         <ReplyForm telephone={telephone} clientId={clientId} />
       </div>
     </div>
