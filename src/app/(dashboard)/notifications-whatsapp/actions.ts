@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
+import { mettreEnPause } from "@/lib/whatsapp-ia/reglages";
 
 function formatNumeroE164(
   telephone: string,
@@ -207,6 +209,13 @@ export async function envoyerReponseWhatsApp(
       media_url: mediaPath || null,
       media_type: mediaType || null,
     });
+
+    // Un humain a repris la conversation : l'agent IA se tait 12 h.
+    try {
+      await mettreEnPause(createAdminClient(), telephone, 12, "réponse depuis l'appli");
+    } catch {
+      // Table absente tant que la migration n'est pas passée : sans effet.
+    }
 
     revalidatePath(`/chat/${encodeURIComponent(telephone)}`);
     revalidatePath("/chat");

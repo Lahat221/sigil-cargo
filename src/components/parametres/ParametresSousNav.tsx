@@ -7,6 +7,7 @@ import {
   IconShieldCheck,
   IconInvoice,
   IconGlobe,
+  IconChat,
 } from "@/components/ui/Icons";
 
 const ONGLETS = [
@@ -14,6 +15,7 @@ const ONGLETS = [
   { href: "/parametres/utilisateurs", label: "Utilisateurs & accès", icon: IconUsers, admin: true },
   { href: "/parametres/tarifs", label: "Tarifs", icon: IconInvoice, admin: true },
   { href: "/parametres/site", label: "Site public", icon: IconGlobe, admin: true },
+  { href: "/parametres/agent-whatsapp", label: "Agent WhatsApp", icon: IconChat, admin: true },
 ];
 
 export function ParametresSousNav({ estAdmin }: { estAdmin: boolean }) {

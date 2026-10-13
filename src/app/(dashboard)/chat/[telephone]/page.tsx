@@ -18,13 +18,24 @@ export default async function ConversationPage({
   const telephone = decodeURIComponent(params.telephone);
   const supabase = createClient();
 
-  const { data: messages } = await supabase
+  const colonnes =
+    "id, body, direction, created_at, client_id, media_url, media_type, clients(nom)";
+  // `source` (marque « IA ») n'existe qu'après la migration de l'agent WhatsApp :
+  // repli sans cette colonne tant qu'elle manque.
+  const avecSource = await supabase
     .from("whatsapp_messages")
-    .select(
-      "id, body, direction, created_at, client_id, media_url, media_type, clients(nom)"
-    )
+    .select(`${colonnes}, source`)
     .eq("telephone", telephone)
     .order("created_at", { ascending: true });
+  const messages = avecSource.error
+    ? (
+        await supabase
+          .from("whatsapp_messages")
+          .select(colonnes)
+          .eq("telephone", telephone)
+          .order("created_at", { ascending: true })
+      ).data?.map((m) => ({ ...m, source: null as string | null }))
+    : avecSource.data;
 
   if (!messages || messages.length === 0) notFound();
 
@@ -93,6 +104,11 @@ export default async function ConversationPage({
                       className="mb-1.5 h-9 max-w-[240px]"
                     />
                   ))}
+                {m.source === "ia" && (
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/80">
+                    🤖 Réponse IA
+                  </p>
+                )}
                 {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
                 {!m.body && !m.mediaSignedUrl && (
                   <p className="whitespace-pre-wrap opacity-70">(média)</p>

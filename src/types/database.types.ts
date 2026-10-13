@@ -492,6 +492,8 @@ export interface Database {
           message_sid: string | null;
           media_url: string | null;
           media_type: string | null;
+          // "ia" : réponse envoyée par l'agent IA ; null : message client ou agent humain.
+          source: string | null;
           created_at: string;
         };
         Insert: {
@@ -503,6 +505,7 @@ export interface Database {
           message_sid?: string | null;
           media_url?: string | null;
           media_type?: string | null;
+          source?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["whatsapp_messages"]["Insert"]>;
@@ -514,6 +517,22 @@ export interface Database {
             referencedColumns: ["id"];
           }
         ];
+      };
+      whatsapp_ia_pause: {
+        Row: {
+          telephone: string;
+          pause_jusqu_a: string;
+          motif: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          telephone: string;
+          pause_jusqu_a: string;
+          motif?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["whatsapp_ia_pause"]["Insert"]>;
+        Relationships: [];
       };
       whatsapp_relay_state: {
         Row: {

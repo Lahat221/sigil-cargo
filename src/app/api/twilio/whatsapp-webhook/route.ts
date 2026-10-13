@@ -2,11 +2,18 @@ import { randomUUID } from "crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import twilio from "twilio";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { waitUntil } from "@vercel/functions";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
+import { RELAY_TEMPLATE_SID } from "@/lib/twilio/relais";
+import { traiterMessageEntrant } from "@/lib/whatsapp-ia/agent";
+import { mettreEnPause } from "@/lib/whatsapp-ia/reglages";
 
-// Modèle "sigil_cargo_notification" approuvé par Meta (Twilio Content Template
-// Builder) — sert de repli pour joindre le propriétaire hors fenêtre de 24h.
-const RELAY_TEMPLATE_SID = "HX2395b8157b45fff54b34fc1454d93d4c";
+// L'agent IA répond après avoir rendu la main à Twilio (waitUntil) : on laisse
+// le temps aux appels Claude + outils.
+export const maxDuration = 60;
+
+// Quand un humain répond dans une conversation, l'IA se tait ce nombre d'heures.
+const PAUSE_IA_APRES_HUMAIN_H = 12;
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -195,6 +202,12 @@ export async function POST(request: NextRequest) {
         .eq("id", 1)
         .maybeSingle();
       if (state?.client_telephone) {
+        await mettreEnPause(
+          supabase,
+          state.client_telephone,
+          PAUSE_IA_APRES_HUMAIN_H,
+          "réponse du propriétaire"
+        );
         await relayerVersClient(
           state.client_telephone,
           body,
@@ -236,6 +249,17 @@ export async function POST(request: NextRequest) {
       supabase
     );
   }
+
+  // Agent IA : travaille en arrière-plan, ne bloque pas la réponse à Twilio.
+  waitUntil(
+    traiterMessageEntrant({
+      supabase,
+      telephone: from,
+      clientNom: match?.nom ?? null,
+      clientId: match?.id ?? null,
+      texteClient: body,
+    })
+  );
 
   return new NextResponse(null, { status: 204 });
 }
