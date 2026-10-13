@@ -73,6 +73,18 @@ export const OUTILS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "demander_a_l_equipe",
+    description:
+      "Pour une question simple et non sensible dont tu ne connais pas la réponse (ex. mode de paiement, produit précis, détail pratique) : l'équipe est alertée, MAIS tu restes actif dans la conversation. Dis ensuite au client que l'équipe confirmera et continue de l'aider sur le reste.",
+    input_schema: {
+      type: "object",
+      properties: {
+        question: { type: "string", description: "La question du client, reformulée clairement." },
+      },
+      required: ["question"],
+    },
+  },
+  {
     name: "transferer_a_un_humain",
     description:
       "Passe la conversation à un membre de l'équipe (litige, perte/retard/casse, paiement, mécontentement, douane complexe, négociation, hors cadre, demande explicite d'un humain). L'équipe est alertée et l'IA se met en pause.",
@@ -103,6 +115,8 @@ export async function executerOutil(
         return JSON.stringify(await prochainsDeparts(ctx));
       case "enregistrer_demande_devis":
         return JSON.stringify(await enregistrerDevis(entree, ctx));
+      case "demander_a_l_equipe":
+        return JSON.stringify(await demanderAEquipe(entree, ctx));
       case "transferer_a_un_humain":
         return JSON.stringify(await transferer(entree, ctx));
       default:
@@ -257,6 +271,18 @@ async function enregistrerDevis(entree: Record<string, unknown>, ctx: ContexteOu
 
   await ctx.alerterProprietaire(
     `📝 Nouvelle demande de devis (via l'agent IA)\n${nom} — ${ctx.telephone}\n${description}`
+  );
+  return { ok: true };
+}
+
+async function demanderAEquipe(entree: Record<string, unknown>, ctx: ContexteOutils) {
+  const question = String(entree.question ?? "").trim().slice(0, 500);
+  if (!question) return { erreur: "Question manquante." };
+  if (ctx.simulation) {
+    return { ok: true, note: "SIMULATION : l'équipe n'a pas été alertée." };
+  }
+  await ctx.alerterProprietaire(
+    `❓ Question sans réponse (l'IA reste active)\n${ctx.clientNom ?? ctx.telephone} (${ctx.telephone})\n${question}\n\nRépondez directement au client si besoin : l'IA se taira alors 12 h.`
   );
   return { ok: true };
 }

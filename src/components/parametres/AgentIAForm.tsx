@@ -98,19 +98,22 @@ export function AgentIAForm({
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            Consignes supplémentaires (optionnel)
+            Informations et consignes pour l&apos;agent
           </label>
           <textarea
             value={consignes}
             onChange={(e) => setConsignes(e.target.value)}
             rows={5}
             maxLength={3000}
-            placeholder="Ex : Le dépôt est fermé le dimanche. Pour Marseille, dire que le premier départ est début novembre."
+            placeholder="Plus vous en écrivez, plus l'agent répond seul. Ex : Paiement accepté : espèces, Wave, Orange Money. Dépôt ouvert du lundi au samedi, 9h-18h. Les colis doivent être fermés et étiquetés. Pour Marseille, premier départ début novembre."
             className={INPUT_CLASS}
           />
           <p className="mt-1 text-xs text-slate-500">
-            Ajoutées aux règles de base. L&apos;agent ne peut ni promettre un
-            remboursement ni inventer un prix : les tarifs viennent de la page Tarifs.
+            Tout ce que l&apos;agent doit savoir : modes de paiement, jours d&apos;ouverture,
+            conditions, réponses types... Il l&apos;utilise comme source fiable. Il ne
+            révèle jamais vos chiffres internes (CA, dépenses, marges), les données des
+            autres clients ni vos contrats fournisseurs, et ne promet ni remboursement ni
+            réduction. Les tarifs viennent de la page Tarifs.
           </p>
         </div>
 
