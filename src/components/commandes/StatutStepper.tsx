@@ -3,41 +3,47 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { changerStatut } from "@/app/(dashboard)/commandes/actions";
-import { STATUT_LABELS } from "./StatutBadge";
+import { etapesPourColis, libelleStatut, statutSuivant } from "@/lib/commandes/statuts";
 import type { StatutCommande } from "@/types/database.types";
-
-const PIPELINE: StatutCommande[] = [
-  "recue",
-  "a_preparer",
-  "en_preparation",
-  "prete",
-  "expediee",
-  "livree",
-];
 
 export function StatutStepper({
   commandeId,
   statut,
+  destination = null,
 }: {
   commandeId: string;
   statut: StatutCommande;
+  /** Ville de destination du colis : détermine les étapes après Paris. */
+  destination?: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const currentIndex = PIPELINE.indexOf(statut);
+  const etapes = etapesPourColis(destination);
+  const currentIndex = etapes.indexOf(statut);
+  const suivant = statutSuivant(statut, destination);
 
   function goTo(nouveauStatut: StatutCommande) {
     if (nouveauStatut === statut) return;
     setError(null);
     startTransition(async () => {
-      const result = await changerStatut(commandeId, nouveauStatut);
+      let result = await changerStatut(commandeId, nouveauStatut);
+      // Étape non conforme (non vérifié, sans poids) : on demande confirmation.
+      if ("error" in result && result.confirmable) {
+        if (!window.confirm(result.error)) return;
+        result = await changerStatut(commandeId, nouveauStatut, { forcer: true });
+      }
       if ("error" in result) {
         setError(result.error);
         return;
       }
       router.refresh();
     });
+  }
+
+  function annuler() {
+    if (!window.confirm("Annuler ce colis ? Il disparaîtra du suivi.")) return;
+    goTo("annulee");
   }
 
   if (statut === "annulee") {
@@ -53,7 +59,7 @@ export function StatutStepper({
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
-        {PIPELINE.map((s, i) => {
+        {etapes.map((s, i) => {
           const done = i <= currentIndex;
           return (
             <button
@@ -67,29 +73,27 @@ export function StatutStepper({
                   : "bg-slate-100 text-slate-500 hover:bg-slate-200"
               }`}
             >
-              {STATUT_LABELS[s]}
+              {libelleStatut(s, destination)}
             </button>
           );
         })}
       </div>
 
       <div className="mt-3 flex items-center gap-3">
-        {currentIndex < PIPELINE.length - 1 && (
+        {suivant && (
           <button
             type="button"
             disabled={isPending}
-            onClick={() => goTo(PIPELINE[currentIndex + 1])}
+            onClick={() => goTo(suivant)}
             className="rounded-md bg-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-navy-2 disabled:opacity-50"
           >
-            {isPending
-              ? "..."
-              : `→ ${STATUT_LABELS[PIPELINE[currentIndex + 1]]}`}
+            {isPending ? "..." : `→ ${libelleStatut(suivant, destination)}`}
           </button>
         )}
         <button
           type="button"
           disabled={isPending}
-          onClick={() => goTo("annulee")}
+          onClick={annuler}
           className="text-sm text-red-600 hover:underline disabled:opacity-50"
         >
           Annuler le colis

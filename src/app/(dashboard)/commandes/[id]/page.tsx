@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { StatutBadge, STATUT_LABELS } from "@/components/commandes/StatutBadge";
+import { StatutBadge } from "@/components/commandes/StatutBadge";
+import { libelleStatut } from "@/lib/commandes/statuts";
 import { StatutStepper } from "@/components/commandes/StatutStepper";
 import { SupprimerCommandeButton } from "@/components/commandes/SupprimerCommandeButton";
 import { NotifButtons } from "@/components/commandes/NotifButtons";
@@ -137,7 +138,7 @@ export default async function CommandeDetailPage({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <StatutBadge statut={commande.statut} />
+          <StatutBadge statut={commande.statut} destination={commande.destination} />
         </div>
       </div>
 
@@ -195,7 +196,7 @@ export default async function CommandeDetailPage({
               ? `Volume : ${commande.volume_m3} m³`
               : null,
             `Montant : ${montantFormatter.format(commande.montant_total)}`,
-            `Statut : ${STATUT_LABELS[commande.statut]}`,
+            `Statut : ${libelleStatut(commande.statut, commande.destination)}`,
             commande.description ? `Contenu : ${commande.description}` : null,
           ]
             .filter(Boolean)
@@ -228,7 +229,11 @@ export default async function CommandeDetailPage({
 
       <div className="mb-6 rounded-xl border border-slate-200/70 bg-white shadow-sm p-4">
         <h2 className="mb-3 text-sm font-medium text-slate-700">Suivi de colis</h2>
-        <StatutStepper commandeId={commande.id} statut={commande.statut} />
+        <StatutStepper
+          commandeId={commande.id}
+          statut={commande.statut}
+          destination={commande.destination}
+        />
       </div>
 
       <PaiementsPanel
@@ -385,9 +390,9 @@ export default async function CommandeDetailPage({
             {historique.map((h, i) => (
               <li key={i} className="flex items-center justify-between">
                 <span className="text-slate-700">
-                  {h.ancien_statut ? STATUT_LABELS[h.ancien_statut] : "—"} →{" "}
+                  {h.ancien_statut ? libelleStatut(h.ancien_statut, commande.destination) : "—"} →{" "}
                   <span className="font-medium">
-                    {STATUT_LABELS[h.nouveau_statut]}
+                    {libelleStatut(h.nouveau_statut, commande.destination)}
                   </span>
                 </span>
                 <span className="text-slate-400">

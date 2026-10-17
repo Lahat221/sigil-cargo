@@ -6,6 +6,13 @@ import { resolveClientId } from "@/lib/commandes/resolveClient";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
+import {
+  SUIVI_FRET_FRANCE,
+  exigeVerification,
+  libelleStatut,
+  rangStatut,
+  statutSuivant,
+} from "@/lib/commandes/statuts";
 
 /**
  * Résout à la demande l'URL signée d'un fichier commandes-media — utilisé
@@ -47,17 +54,63 @@ export async function marquerContenuVerifie(
   return { success: true };
 }
 
+export type ResultatStatut =
+  | { success: true }
+  | {
+      error: string;
+      /** true : l'utilisateur peut passer outre après confirmation (renvoyer avec forcer). */
+      confirmable?: boolean;
+    };
+
+type ColisPourStatut = {
+  id: string;
+  statut: StatutCommande;
+  destination: string | null;
+  contenu_verifie: boolean;
+  poids_kg: number | null;
+};
+
+/** Ce qui manque à un colis pour franchir cette étape (vide = rien). */
+function problemesAvant(colis: ColisPourStatut, vers: StatutCommande): string[] {
+  const problemes: string[] = [];
+  if (exigeVerification(vers) && !colis.contenu_verifie) {
+    problemes.push("non vérifié à Dakar");
+  }
+  if (rangStatut(vers) >= rangStatut("expediee") && colis.poids_kg === null) {
+    problemes.push("poids non saisi");
+  }
+  return problemes;
+}
+
 export async function changerStatut(
   commandeId: string,
-  nouveauStatut: StatutCommande
-): Promise<{ error: string } | { success: true }> {
+  nouveauStatut: StatutCommande,
+  options: { forcer?: boolean } = {}
+): Promise<ResultatStatut> {
   const supabase = createClient();
 
-  const { error } = await supabase
+  const { data: colis } = await supabase
     .from("commandes")
-    .update({ statut: nouveauStatut })
-    .eq("id", commandeId);
+    .select("id, statut, destination, contenu_verifie, poids_kg")
+    .eq("id", commandeId)
+    .maybeSingle<ColisPourStatut>();
+  if (!colis) return { error: "Colis introuvable." };
 
+  if (nouveauStatut !== "annulee" && !options.forcer) {
+    const problemes = problemesAvant(colis, nouveauStatut);
+    if (problemes.length > 0) {
+      return {
+        error: `Ce colis est ${problemes.join(" et ")}. Passer quand même à « ${libelleStatut(nouveauStatut, colis.destination)} » ?`,
+        confirmable: true,
+      };
+    }
+  }
+
+  // Passer à « Vérifié à Dakar » = contrôle du contenu fait.
+  const miseAJour: { statut: StatutCommande; contenu_verifie?: boolean } = { statut: nouveauStatut };
+  if (SUIVI_FRET_FRANCE && nouveauStatut === "en_preparation") miseAJour.contenu_verifie = true;
+
+  const { error } = await supabase.from("commandes").update(miseAJour).eq("id", commandeId);
   if (error) return { error: error.message };
 
   revalidatePath("/commandes");
@@ -68,29 +121,116 @@ export async function changerStatut(
 
 /**
  * Changement de statut groupé — sélection de plusieurs colis dans la liste
- * (CommandesListe) plutôt qu'un par un. Un seul update multi-lignes : le
- * trigger trg_log_statut (historique) se déclenche normalement une fois
- * par ligne modifiée, comme pour changerStatut().
+ * (CommandesListe). Les colis qui ne remplissent pas les conditions de l'étape
+ * (vérification à Dakar, poids) sont ignorés sauf si `forcer` ; on dit
+ * combien. Un seul update par lot : le trigger trg_log_statut (historique)
+ * se déclenche une fois par ligne modifiée, comme pour changerStatut().
  */
 export async function changerStatutMasse(
   commandeIds: string[],
-  nouveauStatut: StatutCommande
-): Promise<{ error: string } | { success: true; nbMisAJour: number }> {
-  if (commandeIds.length === 0) return { success: true, nbMisAJour: 0 };
+  nouveauStatut: StatutCommande,
+  options: { forcer?: boolean } = {}
+): Promise<{ error: string } | { success: true; nbMisAJour: number; nbIgnores: number }> {
+  if (commandeIds.length === 0) return { success: true, nbMisAJour: 0, nbIgnores: 0 };
 
   const supabase = createClient();
 
+  const { data: colis } = await supabase
+    .from("commandes")
+    .select("id, statut, destination, contenu_verifie, poids_kg")
+    .in("id", commandeIds)
+    .returns<ColisPourStatut[]>();
+
+  const aMettreAJour = (colis ?? []).filter(
+    (c) => nouveauStatut === "annulee" || options.forcer || problemesAvant(c, nouveauStatut).length === 0
+  );
+  const nbIgnores = (colis ?? []).length - aMettreAJour.length;
+  if (aMettreAJour.length === 0) return { success: true, nbMisAJour: 0, nbIgnores };
+
   const { data, error } = await supabase
     .from("commandes")
-    .update({ statut: nouveauStatut })
-    .in("id", commandeIds)
+    .update({
+      statut: nouveauStatut,
+      ...(SUIVI_FRET_FRANCE && nouveauStatut === "en_preparation" ? { contenu_verifie: true } : {}),
+    })
+    .in(
+      "id",
+      aMettreAJour.map((c) => c.id)
+    )
     .select("id");
 
   if (error) return { error: error.message };
 
   revalidatePath("/commandes");
   revalidatePath("/commandes/pipeline");
-  return { success: true, nbMisAJour: data?.length ?? 0 };
+  return { success: true, nbMisAJour: data?.length ?? 0, nbIgnores };
+}
+
+/**
+ * Fait avancer d'un coup les colis d'un départ qui sont à l'étape `depuis`
+ * (ex. tous les « En vol » → « En transit à Paris » quand le vol atterrit).
+ * L'étape suivante dépend de la destination de chaque colis : après « Arrivé
+ * à Paris », un colis pour Lyon passe à « Arrivé à Lyon », un colis pour
+ * Paris est remis au client.
+ */
+export async function avancerDepart(
+  projetId: string,
+  depuis: StatutCommande,
+  options: { forcer?: boolean } = {}
+): Promise<
+  | { error: string; confirmable?: boolean }
+  | { success: true; nbMisAJour: number; nbIgnores: number }
+> {
+  const supabase = createClient();
+
+  const { data: colis } = await supabase
+    .from("commandes")
+    .select("id, statut, destination, contenu_verifie, poids_kg")
+    .eq("projet_id", projetId)
+    .eq("statut", depuis)
+    .returns<ColisPourStatut[]>();
+
+  const liste = colis ?? [];
+  if (liste.length === 0) return { success: true, nbMisAJour: 0, nbIgnores: 0 };
+
+  // Regroupe par étape suivante (elle varie avec la destination).
+  const parSuivant = new Map<StatutCommande, ColisPourStatut[]>();
+  for (const c of liste) {
+    const suivant = statutSuivant(depuis, c.destination);
+    if (!suivant) continue;
+    parSuivant.set(suivant, [...(parSuivant.get(suivant) ?? []), c]);
+  }
+
+  const nonConformes = Array.from(parSuivant.entries()).flatMap(([suivant, cs]) =>
+    cs.filter((c) => problemesAvant(c, suivant).length > 0)
+  );
+  if (nonConformes.length > 0 && !options.forcer) {
+    return {
+      error: `${nonConformes.length} colis sur ${liste.length} ne sont pas prêts (non vérifiés à Dakar ou sans poids). Les faire avancer quand même ?`,
+      confirmable: true,
+    };
+  }
+
+  let nbMisAJour = 0;
+  for (const [suivant, cs] of Array.from(parSuivant.entries())) {
+    const { data, error } = await supabase
+      .from("commandes")
+      .update({
+        statut: suivant,
+        ...(SUIVI_FRET_FRANCE && suivant === "en_preparation" ? { contenu_verifie: true } : {}),
+      })
+      .in(
+        "id",
+        cs.map((c) => c.id)
+      )
+      .select("id");
+    if (error) return { error: error.message };
+    nbMisAJour += data?.length ?? 0;
+  }
+
+  revalidatePath("/commandes");
+  revalidatePath("/commandes/pipeline");
+  return { success: true, nbMisAJour, nbIgnores: 0 };
 }
 
 type UpdateCommandeInput = {

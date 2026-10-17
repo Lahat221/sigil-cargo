@@ -5,6 +5,7 @@ import { DashboardFiltres } from "@/components/dashboard/DashboardFiltres";
 import { BarChart } from "@/components/dashboard/BarChart";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { resumePaiements } from "@/lib/paiements";
+import { PIPELINE } from "@/lib/commandes/statuts";
 import { compterAlertesDouane } from "@/lib/douane/etapesDepart";
 import { MontantsSensibles } from "@/components/dashboard/MontantsSensibles";
 import type { StatutCommande } from "@/types/database.types";
@@ -21,14 +22,7 @@ const jourLabelFormatter = new Intl.DateTimeFormat("fr-FR", {
   month: "2-digit",
 });
 
-const STATUTS_PIPELINE: StatutCommande[] = [
-  "recue",
-  "a_preparer",
-  "en_preparation",
-  "prete",
-  "expediee",
-  "livree",
-];
+const STATUTS_PIPELINE: StatutCommande[] = PIPELINE;
 
 function calculerPeriode(
   periode: string | undefined,
@@ -376,7 +370,7 @@ export default async function TableauDeBordPage({
         <h2 className="mb-4 text-sm font-medium text-slate-700">
           Suivi de colis
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {STATUTS_PIPELINE.map((s) => (
             <Link
               key={s}

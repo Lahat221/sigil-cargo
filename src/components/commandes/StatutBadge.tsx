@@ -1,31 +1,23 @@
 import type { StatutCommande } from "@/types/database.types";
+import { STATUT_LABELS, STYLES_STATUT, libelleStatut } from "@/lib/commandes/statuts";
 
-export const STATUT_LABELS: Record<StatutCommande, string> = {
-  recue: "Reçue",
-  a_preparer: "À préparer",
-  en_preparation: "En préparation",
-  prete: "Prête",
-  expediee: "Expédiée",
-  livree: "Livrée",
-  annulee: "Annulée",
-};
+// Les libellés et le parcours vivent dans src/lib/commandes/statuts.ts ;
+// ré-exporté ici car beaucoup d'écrans importent STATUT_LABELS d'ici.
+export { STATUT_LABELS };
 
-const STATUT_STYLES: Record<StatutCommande, string> = {
-  recue: "bg-slate-100 text-slate-700",
-  a_preparer: "bg-amber-100 text-amber-800",
-  en_preparation: "bg-blue-100 text-blue-800",
-  prete: "bg-purple-100 text-purple-800",
-  expediee: "bg-indigo-100 text-indigo-800",
-  livree: "bg-green-100 text-green-800",
-  annulee: "bg-red-100 text-red-800",
-};
-
-export function StatutBadge({ statut }: { statut: StatutCommande }) {
+export function StatutBadge({
+  statut,
+  destination,
+}: {
+  statut: StatutCommande;
+  /** Ville de destination du colis : « Arrivé à Lyon » plutôt que « Arrivé à destination ». */
+  destination?: string | null;
+}) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUT_STYLES[statut]}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STYLES_STATUT[statut]}`}
     >
-      {STATUT_LABELS[statut]}
+      {libelleStatut(statut, destination)}
     </span>
   );
 }

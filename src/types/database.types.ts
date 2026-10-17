@@ -16,6 +16,9 @@ export type StatutCommande =
   | "en_preparation"
   | "prete"
   | "expediee"
+  | "en_transit_paris"
+  | "arrive_paris"
+  | "arrive_destination"
   | "livree"
   | "annulee";
 

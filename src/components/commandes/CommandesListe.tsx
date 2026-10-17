@@ -13,6 +13,7 @@ import type { CommandeListItem } from "./types";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
 import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
+import { STATUTS_AFFICHES } from "@/lib/commandes/statuts";
 import {
   LIBELLES_STATUT_PAIEMENT,
   formaterMontant,
@@ -21,7 +22,7 @@ import {
 } from "@/lib/paiements";
 import { STYLE_STATUT_PAIEMENT } from "./PaiementsPanel";
 
-const STATUTS_ORDONNES = Object.keys(STATUT_LABELS) as StatutCommande[];
+const STATUTS_ORDONNES: StatutCommande[] = STATUTS_AFFICHES;
 
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -94,7 +95,15 @@ export function CommandesListe({
   function appliquerStatutMasse() {
     const ids = Array.from(selectionnes);
     startTransition(async () => {
-      await changerStatutMasse(ids, statutMasse);
+      let r = await changerStatutMasse(ids, statutMasse);
+      // Colis non vérifiés à Dakar / sans poids : ignorés, sauf confirmation.
+      if ("success" in r && r.nbIgnores > 0) {
+        const ok = window.confirm(
+          `${r.nbIgnores} colis n'ont pas été modifiés (non vérifiés à Dakar ou sans poids). Les passer quand même à « ${STATUT_LABELS[statutMasse]} » ?`
+        );
+        if (ok) r = await changerStatutMasse(ids, statutMasse, { forcer: true });
+      }
+      if ("error" in r) window.alert(r.error);
       setSelectionnes(new Set());
       router.refresh();
     });
@@ -226,7 +235,7 @@ export function CommandesListe({
                     {c.destination ?? "—"}
                   </td>
                   <td className="px-4 py-3">
-                    <StatutBadge statut={c.statut} />
+                    <StatutBadge statut={c.statut} destination={c.destination} />
                   </td>
                   <td className="px-4 py-3 text-slate-700">
                     {formatPoids(c.poids_kg)}
@@ -310,7 +319,7 @@ export function CommandesListe({
                     #{c.numero}
                   </span>
                 </label>
-                <StatutBadge statut={c.statut} />
+                <StatutBadge statut={c.statut} destination={c.destination} />
               </div>
               <Link href={`/commandes/${c.id}`}>
                 <p className="text-sm text-slate-700">

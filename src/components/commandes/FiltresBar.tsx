@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { STATUT_LABELS } from "./StatutBadge";
+import { STATUTS_AFFICHES } from "@/lib/commandes/statuts";
 import { IconX } from "@/components/ui/Icons";
 import type { Destination } from "@/lib/commandes/destinations";
 import type { StatutCommande } from "@/types/database.types";
 
-const STATUTS = Object.keys(STATUT_LABELS) as StatutCommande[];
+const STATUTS: StatutCommande[] = STATUTS_AFFICHES;
 
 const STORAGE_KEY = "commandes-filtres";
 

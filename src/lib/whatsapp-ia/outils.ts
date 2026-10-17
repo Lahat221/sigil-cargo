@@ -4,7 +4,7 @@ import type { Database } from "@/types/database.types";
 import { chargerDestinations } from "@/lib/commandes/destinations";
 import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
 import { estimerPrix } from "@/lib/prix";
-import { STATUT_LABELS } from "@/components/commandes/StatutBadge";
+import { libelleStatut } from "@/lib/commandes/statuts";
 import { PAUSE_HUMAIN_H, PAUSE_TRANSFERT_H, mettreEnPause } from "./reglages";
 import { memeTelephone } from "./telephone";
 
@@ -187,7 +187,7 @@ async function suivreColis(entree: Record<string, unknown>, ctx: ContexteOutils)
       } | null;
       return {
         numero: c.numero,
-        statut: STATUT_LABELS[c.statut],
+        statut: libelleStatut(c.statut, c.destination),
         destination: c.destination,
         poids_kg: c.poids_kg,
         depose_le: jourFormat.format(new Date(c.created_at)),

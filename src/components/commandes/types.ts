@@ -20,4 +20,7 @@ export type CommandeListItem = {
   projets: { nom: string } | null;
   // Versements (montants convertis dans la devise de l'entreprise) — absents sur certaines vues.
   paiements?: { montant_base: number }[] | null;
+  // Suivi : colis vérifié à Dakar et dates de passage à chaque étape.
+  contenu_verifie?: boolean;
+  commandes_historique?: { nouveau_statut: StatutCommande; created_at: string }[] | null;
 };

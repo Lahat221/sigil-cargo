@@ -1,24 +1,21 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Logo } from "@/components/layout/Logo";
-import { STATUT_LABELS } from "@/components/commandes/StatutBadge";
+import { etapesPourColis, libelleStatut } from "@/lib/commandes/statuts";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
-const PIPELINE: StatutCommande[] = [
-  "recue",
-  "a_preparer",
-  "en_preparation",
-  "prete",
-  "expediee",
-  "livree",
-];
-
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
   dateStyle: "long",
   timeStyle: "short",
+});
+const dateEtapeFormatter = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
 });
 
 // Page PUBLIQUE (voir PUBLIC_PATHS dans middleware.ts) — un client suit son
@@ -49,6 +46,7 @@ export default async function SuiviColisPage({
     date_livraison_reelle: string | null;
     id: string;
     projets: { nom: string; date_depart: string | null } | null;
+    commandes_historique: { nouveau_statut: StatutCommande; created_at: string }[] | null;
   } | null = null;
   let erreur: string | null = null;
 
@@ -63,7 +61,7 @@ export default async function SuiviColisPage({
       const { data } = await supabase
         .from("commandes")
         .select(
-          "id, numero, statut, destination, poids_kg, created_at, date_livraison_prevue, date_livraison_reelle, clients(telephone), projets(nom, date_depart)"
+          "id, numero, statut, destination, poids_kg, created_at, date_livraison_prevue, date_livraison_reelle, clients(telephone), projets(nom, date_depart), commandes_historique(nouveau_statut, created_at)"
         )
         .eq("numero", numeroNombre)
         .returns<
@@ -78,6 +76,7 @@ export default async function SuiviColisPage({
             date_livraison_reelle: string | null;
             clients: { telephone: string | null } | null;
             projets: { nom: string; date_depart: string | null } | null;
+            commandes_historique: { nouveau_statut: StatutCommande; created_at: string }[] | null;
           }[]
         >();
 
@@ -98,7 +97,16 @@ export default async function SuiviColisPage({
     }
   }
 
-  const currentIndex = resultat ? PIPELINE.indexOf(resultat.statut) : -1;
+  // Étapes de CE colis (un colis pour Lyon a une étape « Arrivé à Lyon »,
+  // un colis pour Paris non) et date du dernier passage à chacune.
+  const etapes = resultat ? etapesPourColis(resultat.destination) : [];
+  const currentIndex = resultat ? etapes.indexOf(resultat.statut) : -1;
+  const dateEtape = (s: StatutCommande): string | null => {
+    const dates = (resultat?.commandes_historique ?? [])
+      .filter((h) => h.nouveau_statut === s)
+      .map((h) => new Date(h.created_at).getTime());
+    return dates.length > 0 ? dateEtapeFormatter.format(new Date(Math.max(...dates))) : null;
+  };
 
   return (
     <div className="min-h-screen bg-navy-gradient px-4 py-10">
@@ -172,7 +180,7 @@ export default async function SuiviColisPage({
                 </span>
               ) : (
                 <div className="space-y-1.5">
-                  {PIPELINE.map((s, i) => (
+                  {etapes.map((s, i) => (
                     <div key={s} className="flex items-center gap-2">
                       <span
                         className={`h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -186,8 +194,11 @@ export default async function SuiviColisPage({
                             : "text-slate-400"
                         }`}
                       >
-                        {STATUT_LABELS[s]}
+                        {libelleStatut(s, resultat.destination)}
                       </span>
+                      {i <= currentIndex && dateEtape(s) && (
+                        <span className="ml-auto text-xs text-slate-400">{dateEtape(s)}</span>
+                      )}
                     </div>
                   ))}
                 </div>
