@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { chargerHistoriqueAuditsFrance } from "../dedouanement-france/actions";
 import { chargerLignesFrance } from "@/lib/dedouanement-france/lignesFrance";
 import { AuditReportPanel } from "@/components/douane/AuditReportPanel";
+import { ProduitsExclusionTable } from "@/components/douane/ProduitsExclusionTable";
+import { EtapeBandeau, EtapeNavigation } from "@/components/douane/EtapesNav";
+import { chargerEtatDepart } from "@/lib/douane/etapesDepart";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
@@ -37,6 +40,7 @@ export default async function AuditFrancePage({
   const historiqueAudits = await chargerHistoriqueAuditsFrance(projetId);
   const lignes = await chargerLignesFrance(supabase, projetId);
   const produitsExclus = lignes.filter((l) => l.exclu).map((l) => l.produitId);
+  const etat = await chargerEtatDepart(supabase, projetId);
 
   return (
     <div className="max-w-5xl">
@@ -45,25 +49,34 @@ export default async function AuditFrancePage({
         {nomProjet && <p className="text-sm text-ink-muted">{nomProjet}</p>}
       </div>
 
+      <EtapeBandeau etat={etat} etapeId="audit" />
+
       {historiqueAudits.length === 0 && (
         <p className="mb-4 text-sm text-ink-muted">
-          Aucun audit encore lancé pour ce départ. Vérifie d&apos;abord que le MAWB et la date de vol
-          sont renseignés sur{" "}
+          Aucun audit encore lancé pour ce départ. L&apos;audit demande que la déclaration Dakar soit
+          validée et que le MAWB, la date de vol, le poids et le fichier de la{" "}
           <Link
             href={`/gestion-douaniere/dedouanement-france?projet=${projetId}`}
             className="text-gold-2 hover:underline"
           >
-            Dédouanement France
-          </Link>
-          , puis lance l&apos;audit ci-dessous.
+            LTA
+          </Link>{" "}
+          soient renseignés ; lance-le ensuite ci-dessous.
         </p>
       )}
+
+      <div className="mb-4">
+        <h2 className="mb-2 text-sm font-semibold text-ink">Produits à déclarer</h2>
+        <ProduitsExclusionTable lignes={lignes} />
+      </div>
 
       <AuditReportPanel
         projetId={projetId}
         historiqueInitial={historiqueAudits}
         produitsExclusInitial={produitsExclus}
       />
+
+      <EtapeNavigation etat={etat} etapeId="audit" />
     </div>
   );
 }

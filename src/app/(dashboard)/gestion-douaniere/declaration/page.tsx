@@ -6,6 +6,8 @@ import { DeclarationXlsxButton } from "@/components/douane/DeclarationXlsxButton
 import { ValiderDeclarationButton } from "@/components/douane/ValiderDeclarationButton";
 import { ImprimerButton } from "@/components/douane/ImprimerButton";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
+import { chargerEtatDepart } from "@/lib/douane/etapesDepart";
+import { EtapeBandeau, EtapeNavigation } from "@/components/douane/EtapesNav";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +70,7 @@ export default async function DeclarationPage({
         .maybeSingle()
     : { data: null };
   const declarationValidee = expeditionFrance?.declaration_dakar_validee ?? false;
+  const etat = projetId ? await chargerEtatDepart(supabase, projetId) : null;
 
   return (
     <div className="declaration-print max-w-5xl">
@@ -101,6 +104,11 @@ export default async function DeclarationPage({
         </p>
       ) : (
         <>
+          {etat && (
+            <div className="print:hidden">
+              <EtapeBandeau etat={etat} etapeId="dakar" />
+            </div>
+          )}
           <div className="bloc-print mb-6 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm">
             <div className="bg-navy px-5 py-3">
               <h1 className="text-center text-lg font-bold tracking-wide text-white">
@@ -242,6 +250,7 @@ export default async function DeclarationPage({
               )}
             </div>
           )}
+          {etat && <EtapeNavigation etat={etat} etapeId="dakar" />}
         </>
       )}
     </div>

@@ -13,7 +13,8 @@ import { DeclarationFranceSchema, AuditReportSchema } from "@/lib/dedouanement-f
 import type { DeclarationFranceIA, AuditReport } from "@/lib/dedouanement-france/schema";
 import type { InfosExpedition } from "@/lib/dedouanement-france/excel/facture";
 import { SECTIONS_DECLARATION } from "@/lib/douane/sections";
-import { getAnthropicClient, anthropicModel, messageErreurAnthropic } from "@/lib/dedouanement-france/anthropic";
+import { messageErreurIA } from "@/lib/ia/fournisseur";
+import { lireLtaAvecIA } from "@/lib/douane/ltaIA";
 import { normaliserMawb, normaliserDateVol, nombrePositif } from "@/lib/douane/lta";
 
 // num_source (1-indexé, ordre exact envoyé à Claude) -> identifiants réels,
@@ -166,34 +167,7 @@ export async function extraireLtaInfoDepuisPdf(
   const base64 = Buffer.from(await fileData.arrayBuffer()).toString("base64");
 
   try {
-    const client = getAnthropicClient();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const contentBlocks: any[] = [
-      estPdf
-        ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
-        : { type: "image", source: { type: "base64", media_type: typeImage, data: base64 } },
-      {
-        type: "text",
-        text: `Tu regardes UNIQUEMENT la première page de ce document. Extrait les informations suivantes de cette LTA (Lettre de Transport Aérien) et réponds UNIQUEMENT en JSON valide, sans markdown, sans explication :
-{
-  "mawb": "numéro MAWB (ex: 490-02087654)",
-  "date_vol": "date de vol au format JJ-MM-AAAA",
-  "poids_brut_kg": nombre décimal (poids brut en kg),
-  "nombre_colis": nombre entier,
-  "dimensions": "dimensions (ex: 120x100x95 cm)"
-}
-Si un champ est absent ou illisible, mets null. N'invente rien : mieux vaut null qu'une valeur incertaine.`,
-      },
-    ];
-
-    const response = await client.messages.create({
-      model: anthropicModel(),
-      max_tokens: 512,
-      messages: [{ role: "user", content: contentBlocks }],
-    });
-
-    const text = response.content.find((b) => b.type === "text")?.text ?? "";
+    const text = await lireLtaAvecIA({ base64, estPdf: !!estPdf, typeImage });
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return { error: "La lecture automatique n'a rien renvoyé d'exploitable." };
 
@@ -205,7 +179,8 @@ Si un champ est absent ou illisible, mets null. N'invente rien : mieux vaut null
     }
 
     const nombreColis = nombrePositif(parsed.nombre_colis);
-    const dimensions = String(parsed.dimensions ?? "").trim().slice(0, 80);
+    // « 120x100x95CM/2 » : le suffixe « /2 » est le nombre de pièces, pas une dimension.
+    const dimensions = String(parsed.dimensions ?? "").replace(/\s*\/\s*\d+\s*$/, "").trim().slice(0, 80);
     const infos: InfosLtaExtraites = {
       mawb: normaliserMawb(parsed.mawb),
       dateVol: normaliserDateVol(parsed.date_vol),
@@ -227,7 +202,7 @@ Si un champ est absent ou illisible, mets null. N'invente rien : mieux vaut null
     }
     return { success: true, infos, nonLus };
   } catch (err) {
-    return { error: `Lecture automatique impossible : ${messageErreurAnthropic(err)}` };
+    return { error: `Lecture automatique impossible : ${messageErreurIA(err)}` };
   }
 }
 
@@ -592,6 +567,18 @@ export async function genererDocumentsFrance(projetId: string): Promise<Resultat
   const contexteResultat = await chargerContexteFrance(supabase, projetId);
   if ("error" in contexteResultat) return contexteResultat;
   const { expedition, lignesIncluses, sousTotauxFcfa } = contexteResultat.contexte;
+
+  // Étapes successives : l'audit (étape 4) précède la génération (étape 5) —
+  // c'est lui qui repère les produits à retirer avant de payer l'appel final.
+  const { count: nbAudits } = await supabase
+    .from("douane_audits_france")
+    .select("id", { count: "exact", head: true })
+    .eq("expedition_id", expedition.id);
+  if (!nbAudits) {
+    return {
+      error: "Aucun audit lancé pour ce départ. Faites d'abord l'étape 4 (Audit), puis revenez générer les documents.",
+    };
+  }
 
   const resultat = await genererDeclarationFrance({
     mawb: expedition.mawb,

@@ -7,12 +7,14 @@ import { ReanalyserButton } from "@/components/douane/ReanalyserButton";
 import { HistoriqueExtraction } from "@/components/douane/HistoriqueExtraction";
 import { TraiterDepartButton } from "@/components/douane/TraiterDepartButton";
 import { STATUT_DOUANE_LABELS } from "@/components/douane/statutLabels";
+import { LienRetour } from "@/components/douane/EtapesNav";
 import type { StatutExtractionDouane } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
 
 type ColisDetail = {
   id: string;
+  projet_id: string;
   numero: number;
   poids_kg: number | null;
   description: string | null;
@@ -34,7 +36,7 @@ export default async function DetailDouanePage({ params }: { params: { id: strin
 
   const { data: colis } = await supabase
     .from("commandes")
-    .select("id, numero, poids_kg, description, clients(nom, telephone)")
+    .select("id, projet_id, numero, poids_kg, description, clients(nom, telephone)")
     .eq("id", params.id)
     .maybeSingle<ColisDetail>();
 
@@ -83,6 +85,7 @@ export default async function DetailDouanePage({ params }: { params: { id: strin
 
   return (
     <div className="max-w-4xl">
+      <LienRetour href={`/gestion-douaniere?projet=${colis.projet_id}`} label="Retour aux colis du départ" />
       <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-ink">Colis #{colis.numero}</h1>

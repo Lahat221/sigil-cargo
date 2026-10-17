@@ -1,5 +1,6 @@
 import type { ZodType } from "zod";
 import { getAnthropicClient, anthropicModel } from "./anthropic";
+import { messageErreurIA } from "@/lib/ia/fournisseur";
 import { SIGIL_SYSTEM_PROMPT, PROMPT_VERSION } from "./promptSysteme";
 import { DeclarationFranceSchema, AuditReportSchema, type DeclarationFranceIA, type AuditReport } from "./schema";
 import { validerDeclarationFrance } from "./validation";
@@ -122,7 +123,7 @@ async function appellerClaudeJson<T>(params: {
       }
       texteReponse = blocTexte.text;
     } catch (err) {
-      derniereErreur = err instanceof Error ? err.message : "Erreur d'appel à l'API Claude.";
+      derniereErreur = err instanceof Error ? messageErreurIA(err) : "Erreur d'appel à l'API Claude.";
       break;
     }
 

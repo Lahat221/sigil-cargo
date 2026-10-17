@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { ExportDouaneButton } from "@/components/douane/ExportDouaneButton";
 import { STATUT_DOUANE_LABELS, STATUT_DOUANE_STYLES } from "@/components/douane/statutLabels";
+import { LienRetour } from "@/components/douane/EtapesNav";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,10 @@ export default async function VueEnsembleDouanePage({
 
   return (
     <div>
+      <LienRetour
+        href={projetId ? `/gestion-douaniere?projet=${projetId}` : "/gestion-douaniere"}
+        label="Retour aux colis du départ"
+      />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold text-ink">Vue d&apos;ensemble</h1>

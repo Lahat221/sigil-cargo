@@ -1,9 +1,18 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import type OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
 import { chargerParametresSite } from "@/lib/parametres";
-import { anthropicModel, getAnthropicClient, messageErreurAnthropic } from "@/lib/dedouanement-france/anthropic";
+import { anthropicModel, getAnthropicClient } from "@/lib/dedouanement-france/anthropic";
+import { getOpenAIClient } from "@/lib/douane/openai";
+import {
+  fournisseurIA,
+  iaConfiguree,
+  messageErreurIA,
+  modeleOpenAI,
+  optionsRaisonnement,
+} from "@/lib/ia/fournisseur";
 import { envoyerAuProprietaire } from "@/lib/twilio/relais";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import { OUTILS, executerOutil, type ContexteOutils } from "./outils";
@@ -111,38 +120,28 @@ async function chargerHistorique(supabase: Admin, telephone: string): Promise<To
 
 export type ResultatAgent = { texte: string; outils: string[]; transfert: boolean };
 
-/** Boucle outil de l'agent. N'envoie rien : renvoie le texte de réponse. */
-export async function genererReponse(opts: {
-  supabase: Admin;
-  telephone: string;
-  clientNom: string | null;
-  /** Message testé (simulation) ; sinon l'historique en base sert de contexte. */
-  messageTest?: string;
-  consignes: string;
-  contacts: string;
-  simulation: boolean;
-}): Promise<ResultatAgent> {
-  const { supabase, telephone, clientNom, simulation } = opts;
+const TEXTE_TRANSFERT_FORCE =
+  "Je transmets votre demande à notre équipe, qui vous répond très bientôt. Merci de votre patience 🙏";
+
+type EtatBoucle = { outils: string[]; transfert: boolean };
+
+/** WhatsApp met en gras avec un seul astérisque. */
+function formaterPourWhatsApp(texte: string): string {
+  return texte.replace(/\*\*(.+?)\*\*/g, "*$1*");
+}
+
+async function boucleAnthropic(params: {
+  historique: Tour[];
+  systeme: string;
+  ctx: ContexteOutils;
+  etat: EtatBoucle;
+}): Promise<string | null> {
+  const { historique, systeme, ctx, etat } = params;
   const anthropic = getAnthropicClient();
-
-  const messages: Anthropic.MessageParam[] = opts.messageTest
-    ? [{ role: "user", content: opts.messageTest }]
-    : (await chargerHistorique(supabase, telephone)).map((t) => ({
-        role: t.role,
-        content: t.content,
-      }));
-  if (messages.length === 0) throw new Error("Aucun message à traiter.");
-
-  const outilsUtilises: string[] = [];
-  let transfert = false;
-  const ctx: ContexteOutils = {
-    supabase,
-    telephone,
-    clientNom,
-    simulation,
-    alerterProprietaire: simulation ? async () => {} : envoyerAuProprietaire,
-  };
-  const systeme = await construirePrompt(supabase, opts.consignes, opts.contacts);
+  const messages: Anthropic.MessageParam[] = historique.map((t) => ({
+    role: t.role,
+    content: t.content,
+  }));
 
   for (let tour = 0; tour < MAX_TOURS_OUTILS; tour++) {
     const reponse = await anthropic.messages.create({
@@ -163,15 +162,14 @@ export async function genererReponse(opts: {
         .join("\n")
         .trim();
       if (!texte) throw new Error("Réponse vide de l'IA.");
-      // WhatsApp met en gras avec un seul astérisque.
-      return { texte: texte.replace(/\*\*(.+?)\*\*/g, "*$1*"), outils: outilsUtilises, transfert };
+      return texte;
     }
 
     messages.push({ role: "assistant", content: reponse.content });
     const resultats: Anthropic.ToolResultBlockParam[] = [];
     for (const appel of appels) {
-      outilsUtilises.push(appel.name);
-      if (appel.name === "transferer_a_un_humain") transfert = true;
+      etat.outils.push(appel.name);
+      if (appel.name === "transferer_a_un_humain") etat.transfert = true;
       resultats.push({
         type: "tool_result",
         tool_use_id: appel.id,
@@ -184,15 +182,115 @@ export async function genererReponse(opts: {
     }
     messages.push({ role: "user", content: resultats });
   }
+  return null;
+}
+
+async function boucleOpenAI(params: {
+  historique: Tour[];
+  systeme: string;
+  ctx: ContexteOutils;
+  etat: EtatBoucle;
+}): Promise<string | null> {
+  const { historique, systeme, ctx, etat } = params;
+  const openai = getOpenAIClient();
+  const modele = modeleOpenAI("agent");
+
+  const outils: OpenAI.Chat.Completions.ChatCompletionTool[] = OUTILS.map((o) => ({
+    type: "function",
+    function: {
+      name: o.name,
+      description: o.description,
+      parameters: o.input_schema as Record<string, unknown>,
+    },
+  }));
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+    { role: "system", content: systeme },
+    ...historique.map((t) => ({ role: t.role, content: t.content })),
+  ];
+
+  for (let tour = 0; tour < MAX_TOURS_OUTILS; tour++) {
+    const reponse = await openai.chat.completions.create({
+      model: modele,
+      // Les modèles « raisonnement » comptent leur réflexion dans cette limite.
+      max_completion_tokens: 2500,
+      tools: outils,
+      messages,
+      ...optionsRaisonnement(modele, true),
+    });
+
+    const message = reponse.choices[0]?.message;
+    if (!message) throw new Error("Réponse vide de l'IA.");
+    const appels = (message.tool_calls ?? []).filter(
+      (a): a is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall => a.type === "function"
+    );
+    if (appels.length === 0) {
+      const texte = (message.content ?? "").trim();
+      if (!texte) throw new Error("Réponse vide de l'IA.");
+      return texte;
+    }
+
+    messages.push({ role: "assistant", content: message.content, tool_calls: appels });
+    for (const appel of appels) {
+      etat.outils.push(appel.function.name);
+      if (appel.function.name === "transferer_a_un_humain") etat.transfert = true;
+      let entree: Record<string, unknown> = {};
+      try {
+        entree = JSON.parse(appel.function.arguments || "{}");
+      } catch {
+        entree = {};
+      }
+      messages.push({
+        role: "tool",
+        tool_call_id: appel.id,
+        content: await executerOutil(appel.function.name, entree, ctx),
+      });
+    }
+  }
+  return null;
+}
+
+/** Boucle outil de l'agent. N'envoie rien : renvoie le texte de réponse. */
+export async function genererReponse(opts: {
+  supabase: Admin;
+  telephone: string;
+  clientNom: string | null;
+  /** Message testé (simulation) ; sinon l'historique en base sert de contexte. */
+  messageTest?: string;
+  consignes: string;
+  contacts: string;
+  simulation: boolean;
+}): Promise<ResultatAgent> {
+  const { supabase, telephone, clientNom, simulation } = opts;
+  const fournisseur = fournisseurIA("agent");
+  if (!fournisseur) throw new Error("Aucune clé d'IA configurée (ANTHROPIC_API_KEY ou OPENAI_API_KEY).");
+
+  const historique: Tour[] = opts.messageTest
+    ? [{ role: "user", content: opts.messageTest }]
+    : await chargerHistorique(supabase, telephone);
+  if (historique.length === 0) throw new Error("Aucun message à traiter.");
+
+  const etat: EtatBoucle = { outils: [], transfert: false };
+  const ctx: ContexteOutils = {
+    supabase,
+    telephone,
+    clientNom,
+    simulation,
+    alerterProprietaire: simulation ? async () => {} : envoyerAuProprietaire,
+  };
+  const systeme = await construirePrompt(supabase, opts.consignes, opts.contacts);
+
+  const boucle = fournisseur === "openai" ? boucleOpenAI : boucleAnthropic;
+  const texte = await boucle({ historique, systeme, ctx, etat });
+
+  if (texte !== null) {
+    return { texte: formaterPourWhatsApp(texte), outils: etat.outils, transfert: etat.transfert };
+  }
 
   // Trop de tours : on passe la main plutôt que de laisser le client sans réponse.
-  if (!simulation) await executerOutil("transferer_a_un_humain", { motif: "Demande trop complexe pour l'agent IA" }, ctx);
-  return {
-    texte:
-      "Je transmets votre demande à notre équipe, qui vous répond très bientôt. Merci de votre patience 🙏",
-    outils: outilsUtilises,
-    transfert: true,
-  };
+  if (!simulation) {
+    await executerOutil("transferer_a_un_humain", { motif: "Demande trop complexe pour l'agent IA" }, ctx);
+  }
+  return { texte: TEXTE_TRANSFERT_FORCE, outils: etat.outils, transfert: true };
 }
 
 /**
@@ -211,7 +309,7 @@ export async function traiterMessageEntrant(opts: {
   const twilioNumber = process.env.TWILIO_WHATSAPP_FROM;
   try {
     if (!opts.texteClient?.trim() || !twilioNumber) return;
-    if (!process.env.ANTHROPIC_API_KEY) return;
+    if (!iaConfiguree("agent")) return;
 
     const reglages = await chargerReglagesIA(supabase);
     if (!reglages.actif) return;
@@ -259,7 +357,7 @@ export async function traiterMessageEntrant(opts: {
 
     await envoyerAuProprietaire(`🤖 Réponse de l'IA à ${clientNom ?? telephone} :\n${resultat.texte}`);
   } catch (e) {
-    const raison = messageErreurAnthropic(e);
+    const raison = messageErreurIA(e);
     try {
       await envoyerAuProprietaire(
         `⚠️ L'agent IA n'a pas pu répondre à ${clientNom ?? telephone} (${raison}). À traiter à la main.`

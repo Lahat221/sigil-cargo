@@ -8,6 +8,7 @@ import { STATUT_DOUANE_LABELS } from "@/components/douane/statutLabels";
 import { ChecklistDepart } from "@/components/douane/ChecklistDepart";
 import { ColisDouaneTable, type LigneColisDouane } from "@/components/douane/ColisDouaneTable";
 import { chargerEtatDepart } from "@/lib/douane/etapesDepart";
+import { EtapeNavigation } from "@/components/douane/EtapesNav";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { chargerResumeAuditFrance } from "./dedouanement-france/actions";
 import { IconBell } from "@/components/ui/Icons";
@@ -209,6 +210,7 @@ export default async function GestionDouanierePage({
             lignes={lignesTable}
             messageVide={statutFiltre ? "Aucun colis avec ce statut." : "Aucun colis pour ce départ."}
           />
+          {etatDepart && <EtapeNavigation etat={etatDepart} etapeId="colis" />}
         </>
       )}
     </div>

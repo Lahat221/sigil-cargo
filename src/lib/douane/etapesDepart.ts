@@ -6,11 +6,18 @@ type Client = SupabaseClient<Database>;
 
 export type StatutEtape = "fait" | "a_faire" | "alerte";
 
+export type EtapeId = "colis" | "dakar" | "lta" | "audit" | "documents";
+
 export type EtapeDepart = {
-  id: string;
+  id: EtapeId;
+  /** Nom court (menu, fil d'étapes). */
+  nom: string;
   titre: string;
   detail: string;
   statut: StatutEtape;
+  /** Page de l'étape. */
+  page: string;
+  /** Lien vers l'endroit précis où agir (peut cibler un filtre de la page). */
   href: string;
   action: string;
 };
@@ -86,51 +93,43 @@ export async function chargerEtatDepart(
 
   const etapes: EtapeDepart[] = [];
 
-  // 1. Analyse IA des colis
+  // 1. Colis : analyse IA puis vérification/validation des produits et codes HS
   const analyseOk = total > 0 && nonTraites === 0 && enCours === 0 && erreurs === 0;
+  const verifOk = analyseOk && aValider === 0 && hsIncertain === 0;
   etapes.push({
-    id: "analyse",
-    titre: "Analyser les colis",
+    id: "colis",
+    nom: "Colis",
+    titre: "Analyser et valider les colis",
     detail:
       total === 0
         ? "Aucun colis dans ce départ"
         : erreurs > 0
           ? `${pluriel(erreurs, "colis")} en erreur — à relancer`
-          : analyseOk
-            ? `${total}/${total} colis analysés`
-            : `${analyses}/${total} colis analysés`,
-    statut: analyseOk ? "fait" : erreurs > 0 ? "alerte" : "a_faire",
-    href: `/gestion-douaniere${q}`,
-    action: erreurs > 0 ? "Voir les erreurs" : "Analyser les colis",
-  });
-
-  // 2. Vérification / validation des produits et codes HS
-  const verifOk = analyseOk && aValider === 0 && hsIncertain === 0;
-  etapes.push({
-    id: "validation",
-    titre: "Vérifier et valider les produits",
-    detail: !analyseOk
-      ? "Après l'analyse des colis"
-      : verifOk
-        ? "Tous les colis sont validés"
-        : [
-            aValider > 0 ? `${pluriel(aValider, "colis")} à valider` : null,
-            hsIncertain > 0 ? `${pluriel(hsIncertain, "code")} HS à vérifier` : null,
-          ]
-            .filter(Boolean)
-            .join(" · "),
-    statut: verifOk ? "fait" : analyseOk && (hsIncertain > 0 || aVerifier > 0) ? "alerte" : "a_faire",
-    href: `/gestion-douaniere${q}&statut=${aVerifier > 0 ? "a_verifier" : "traite"}`,
-    action: "Vérifier les colis",
+          : !analyseOk
+            ? `${analyses}/${total} colis analysés`
+            : verifOk
+              ? `${total}/${total} colis analysés et validés`
+              : [
+                  aValider > 0 ? `${pluriel(aValider, "colis")} à valider` : null,
+                  hsIncertain > 0 ? `${pluriel(hsIncertain, "code")} HS à vérifier` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · "),
+    statut: verifOk ? "fait" : erreurs > 0 || (analyseOk && (hsIncertain > 0 || aVerifier > 0)) ? "alerte" : "a_faire",
+    page: `/gestion-douaniere${q}`,
+    href: !analyseOk || erreurs > 0 ? `/gestion-douaniere${q}` : `/gestion-douaniere${q}&statut=${aVerifier > 0 ? "a_verifier" : "traite"}`,
+    action: erreurs > 0 ? "Voir les erreurs" : !analyseOk ? "Analyser les colis" : "Vérifier les colis",
   });
 
   // 3. Déclaration Dakar
   const dakarOk = !!expedition?.declaration_dakar_validee;
   etapes.push({
     id: "dakar",
+    nom: "Déclaration Dakar",
     titre: "Valider la déclaration Dakar",
     detail: dakarOk ? "Déclaration validée" : "Pas encore validée",
     statut: dakarOk ? "fait" : "a_faire",
+    page: `/gestion-douaniere/declaration${q}`,
     href: `/gestion-douaniere/declaration${q}`,
     action: "Ouvrir la déclaration",
   });
@@ -144,9 +143,11 @@ export async function chargerEtatDepart(
     ].filter(Boolean);
     etapes.push({
       id: "lta",
+      nom: "LTA",
       titre: "Renseigner la LTA",
       detail: manques.length === 0 ? `MAWB ${expedition?.mawb} · vol du ${expedition?.date_vol}` : `Manque : ${manques.join(", ")}`,
       statut: manques.length === 0 ? "fait" : "a_faire",
+      page: `/gestion-douaniere/dedouanement-france${q}`,
       href: `/gestion-douaniere/dedouanement-france${q}`,
       action: "Compléter la LTA",
     });
@@ -184,6 +185,7 @@ export async function chargerEtatDepart(
     const auditOk = !!audit && audit.critiques === 0;
     etapes.push({
       id: "audit",
+      nom: "Audit",
       titre: "Auditer les produits à risque",
       detail: !audit
         ? "Audit pas encore lancé"
@@ -193,6 +195,7 @@ export async function chargerEtatDepart(
             ? `Audit v${audit.version} · ${pluriel(audit.autres, "alerte")} à relire`
             : `Audit v${audit.version} sans alerte`,
       statut: auditOk ? "fait" : audit && audit.critiques > 0 ? "alerte" : "a_faire",
+      page: `/gestion-douaniere/audit-france${q}`,
       href: `/gestion-douaniere/audit-france${q}`,
       action: audit ? "Voir l'audit" : "Lancer l'audit",
     });
@@ -200,12 +203,14 @@ export async function chargerEtatDepart(
     // 6. Documents France
     etapes.push({
       id: "documents",
+      nom: "Documents",
       titre: "Générer les documents France",
       detail: derniereDeclaration
         ? `v${derniereDeclaration.version} générée le ${dateFormatter.format(new Date(derniereDeclaration.created_at))}`
         : "Pas encore générés",
       statut: derniereDeclaration ? "fait" : "a_faire",
-      href: `/gestion-douaniere/dedouanement-france${q}`,
+      page: `/gestion-douaniere/documents-france${q}`,
+      href: `/gestion-douaniere/documents-france${q}`,
       action: "Générer les documents",
     });
   }

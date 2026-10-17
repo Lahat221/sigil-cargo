@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { ReferentielTable, type EntreeReferentiel } from "@/components/douane/ReferentielTable";
+import { LienRetour } from "@/components/douane/EtapesNav";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export default async function ReferentielPage() {
 
   return (
     <div className="max-w-4xl">
+      <LienRetour href="/gestion-douaniere" label="Retour aux colis du départ" />
       <h1 className="mb-4 text-xl font-bold text-ink">Référentiel produits</h1>
       <p className="mb-4 text-sm text-ink-muted">
         Les correspondances trouvées ici sont proposées en priorité à l&apos;IA avant qu&apos;elle
