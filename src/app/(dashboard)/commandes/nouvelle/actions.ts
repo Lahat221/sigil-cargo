@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { resolveClientId } from "@/lib/commandes/resolveClient";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
+import { preparerPaiement, type PaiementInput } from "@/lib/paiements";
 
 export type ClientMatch = {
   id: string;
@@ -54,12 +55,17 @@ type CreateCommandeInput = {
   photoPaths: string[];
   videoPaths: string[];
   noteVocalePath: string | null;
+  // Avance versée à l'enregistrement (acompte ou paiement complet), optionnelle.
+  paiement: PaiementInput | null;
 };
 
 export async function createCommande(
   input: CreateCommandeInput
 ): Promise<{ error: string } | { success: true }> {
   const supabase = createClient();
+
+  const paiement = input.paiement ? preparerPaiement(input.paiement) : null;
+  if (paiement && "error" in paiement) return { error: paiement.error };
 
   const clientResult = await resolveClientId(
     supabase,
@@ -106,6 +112,17 @@ export async function createCommande(
 
   if (insertError) {
     return { error: "Erreur lors de la création : " + insertError.message };
+  }
+
+  if (paiement) {
+    const { error: paiementError } = await supabase
+      .from("paiements")
+      .insert({ commande_id: input.commandeId, ...paiement });
+    if (paiementError) {
+      // Pas de colis sans son avance : on annule pour éviter un doublon au renvoi.
+      await supabase.from("commandes").delete().eq("id", input.commandeId);
+      return { error: "Erreur lors de l'enregistrement de l'avance : " + paiementError.message };
+    }
   }
 
   revalidatePath("/commandes");

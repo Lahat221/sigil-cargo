@@ -4,6 +4,7 @@ import { StatutBadge, STATUT_LABELS } from "@/components/commandes/StatutBadge";
 import { DashboardFiltres } from "@/components/dashboard/DashboardFiltres";
 import { BarChart } from "@/components/dashboard/BarChart";
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { resumePaiements } from "@/lib/paiements";
 import { MontantsSensibles } from "@/components/dashboard/MontantsSensibles";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
@@ -102,7 +103,7 @@ export default async function TableauDeBordPage({
   let query = supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, montant_total, created_at, clients(nom), projets(nom), produits(nom)"
+      "id, numero, statut, poids_kg, montant_total, created_at, clients(nom), projets(nom), produits(nom), paiements(montant_base)"
     )
     .order("created_at", { ascending: false });
 
@@ -132,6 +133,13 @@ export default async function TableauDeBordPage({
 
   const chiffreAffaires = actives.reduce((sum, c) => sum + c.montant_total, 0);
   const benefice = chiffreAffaires - totalDepenses;
+  // Encaissé / reste à encaisser (par colis, un trop-perçu n'efface pas le reste d'un autre).
+  const resumes = actives.map((c) =>
+    resumePaiements(c.montant_total, c.paiements as { montant_base: number }[] | null)
+  );
+  const encaisse = resumes.reduce((sum, r) => sum + r.paye, 0);
+  const resteAEncaisser = resumes.reduce((sum, r) => sum + r.reste, 0);
+  const nbAvecReste = resumes.filter((r) => r.reste > 0).length;
   const compteParStatut = STATUTS_PIPELINE.reduce<Record<string, number>>(
     (acc, s) => {
       acc[s] = toutes.filter((c) => c.statut === s).length;
@@ -242,6 +250,20 @@ export default async function TableauDeBordPage({
             sousTitre: `${actives.length} commande(s)`,
             couleur: "bg-green-50 text-green-600",
             icone: "€",
+          },
+          {
+            label: "Encaissé",
+            valeur: montantFormatter.format(encaisse),
+            sousTitre: "acomptes et paiements reçus",
+            couleur: "bg-green-50 text-green-600",
+            icone: "✓",
+          },
+          {
+            label: "Reste à encaisser",
+            valeur: montantFormatter.format(resteAEncaisser),
+            sousTitre: `${nbAvecReste} colis à solder`,
+            couleur: "bg-amber-50 text-amber-600",
+            icone: "⏳",
           },
           {
             label: "Dépenses",

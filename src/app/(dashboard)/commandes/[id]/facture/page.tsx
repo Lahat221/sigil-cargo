@@ -1,3 +1,4 @@
+import { deviseBase, formaterMontant, libelleMode, resumePaiements } from "@/lib/paiements";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -47,6 +48,14 @@ export default async function FactureCommandePage({
     .maybeSingle();
 
   if (!commande) notFound();
+
+  const { data: paiementsData } = await supabase
+    .from("paiements")
+    .select("montant, devise, montant_base, mode, created_at")
+    .eq("commande_id", params.id)
+    .order("created_at", { ascending: true });
+  const paiements = paiementsData ?? [];
+  const resume = resumePaiements(commande.montant_total, paiements);
 
   const numeroFacture = String(commande.numero).padStart(4, "0");
   const enModeConteneur = commande.mode_fret === "conteneur";
@@ -166,6 +175,22 @@ export default async function FactureCommandePage({
               TOTAL FACTURE : {montantFormatter.format(commande.montant_total)}
             </p>
           </div>
+
+          {paiements.length > 0 && (
+            <div className="mb-6 flex flex-col items-end gap-0.5 text-sm text-slate-700">
+              {paiements.map((p, i) => (
+                <p key={i}>
+                  {paiements.length > 1 || resume.reste > 0 ? "Acompte reçu" : "Réglé"} (
+                  {libelleMode(p.mode)}) : {formaterMontant(p.montant, p.devise)}
+                </p>
+              ))}
+              <p className="font-semibold text-slate-900">
+                {resume.reste > 0
+                  ? `Reste à payer : ${formaterMontant(resume.reste, deviseBase())}`
+                  : "Facture acquittée"}
+              </p>
+            </div>
+          )}
 
           <p
             className="border-t pt-4 text-xs text-slate-500"

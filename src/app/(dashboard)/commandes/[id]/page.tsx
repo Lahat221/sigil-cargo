@@ -11,6 +11,8 @@ import { PartagerVideoWhatsAppButton } from "@/components/commandes/PartagerVide
 import { NotifRetraitButton } from "@/components/commandes/NotifRetraitButton";
 import { PartagerVideoLazyButton } from "@/components/commandes/PartagerVideoLazyButton";
 import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
+import { PaiementsPanel } from "@/components/commandes/PaiementsPanel";
+import { resumePaiements, type PaiementLigne } from "@/lib/paiements";
 import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
@@ -80,6 +82,14 @@ export default async function CommandeDetailPage({
     .select("ancien_statut, nouveau_statut, created_at")
     .eq("commande_id", commande.id)
     .order("created_at", { ascending: false });
+
+  const { data: paiementsData } = await supabase
+    .from("paiements")
+    .select("id, created_at, montant, devise, montant_base, mode, note")
+    .eq("commande_id", commande.id)
+    .order("created_at", { ascending: true });
+  const paiements = (paiementsData ?? []) as PaiementLigne[];
+  const resumePaiement = resumePaiements(commande.montant_total, paiements);
 
   const photoItems: { path: string; url: string }[] = [];
   if (commande.photo_urls) {
@@ -202,6 +212,7 @@ export default async function CommandeDetailPage({
               description: commande.description,
               poidsKg: commande.poids_kg,
               montantTotal: commande.montant_total,
+              montantPaye: resumePaiement.paye,
             })}
           />
         )}
@@ -219,6 +230,12 @@ export default async function CommandeDetailPage({
         <h2 className="mb-3 text-sm font-medium text-slate-700">Suivi de colis</h2>
         <StatutStepper commandeId={commande.id} statut={commande.statut} />
       </div>
+
+      <PaiementsPanel
+        commandeId={commande.id}
+        montantTotal={commande.montant_total}
+        paiements={paiements}
+      />
 
       <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-slate-200/70 bg-white shadow-sm p-4 text-sm sm:grid-cols-3">
         <div>

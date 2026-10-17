@@ -13,6 +13,13 @@ import type { CommandeListItem } from "./types";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
 import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
+import {
+  LIBELLES_STATUT_PAIEMENT,
+  formaterMontant,
+  deviseBase,
+  resumePaiements,
+} from "@/lib/paiements";
+import { STYLE_STATUT_PAIEMENT } from "./PaiementsPanel";
 
 const STATUTS_ORDONNES = Object.keys(STATUT_LABELS) as StatutCommande[];
 
@@ -32,7 +39,22 @@ function texteRetrait(c: CommandeListItem): string {
     description: c.description,
     poidsKg: c.poids_kg,
     montantTotal: c.montant_total,
+    montantPaye: resumePaiements(c.montant_total, c.paiements).paye,
   });
+}
+
+// Pastille « Payé / Acompte / Non payé » + reste dû, sous le montant.
+function BadgePaiement({ c }: { c: CommandeListItem }) {
+  const r = resumePaiements(c.montant_total, c.paiements);
+  return (
+    <span
+      className={`mt-0.5 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${STYLE_STATUT_PAIEMENT[r.statut]}`}
+    >
+      {r.statut === "acompte"
+        ? `Reste ${formaterMontant(r.reste, deviseBase())}`
+        : LIBELLES_STATUT_PAIEMENT[r.statut]}
+    </span>
+  );
 }
 
 export function CommandesListe({
@@ -211,6 +233,9 @@ export function CommandesListe({
                   </td>
                   <td className="px-4 py-3 font-medium text-slate-900">
                     {montantFormatter.format(c.montant_total)}
+                    <div>
+                      <BadgePaiement c={c} />
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -299,8 +324,11 @@ export function CommandesListe({
                   <span className="text-slate-600">
                     {formatPoids(c.poids_kg)}
                   </span>
-                  <span className="font-medium text-slate-900">
+                  <span className="text-right font-medium text-slate-900">
                     {montantFormatter.format(c.montant_total)}
+                    <span className="block">
+                      <BadgePaiement c={c} />
+                    </span>
                   </span>
                 </div>
               </Link>

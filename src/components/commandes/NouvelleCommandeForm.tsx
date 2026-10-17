@@ -7,6 +7,14 @@ import { createCommande } from "@/app/(dashboard)/commandes/nouvelle/actions";
 import { ClientField, type ClientSelection } from "./ClientField";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 import { VideoPreviewList } from "./VideoPreviewList";
+import {
+  PaiementSaisie,
+  SAISIE_VIDE,
+  saisieEnBase,
+  saisieVersInput,
+  type SaisiePaiement,
+} from "./PaiementSaisie";
+import { deviseBase } from "@/lib/paiements";
 import { BRAND } from "@/lib/brand";
 import type { Destination } from "@/lib/commandes/destinations";
 
@@ -60,6 +68,7 @@ export function NouvelleCommandeForm({
   const [photos, setPhotos] = useState<File[]>([]);
   const [videos, setVideos] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<Blob | null>(null);
+  const [saisiePaiement, setSaisiePaiement] = useState<SaisiePaiement>(SAISIE_VIDE);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -174,6 +183,20 @@ export function NouvelleCommandeForm({
       }
     }
 
+    const paiement = saisieVersInput(saisiePaiement);
+    if (paiement) {
+      const verse = saisieEnBase(saisiePaiement);
+      if (!Number.isFinite(verse) || verse <= 0) {
+        setError("Indique un montant d'avance valide.");
+        return;
+      }
+      // Le poids peut changer plus tard : on ne bloque que si l'estimation est connue.
+      if (montantEstime !== null && verse > montantEstime * 1.001 + 0.02) {
+        setError("L'avance dépasse le montant estimé du colis.");
+        return;
+      }
+    }
+
     setSubmitting(true);
     const commandeId = crypto.randomUUID();
     const supabase = createClient();
@@ -235,6 +258,7 @@ export function NouvelleCommandeForm({
         photoPaths,
         videoPaths,
         noteVocalePath,
+        paiement,
       });
 
       if ("error" in result) {
@@ -392,6 +416,23 @@ export function NouvelleCommandeForm({
         <span className="font-semibold text-slate-900">
           {montantEstime !== null ? montantFormatter.format(montantEstime) : "—"}
         </span>
+      </div>
+
+      <div className="space-y-2 rounded-lg border border-slate-200 p-3">
+        <div>
+          <p className="text-sm font-medium text-slate-700">
+            Avance versée à l&apos;enregistrement (optionnel)
+          </p>
+          <p className="text-xs text-slate-500">
+            Acompte ou paiement complet, en {deviseBase() === "EUR" ? "euros ou en FCFA" : "FCFA ou en euros"}.
+            Le reste se règle au retrait du colis. Laisser vide si rien n&apos;est payé maintenant.
+          </p>
+        </div>
+        <PaiementSaisie
+          valeur={saisiePaiement}
+          onChange={setSaisiePaiement}
+          cible={montantEstime}
+        />
       </div>
 
       {destinations.length > 0 && (

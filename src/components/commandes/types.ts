@@ -18,4 +18,6 @@ export type CommandeListItem = {
     adresse: string | null;
   } | null;
   projets: { nom: string } | null;
+  // Versements (montants convertis dans la devise de l'entreprise) — absents sur certaines vues.
+  paiements?: { montant_base: number }[] | null;
 };

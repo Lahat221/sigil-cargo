@@ -44,7 +44,7 @@ export default async function CommandesPage({
 
   const page = Math.max(1, Number(searchParams.page) || 1);
   const SELECT_COLONNES =
-    "id, numero, statut, poids_kg, montant_total, destination, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom)";
+    "id, numero, statut, poids_kg, montant_total, destination, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), paiements(montant_base)";
 
   const q = searchParams.q?.trim();
   let clientIds: string[] = [];

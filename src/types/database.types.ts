@@ -518,6 +518,38 @@ export interface Database {
           }
         ];
       };
+      paiements: {
+        Row: {
+          id: string;
+          commande_id: string;
+          created_at: string;
+          montant: number;
+          devise: "EUR" | "XOF";
+          // Conversion de `montant` dans la devise de l'entreprise (parité fixe EUR/XOF).
+          montant_base: number;
+          mode: string;
+          note: string | null;
+        };
+        Insert: {
+          id?: string;
+          commande_id: string;
+          created_at?: string;
+          montant: number;
+          devise: "EUR" | "XOF";
+          montant_base: number;
+          mode?: string;
+          note?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["paiements"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "paiements_commande_id_fkey";
+            columns: ["commande_id"];
+            referencedRelation: "commandes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       whatsapp_ia_pause: {
         Row: {
           telephone: string;

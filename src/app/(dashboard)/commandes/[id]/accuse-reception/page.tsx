@@ -5,6 +5,14 @@ import { PrintButton } from "@/components/commandes/PrintButton";
 import { ImageImprimanteButton } from "@/components/commandes/ImageImprimanteButton";
 import { MarquerVerifieButton } from "@/components/commandes/MarquerVerifieButton";
 import { BRAND } from "@/lib/brand";
+import {
+  deviseBase,
+  formaterAvecEquivalent,
+  formaterMontant,
+  libelleMode,
+  resumePaiements,
+  type PaiementLigne,
+} from "@/lib/paiements";
 
 export const dynamic = "force-dynamic";
 
@@ -23,12 +31,21 @@ export default async function AccuseReceptionPage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, poids_kg, mode_fret, volume_m3, description, livreur_nom, livreur_telephone, contenu_verifie, created_at, clients(nom, telephone)"
+      "id, numero, poids_kg, mode_fret, volume_m3, description, livreur_nom, livreur_telephone, contenu_verifie, created_at, montant_total, clients(nom, telephone)"
     )
     .eq("id", params.id)
     .maybeSingle();
 
   if (!commande) notFound();
+
+  const { data: paiementsData } = await supabase
+    .from("paiements")
+    .select("id, created_at, montant, devise, montant_base, mode, note")
+    .eq("commande_id", commande.id)
+    .order("created_at", { ascending: true });
+  const paiements = (paiementsData ?? []) as PaiementLigne[];
+  const resume = resumePaiements(commande.montant_total, paiements);
+  const montantConnu = commande.montant_total > 0;
 
   const deposantEstClient = !commande.livreur_nom && !commande.livreur_telephone;
 
@@ -104,6 +121,34 @@ export default async function AccuseReceptionPage({
               "Poids non renseigné"}
           </p>
         </div>
+
+        {(paiements.length > 0 || montantConnu) && (
+          <div className="mb-4 border-t border-slate-200 pt-3 text-sm print:mb-2 print:pt-2 print:text-[11px]">
+            <p className="text-slate-500">Paiement</p>
+            {montantConnu ? (
+              <p className="font-medium text-slate-900">
+                Montant : {formaterMontant(commande.montant_total, deviseBase())}
+              </p>
+            ) : (
+              <p className="font-medium text-slate-900">Montant à confirmer après pesée</p>
+            )}
+            {paiements.map((p) => (
+              <p key={p.id} className="text-slate-700">
+                {paiements.length > 1 || resume.statut !== "solde" ? "Avance" : "Payé"} :{" "}
+                {formaterMontant(p.montant, p.devise)} ({libelleMode(p.mode)})
+              </p>
+            ))}
+            {montantConnu && (
+              <p className="mt-0.5 font-semibold text-slate-900">
+                {resume.reste > 0
+                  ? `Reste à payer au retrait : ${formaterAvecEquivalent(resume.reste)}`
+                  : paiements.length > 0
+                    ? "Colis payé en totalité"
+                    : null}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="mb-5 border-t border-slate-200 pt-3 text-sm print:mb-3 print:pt-2 print:text-[11px]">
           {commande.contenu_verifie ? (
