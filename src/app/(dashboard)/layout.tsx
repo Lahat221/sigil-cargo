@@ -4,6 +4,7 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { RefreshButton } from "@/components/layout/RefreshButton";
 import { IconLogout } from "@/components/ui/Icons";
 import { signOut } from "./actions";
+import { compterAlertesDouane } from "@/lib/douane/etapesDepart";
 
 // Même précaution que le layout racine (voir src/app/layout.tsx) : garantit
 // que le Sidebar (qui affiche BRAND.nom) est réévalué à chaque requête.
@@ -31,10 +32,17 @@ export default async function DashboardLayout({
     }
   }
 
+  // Pastille « à traiter » du module douane — seulement si l'utilisateur y a accès.
+  const accesDouane = modulesAutorises === null || modulesAutorises.includes("gestion-douaniere");
+  const alertesDouane = user && accesDouane ? await compterAlertesDouane(supabase) : null;
+
   return (
     <div className="flex min-h-screen bg-page-gradient">
       <div className="print:hidden">
-        <Sidebar modulesAutorises={modulesAutorises} />
+        <Sidebar
+          modulesAutorises={modulesAutorises}
+          badges={{ "gestion-douaniere": alertesDouane?.total ?? 0 }}
+        />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">

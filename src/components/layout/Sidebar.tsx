@@ -30,12 +30,15 @@ function NavLink({
   active,
   indent = false,
   icon,
+  badge = 0,
 }: {
   href: string;
   children: React.ReactNode;
   active: boolean;
   indent?: boolean;
   icon?: React.ReactNode;
+  /** Nombre d'éléments à traiter, affiché en pastille (0 = rien). */
+  badge?: number;
 }) {
   return (
     <Link
@@ -58,6 +61,14 @@ function NavLink({
         </span>
       )}
       {children}
+      {badge > 0 && (
+        <span
+          className="ml-auto rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold leading-none text-navy"
+          title={`${badge} point(s) à traiter`}
+        >
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
     </Link>
   );
 }
@@ -220,9 +231,12 @@ function MobileTabBar({
 
 export function Sidebar({
   modulesAutorises = null,
+  badges = {},
 }: {
   /** Modules accessibles pour l'utilisateur courant. `null` = admin, accès total. */
   modulesAutorises?: string[] | null;
+  /** Pastilles par module (clé = slug), ex. alertes douane. */
+  badges?: Record<string, number>;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -327,6 +341,7 @@ export function Sidebar({
                         href={item.href}
                         active={pathname.startsWith(item.href)}
                         icon={item.icon}
+                        badge={badges[item.slug] ?? 0}
                       >
                         {item.label}
                       </NavLink>

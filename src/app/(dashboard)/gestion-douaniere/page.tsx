@@ -4,7 +4,10 @@ import { DouaneStatsCards } from "@/components/douane/DouaneStatsCards";
 import { TraiterDepartButton } from "@/components/douane/TraiterDepartButton";
 import { ValiderLotButton } from "@/components/douane/ValiderLotButton";
 import { ExportDouaneButton } from "@/components/douane/ExportDouaneButton";
-import { STATUT_DOUANE_LABELS, STATUT_DOUANE_STYLES } from "@/components/douane/statutLabels";
+import { STATUT_DOUANE_LABELS } from "@/components/douane/statutLabels";
+import { ChecklistDepart } from "@/components/douane/ChecklistDepart";
+import { ColisDouaneTable, type LigneColisDouane } from "@/components/douane/ColisDouaneTable";
+import { chargerEtatDepart } from "@/lib/douane/etapesDepart";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { chargerResumeAuditFrance } from "./dedouanement-france/actions";
 import { IconBell } from "@/components/ui/Icons";
@@ -16,6 +19,7 @@ type ColisRow = {
   id: string;
   numero: number;
   poids_kg: number | null;
+  description: string | null;
   clients: { nom: string; telephone: string | null } | null;
   // commande_id est UNIQUE sur douane_extractions : PostgREST embarque donc
   // un objet unique (ou null), pas un tableau, malgré la relation FK inverse.
@@ -55,7 +59,7 @@ export default async function GestionDouanierePage({
     const { data } = await supabase
       .from("commandes")
       .select(
-        "id, numero, poids_kg, clients(nom, telephone), douane_extractions(id, statut, updated_at)"
+        "id, numero, poids_kg, description, clients(nom, telephone), douane_extractions(id, statut, updated_at)"
       )
       .eq("projet_id", projetId)
       .neq("statut", "annulee")
@@ -83,19 +87,25 @@ export default async function GestionDouanierePage({
     .map((c) => c.douane_extractions?.id)
     .filter((id): id is string => !!id);
 
+  const produitsParExtraction = new Map<string, { total: number; hs: number }>();
   if (extractionIds.length > 0) {
-    const [{ count: hsIncertain }, { count: produitsRetires }] = await Promise.all([
+    const [{ data: produits }, { count: produitsRetires }] = await Promise.all([
       supabase
         .from("douane_produits")
-        .select("id", { count: "exact", head: true })
-        .in("extraction_id", extractionIds)
-        .eq("hs_status", "a_verifier"),
+        .select("extraction_id, hs_status")
+        .in("extraction_id", extractionIds),
       supabase
         .from("douane_produits_retires")
         .select("id", { count: "exact", head: true })
         .in("extraction_id", extractionIds),
     ]);
-    stats.hsIncertain = hsIncertain ?? 0;
+    for (const p of produits ?? []) {
+      const c = produitsParExtraction.get(p.extraction_id) ?? { total: 0, hs: 0 };
+      c.total += 1;
+      if (p.hs_status === "a_verifier") c.hs += 1;
+      produitsParExtraction.set(p.extraction_id, c);
+    }
+    stats.hsIncertain = (produits ?? []).filter((p) => p.hs_status === "a_verifier").length;
     stats.produitsRetires = produitsRetires ?? 0;
   }
 
@@ -114,6 +124,25 @@ export default async function GestionDouanierePage({
     : 0;
 
   const colisAffiches = statutFiltre ? colis.filter((c) => statutDe(c) === statutFiltre) : colis;
+  const lignesTable: LigneColisDouane[] = colisAffiches.map((c) => {
+    const compte = c.douane_extractions
+      ? produitsParExtraction.get(c.douane_extractions.id)
+      : undefined;
+    return {
+      id: c.id,
+      numero: c.numero,
+      clientNom: c.clients?.nom ?? "",
+      description: c.description,
+      poidsKg: c.poids_kg,
+      statut: statutDe(c),
+      nbProduits: compte?.total ?? 0,
+      nbHsAVerifier: compte?.hs ?? 0,
+      majLe: c.douane_extractions?.updated_at ?? null,
+    };
+  });
+
+  const etatDepart = projetId ? await chargerEtatDepart(supabase, projetId) : null;
+  const nomDepart = projets?.find((p) => p.id === projetId)?.nom;
 
   return (
     <div>
@@ -128,6 +157,12 @@ export default async function GestionDouanierePage({
         </p>
       ) : (
         <>
+          {etatDepart && (
+            <div className="mb-4">
+              <ChecklistDepart etat={etatDepart} nomDepart={nomDepart} />
+            </div>
+          )}
+
           <div className="mb-4">
             <DouaneStatsCards stats={stats} projetId={projetId} statutActif={statutFiltre} />
           </div>
@@ -170,62 +205,10 @@ export default async function GestionDouanierePage({
             </div>
           )}
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200/70 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 font-medium">N°</th>
-                  <th className="px-3 py-2 font-medium">Client</th>
-                  <th className="px-3 py-2 font-medium">Poids</th>
-                  <th className="px-3 py-2 font-medium">Statut</th>
-                  <th className="px-3 py-2 font-medium">Dernière extraction</th>
-                  <th className="px-3 py-2 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {colisAffiches.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
-                      {statutFiltre ? "Aucun colis avec ce statut." : "Aucun colis pour ce départ."}
-                    </td>
-                  </tr>
-                )}
-                {colisAffiches.map((c) => {
-                  const statut = statutDe(c);
-                  const extraction = c.douane_extractions;
-                  return (
-                    <tr key={c.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-2 font-mono text-xs">#{c.numero}</td>
-                      <td className="px-3 py-2">{c.clients?.nom ?? "—"}</td>
-                      <td className="px-3 py-2">
-                        {c.poids_kg !== null ? `${c.poids_kg} kg` : "—"}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUT_DOUANE_STYLES[statut]}`}
-                        >
-                          {STATUT_DOUANE_LABELS[statut]}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-xs text-slate-400">
-                        {extraction
-                          ? new Date(extraction.updated_at).toLocaleString("fr-FR")
-                          : "—"}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Link
-                          href={`/gestion-douaniere/${c.id}`}
-                          className="text-sm text-gold-2 hover:underline"
-                        >
-                          Voir
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ColisDouaneTable
+            lignes={lignesTable}
+            messageVide={statutFiltre ? "Aucun colis avec ce statut." : "Aucun colis pour ce départ."}
+          />
         </>
       )}
     </div>

@@ -251,19 +251,33 @@ export async function enregistrerValeurSection(
  * Marque la déclaration Dakar comme validée pour ce départ — §2bis, un des
  * deux documents obligatoires avant l'audit/génération France. Simple
  * bouton de confirmation, pas de fichier (contrairement à la LTA).
+ *
+ * Utilise update() si la ligne existe déjà pour ne pas toucher nombre_colis,
+ * et insert() avec nombre_colis: 1 sinon (évite la violation NOT NULL DEFAULT
+ * sur un upsert sparse quand aucune ligne n'existe encore pour ce projet).
  */
 export async function validerDeclarationDakar(
   projetId: string
 ): Promise<{ error: string } | { success: true }> {
   const supabase = createClient();
-  const { error } = await supabase.from("douane_expeditions_france").upsert(
-    {
-      projet_id: projetId,
-      declaration_dakar_validee: true,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "projet_id" }
-  );
+
+  const { data: existing } = await supabase
+    .from("douane_expeditions_france")
+    .select("id")
+    .eq("projet_id", projetId)
+    .maybeSingle();
+
+  const { error } = existing
+    ? await supabase
+        .from("douane_expeditions_france")
+        .update({ declaration_dakar_validee: true, updated_at: new Date().toISOString() })
+        .eq("projet_id", projetId)
+    : await supabase.from("douane_expeditions_france").insert({
+        projet_id: projetId,
+        declaration_dakar_validee: true,
+        nombre_colis: 1,
+        updated_at: new Date().toISOString(),
+      });
 
   if (error) return { error: error.message };
   revalidatePath("/gestion-douaniere/declaration");

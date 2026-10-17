@@ -5,6 +5,7 @@ import { DashboardFiltres } from "@/components/dashboard/DashboardFiltres";
 import { BarChart } from "@/components/dashboard/BarChart";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { resumePaiements } from "@/lib/paiements";
+import { compterAlertesDouane } from "@/lib/douane/etapesDepart";
 import { MontantsSensibles } from "@/components/dashboard/MontantsSensibles";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
@@ -121,6 +122,8 @@ export default async function TableauDeBordPage({
     .select("id", { count: "exact", head: true })
     .eq("statut", "nouvelle");
 
+  const alertesDouane = await compterAlertesDouane(supabase);
+
   let chargesQuery = supabase.from("charges").select("montant, date_charge");
   if (searchParams.projet) chargesQuery = chargesQuery.eq("projet_id", searchParams.projet);
   if (debut) chargesQuery = chargesQuery.gte("date_charge", debut.slice(0, 10));
@@ -212,6 +215,28 @@ export default async function TableauDeBordPage({
             {(nbDevisNouveaux ?? 0) > 1 ? "s" : ""} de devis à traiter
           </span>
           <span className="font-semibold text-gold-1">Voir →</span>
+        </Link>
+      )}
+
+      {alertesDouane.total > 0 && (
+        <Link
+          href="/gestion-douaniere"
+          className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm transition-colors hover:bg-amber-100"
+        >
+          <span className="font-medium text-slate-800">
+            Douane : {alertesDouane.total} point{alertesDouane.total > 1 ? "s" : ""} à traiter
+            <span className="ml-2 font-normal text-slate-600">
+              {[
+                alertesDouane.colisEnErreur > 0 ? `${alertesDouane.colisEnErreur} colis en erreur` : null,
+                alertesDouane.colisAVerifier > 0 ? `${alertesDouane.colisAVerifier} colis à vérifier` : null,
+                alertesDouane.hsAVerifier > 0 ? `${alertesDouane.hsAVerifier} code(s) HS douteux` : null,
+                alertesDouane.auditCritiques > 0 ? `${alertesDouane.auditCritiques} alerte(s) d'audit critique(s)` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </span>
+          <span className="font-semibold text-amber-700">Voir →</span>
         </Link>
       )}
 

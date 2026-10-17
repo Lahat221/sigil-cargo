@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { chargerLignesFrance, type LigneProduitFrance } from "@/lib/dedouanement-france/lignesFrance";
 import { genererDeclarationFrance, genererAuditFrance, PROMPT_VERSION } from "@/lib/dedouanement-france/generation";
 import { genererMailTransitaire } from "@/lib/dedouanement-france/mail";
@@ -12,6 +13,8 @@ import { DeclarationFranceSchema, AuditReportSchema } from "@/lib/dedouanement-f
 import type { DeclarationFranceIA, AuditReport } from "@/lib/dedouanement-france/schema";
 import type { InfosExpedition } from "@/lib/dedouanement-france/excel/facture";
 import { SECTIONS_DECLARATION } from "@/lib/douane/sections";
+import { getAnthropicClient, anthropicModel } from "@/lib/dedouanement-france/anthropic";
+import { normaliserMawb, normaliserDateVol, nombrePositif } from "@/lib/douane/lta";
 
 // num_source (1-indexé, ordre exact envoyé à Claude) -> identifiants réels,
 // figé au moment de l'audit pour que les liens "Voir le colis"/"Retirer"
@@ -118,6 +121,116 @@ async function chargerContexteFrance(
   };
 }
 
+export type InfosLtaExtraites = {
+  mawb: string | null;
+  dateVol: string | null;       // format JJ-MM-AAAA
+  poidsBrutLtaKg: number | null;
+  nombreColis: number | null;
+  dimensions: string | null;
+};
+
+const TAILLE_MAX_LTA_OCTETS = 20 * 1024 * 1024;
+const TYPES_IMAGE_ACCEPTES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+/**
+ * Télécharge le fichier LTA depuis Supabase Storage, l'envoie à Claude pour
+ * en extraire les champs clés (MAWB, date, poids, colis, dimensions) et
+ * renvoie les valeurs NORMALISÉES et VALIDÉES. Rien n'est enregistré : le
+ * formulaire les propose à l'utilisateur, qui les vérifie puis enregistre —
+ * une erreur de lecture (un chiffre du MAWB) ne doit jamais partir telle
+ * quelle dans les documents de douane.
+ */
+export async function extraireLtaInfoDepuisPdf(
+  _projetId: string,
+  ltaPath: string
+): Promise<{ error: string } | { success: true; infos: InfosLtaExtraites; nonLus: string[] }> {
+  const supabase = createClient();
+
+  const { data: fileData, error: downloadError } = await supabase.storage
+    .from("lta-documents")
+    .download(ltaPath);
+
+  if (downloadError || !fileData) {
+    return { error: `Impossible de télécharger le fichier LTA : ${downloadError?.message ?? "fichier introuvable"}` };
+  }
+  if (fileData.size > TAILLE_MAX_LTA_OCTETS) {
+    return { error: "Fichier trop volumineux pour la lecture automatique (20 Mo maximum)." };
+  }
+
+  const estPdf = fileData.type?.includes("pdf") || ltaPath.toLowerCase().endsWith(".pdf");
+  const typeImage = TYPES_IMAGE_ACCEPTES.includes(fileData.type) ? fileData.type : null;
+  if (!estPdf && !typeImage) {
+    return { error: "Format non lu automatiquement (PDF, JPEG, PNG ou WebP attendu)." };
+  }
+
+  const base64 = Buffer.from(await fileData.arrayBuffer()).toString("base64");
+
+  try {
+    const client = getAnthropicClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const contentBlocks: any[] = [
+      estPdf
+        ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
+        : { type: "image", source: { type: "base64", media_type: typeImage, data: base64 } },
+      {
+        type: "text",
+        text: `Tu regardes UNIQUEMENT la première page de ce document. Extrait les informations suivantes de cette LTA (Lettre de Transport Aérien) et réponds UNIQUEMENT en JSON valide, sans markdown, sans explication :
+{
+  "mawb": "numéro MAWB (ex: 490-02087654)",
+  "date_vol": "date de vol au format JJ-MM-AAAA",
+  "poids_brut_kg": nombre décimal (poids brut en kg),
+  "nombre_colis": nombre entier,
+  "dimensions": "dimensions (ex: 120x100x95 cm)"
+}
+Si un champ est absent ou illisible, mets null. N'invente rien : mieux vaut null qu'une valeur incertaine.`,
+      },
+    ];
+
+    const response = await client.messages.create({
+      model: anthropicModel(),
+      max_tokens: 512,
+      messages: [{ role: "user", content: contentBlocks }],
+    });
+
+    const text = response.content.find((b) => b.type === "text")?.text ?? "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { error: "La lecture automatique n'a rien renvoyé d'exploitable." };
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch {
+      return { error: "La lecture automatique a renvoyé une réponse illisible." };
+    }
+
+    const nombreColis = nombrePositif(parsed.nombre_colis);
+    const dimensions = String(parsed.dimensions ?? "").trim().slice(0, 80);
+    const infos: InfosLtaExtraites = {
+      mawb: normaliserMawb(parsed.mawb),
+      dateVol: normaliserDateVol(parsed.date_vol),
+      poidsBrutLtaKg: nombrePositif(parsed.poids_brut_kg),
+      nombreColis: nombreColis !== null && Number.isInteger(nombreColis) ? nombreColis : null,
+      dimensions: dimensions || null,
+    };
+
+    const nonLus = [
+      infos.mawb ? null : "n° MAWB",
+      infos.dateVol ? null : "date de vol",
+      infos.poidsBrutLtaKg !== null ? null : "poids brut",
+      infos.nombreColis !== null ? null : "nombre de colis",
+      infos.dimensions ? null : "dimensions",
+    ].filter((c): c is string => c !== null);
+
+    if (nonLus.length === 5) {
+      return { error: "Aucune information n'a pu être lue sur ce document (scan flou ou page non conforme)." };
+    }
+    return { success: true, infos, nonLus };
+  } catch (err) {
+    return { error: `Lecture automatique impossible : ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
 export async function enregistrerExpeditionFrance(
   projetId: string,
   champs: {
@@ -148,23 +261,54 @@ export async function enregistrerExpeditionFrance(
 }
 
 /**
+ * Crée le bucket "lta-documents" s'il n'existe pas encore (opération
+ * idempotente, requiert la clé service-role). À appeler côté client avant
+ * l'upload Storage pour éviter une erreur "Bucket not found".
+ */
+export async function initLtaBucket(): Promise<{ error: string } | { ok: true }> {
+  const admin = createAdminClient();
+  const { error } = await admin.storage.createBucket("lta-documents", {
+    public: false,
+  });
+  // Ignorer l'erreur si le bucket existe déjà
+  if (error && !error.message.toLowerCase().includes("already exist")) {
+    return { error: `Impossible de créer le bucket LTA : ${error.message}` };
+  }
+  return { ok: true };
+}
+
+/**
  * Enregistre le chemin du fichier LTA déjà uploadé côté client (bucket
  * Storage "lta-documents", pattern identique à charges-factures) — §2bis,
  * la LTA doit être un vrai document, pas seulement des champs saisis.
+ *
+ * Utilise update() si la ligne existe déjà pour ne pas toucher nombre_colis,
+ * et insert() avec nombre_colis: 1 si aucune ligne n'existe encore (évite la
+ * violation NOT NULL DEFAULT sur un upsert sparse).
  */
 export async function enregistrerLtaFichier(
   projetId: string,
   path: string
 ): Promise<{ error: string } | { success: true }> {
   const supabase = createClient();
-  const { error } = await supabase.from("douane_expeditions_france").upsert(
-    {
-      projet_id: projetId,
-      lta_fichier_path: path,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "projet_id" }
-  );
+
+  const { data: existing } = await supabase
+    .from("douane_expeditions_france")
+    .select("id")
+    .eq("projet_id", projetId)
+    .maybeSingle();
+
+  const { error } = existing
+    ? await supabase
+        .from("douane_expeditions_france")
+        .update({ lta_fichier_path: path, updated_at: new Date().toISOString() })
+        .eq("projet_id", projetId)
+    : await supabase.from("douane_expeditions_france").insert({
+        projet_id: projetId,
+        lta_fichier_path: path,
+        nombre_colis: 1,
+        updated_at: new Date().toISOString(),
+      });
 
   if (error) return { error: error.message };
   revalidatePath("/gestion-douaniere/dedouanement-france");
