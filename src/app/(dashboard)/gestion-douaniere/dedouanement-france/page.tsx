@@ -39,13 +39,13 @@ export default async function DedouanementFrancePage({
         .maybeSingle()
     : { data: null };
 
-  let ltaFichier: { nom: string; urlSignee: string | null } | null = null;
+  let ltaFichier: { nom: string; urlSignee: string | null; path: string } | null = null;
   if (expedition?.lta_fichier_path) {
     const { data: signe } = await supabase.storage
       .from("lta-documents")
       .createSignedUrl(expedition.lta_fichier_path, 3600);
     const nom = expedition.lta_fichier_path.split("/").pop() ?? expedition.lta_fichier_path;
-    ltaFichier = { nom, urlSignee: signe?.signedUrl ?? null };
+    ltaFichier = { nom, urlSignee: signe?.signedUrl ?? null, path: expedition.lta_fichier_path };
   }
 
   const lignes = projetId ? await chargerLignesFrance(supabase, projetId) : [];

@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
 import { chargerParametresSite } from "@/lib/parametres";
-import { anthropicModel, getAnthropicClient } from "@/lib/dedouanement-france/anthropic";
+import { anthropicModel, getAnthropicClient, messageErreurAnthropic } from "@/lib/dedouanement-france/anthropic";
 import { envoyerAuProprietaire } from "@/lib/twilio/relais";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import { OUTILS, executerOutil, type ContexteOutils } from "./outils";
@@ -259,7 +259,7 @@ export async function traiterMessageEntrant(opts: {
 
     await envoyerAuProprietaire(`🤖 Réponse de l'IA à ${clientNom ?? telephone} :\n${resultat.texte}`);
   } catch (e) {
-    const raison = e instanceof Error ? e.message : "erreur inconnue";
+    const raison = messageErreurAnthropic(e);
     try {
       await envoyerAuProprietaire(
         `⚠️ L'agent IA n'a pas pu répondre à ${clientNom ?? telephone} (${raison}). À traiter à la main.`

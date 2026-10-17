@@ -13,7 +13,7 @@ import { DeclarationFranceSchema, AuditReportSchema } from "@/lib/dedouanement-f
 import type { DeclarationFranceIA, AuditReport } from "@/lib/dedouanement-france/schema";
 import type { InfosExpedition } from "@/lib/dedouanement-france/excel/facture";
 import { SECTIONS_DECLARATION } from "@/lib/douane/sections";
-import { getAnthropicClient, anthropicModel } from "@/lib/dedouanement-france/anthropic";
+import { getAnthropicClient, anthropicModel, messageErreurAnthropic } from "@/lib/dedouanement-france/anthropic";
 import { normaliserMawb, normaliserDateVol, nombrePositif } from "@/lib/douane/lta";
 
 // num_source (1-indexé, ordre exact envoyé à Claude) -> identifiants réels,
@@ -227,7 +227,7 @@ Si un champ est absent ou illisible, mets null. N'invente rien : mieux vaut null
     }
     return { success: true, infos, nonLus };
   } catch (err) {
-    return { error: `Lecture automatique impossible : ${err instanceof Error ? err.message : String(err)}` };
+    return { error: `Lecture automatique impossible : ${messageErreurAnthropic(err)}` };
   }
 }
 

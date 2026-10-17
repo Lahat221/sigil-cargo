@@ -38,7 +38,7 @@ export function ExpeditionFranceForm({
     nombreColis: number;
     dimensions: string;
   };
-  ltaFichier: { nom: string; urlSignee: string | null } | null;
+  ltaFichier: { nom: string; urlSignee: string | null; path: string } | null;
 }) {
   const router = useRouter();
   const [mawb, setMawb] = useState(initial.mawb);
@@ -93,6 +93,21 @@ export function ExpeditionFranceForm({
       setLecture(null);
       router.refresh();
     });
+  }
+
+  // Relit le fichier déjà enregistré (ex. après échec de la lecture automatique).
+  async function relireLta() {
+    if (!ltaFichier) return;
+    setLectureErreur(null);
+    setLecture(null);
+    setExtractionPending(true);
+    try {
+      const extraction = await extraireLtaInfoDepuisPdf(projetId, ltaFichier.path);
+      if ("success" in extraction) appliquerLecture(extraction.infos, extraction.nonLus);
+      else setLectureErreur(extraction.error);
+    } finally {
+      setExtractionPending(false);
+    }
   }
 
   async function uploaderLta(e: ChangeEvent<HTMLInputElement>) {
@@ -260,6 +275,17 @@ export function ExpeditionFranceForm({
               className="hidden"
             />
           </label>
+          {ltaFichier && (
+            <button
+              type="button"
+              onClick={relireLta}
+              disabled={uploadPending || extractionPending}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              title="Relance la lecture automatique sur le fichier déjà enregistré"
+            >
+              Relire la LTA
+            </button>
+          )}
           {extractionPending && (
             <span className="text-xs text-slate-500 italic">Lecture du PDF en cours…</span>
           )}
