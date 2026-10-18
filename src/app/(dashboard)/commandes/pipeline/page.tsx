@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { PipelineBoard } from "@/components/commandes/PipelineBoard";
 import { ProjetFilterSelect } from "@/components/commandes/ProjetFilterSelect";
 import { chargerDestinations } from "@/lib/commandes/destinations";
+import { RepartitionDestinations } from "@/components/dashboard/RepartitionDestinations";
+import { repartirParDestination } from "@/lib/commandes/repartition";
 import type { CommandeListItem } from "@/components/commandes/types";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +30,7 @@ export default async function PipelinePage({
   let query = supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, montant_total, destination, contenu_verifie, created_at, clients(nom, telephone), projets(nom), paiements(montant_base), commandes_historique(nouveau_statut, created_at)"
+      "id, numero, statut, poids_kg, montant_total, destination, contenu_verifie, nombre_paquets, client_id, created_at, clients(nom, telephone), projets(nom), paiements(montant_base), commandes_historique(nouveau_statut, created_at)"
     )
     .neq("statut", "annulee")
     .order("created_at", { ascending: false });
@@ -39,6 +41,9 @@ export default async function PipelinePage({
     query.returns<CommandeListItem[]>(),
     chargerDestinations(supabase),
   ]);
+
+  const repartition = repartirParDestination(commandes ?? []);
+  const nomProjet = (projets ?? []).find((p) => p.id === projetId)?.nom;
 
   return (
     <div>
@@ -52,6 +57,18 @@ export default async function PipelinePage({
       <div className="mb-4 inline-block rounded-lg bg-white p-1 shadow-sm">
         <ProjetFilterSelect projets={projets ?? []} defaut={projetParDefaut ?? "tous"} />
       </div>
+
+      {projetId && (
+        <div className="mb-5">
+          <RepartitionDestinations
+            lignes={repartition.lignes}
+            total={repartition.total}
+            titre="Répartition du départ par destination"
+            sousTitre={nomProjet}
+            montantsMasquesParDefaut={false}
+          />
+        </div>
+      )}
 
       <PipelineBoard
         commandes={commandes ?? []}

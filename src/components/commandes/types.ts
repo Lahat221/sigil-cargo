@@ -22,5 +22,7 @@ export type CommandeListItem = {
   paiements?: { montant_base: number }[] | null;
   // Suivi : colis vérifié à Dakar et dates de passage à chaque étape.
   contenu_verifie?: boolean;
+  nombre_paquets?: number | null;
+  client_id?: string | null;
   commandes_historique?: { nouveau_statut: StatutCommande; created_at: string }[] | null;
 };

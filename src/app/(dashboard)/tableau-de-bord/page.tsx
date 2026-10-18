@@ -6,6 +6,8 @@ import { BarChart } from "@/components/dashboard/BarChart";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { resumePaiements } from "@/lib/paiements";
 import { PIPELINE } from "@/lib/commandes/statuts";
+import { repartirParDestination, type ColisRepartition } from "@/lib/commandes/repartition";
+import { RepartitionDestinations } from "@/components/dashboard/RepartitionDestinations";
 import { compterAlertesDouane } from "@/lib/douane/etapesDepart";
 import { MontantsSensibles } from "@/components/dashboard/MontantsSensibles";
 import type { StatutCommande } from "@/types/database.types";
@@ -98,7 +100,7 @@ export default async function TableauDeBordPage({
   let query = supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, montant_total, created_at, clients(nom), projets(nom), produits(nom), paiements(montant_base)"
+      "id, numero, statut, poids_kg, montant_total, created_at, clients(nom), projets(nom), produits(nom), destination, nombre_paquets, client_id, contenu_verifie, paiements(montant_base)"
     )
     .order("created_at", { ascending: false });
 
@@ -189,6 +191,8 @@ export default async function TableauDeBordPage({
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 10);
+
+  const repartition = repartirParDestination(actives as unknown as ColisRepartition[]);
 
   const recentes = toutes.slice(0, 8);
 
@@ -332,6 +336,14 @@ export default async function TableauDeBordPage({
           },
         ]}
       />
+
+      <div className="mb-8">
+        <RepartitionDestinations
+          lignes={repartition.lignes}
+          total={repartition.total}
+          sousTitre="Selon le départ et la période choisis ci-dessus — pour décider de l'aéroport de dédouanement (Paris, Lyon ou Marseille)."
+        />
+      </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200/70 bg-white shadow-sm p-5">
