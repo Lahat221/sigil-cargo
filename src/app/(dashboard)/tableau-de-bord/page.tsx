@@ -8,6 +8,9 @@ import { resumePaiements } from "@/lib/paiements";
 import { PIPELINE } from "@/lib/commandes/statuts";
 import { repartirParDestination, type ColisRepartition } from "@/lib/commandes/repartition";
 import { RepartitionDestinations } from "@/components/dashboard/RepartitionDestinations";
+import { AnalyseActivite } from "@/components/dashboard/AnalyseActivite";
+import { analyserActivite, evolutionParDepart } from "@/lib/commandes/analyse";
+import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
 import { compterAlertesDouane } from "@/lib/douane/etapesDepart";
 import { MontantsSensibles } from "@/components/dashboard/MontantsSensibles";
 import type { StatutCommande } from "@/types/database.types";
@@ -88,7 +91,7 @@ export default async function TableauDeBordPage({
 
   const { data: projets } = await supabase
     .from("projets")
-    .select("id, nom")
+    .select("id, nom, date_depart, created_at, statut")
     .order("created_at", { ascending: false });
 
   const { debut, fin } = calculerPeriode(
@@ -193,6 +196,19 @@ export default async function TableauDeBordPage({
     .slice(0, 10);
 
   const repartition = repartirParDestination(actives as unknown as ColisRepartition[]);
+
+  // Analyse de l'activité : la sélection filtrée (période / départ), et
+  // l'évolution sur TOUS les départs pour voir la tendance.
+  const seuilPetitColis = reglesPrix(await chargerParametresSite(supabase)).seuilPetitColisKg;
+  const { data: toutesCommandes } = await supabase
+    .from("commandes")
+    .select("projet_id, poids_kg, montant_total, client_id")
+    .neq("statut", "annulee");
+  const analyse = analyserActivite(
+    actives as unknown as { poids_kg: number | null; montant_total: number; client_id: string | null }[],
+    seuilPetitColis
+  );
+  const departsEvolution = evolutionParDepart(toutesCommandes ?? [], projets ?? [], seuilPetitColis);
 
   const recentes = toutes.slice(0, 8);
 
@@ -342,6 +358,15 @@ export default async function TableauDeBordPage({
           lignes={repartition.lignes}
           total={repartition.total}
           sousTitre="Selon le départ et la période choisis ci-dessus — pour décider de l'aéroport de dédouanement (Paris, Lyon ou Marseille)."
+        />
+      </div>
+
+      <div className="mb-8">
+        <AnalyseActivite
+          resume={analyse.resume}
+          tranches={analyse.tranches}
+          departs={departsEvolution}
+          seuilKg={seuilPetitColis}
         />
       </div>
 
