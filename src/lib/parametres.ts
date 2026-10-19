@@ -78,9 +78,9 @@ export function defautsSite(): ParametresSite {
     chiffresKg: "",
     chiffresClients: "",
     chiffresDeparts: "",
-    // Valeurs de l'affiche de départ SIGIL CARGO : colis de moins de 10 kg
-    // à 10 €/kg, enveloppe au forfait de 15 €.
-    seuilPetitColisKg: "10",
+    // Valeurs de secours (utilisées tant que Paramètres → Tarifs n'a rien
+    // enregistré) : colis de moins de 8 kg à 10 €/kg, enveloppe à 15 €.
+    seuilPetitColisKg: "8",
     petitColisParKg: "10",
     forfaitEnveloppe: "15",
   };
