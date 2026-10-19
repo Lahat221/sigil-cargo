@@ -1,11 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { cleSonore } from "./phonetique";
 
 export type ReferentielMatch = {
   nom_local: string;
   type_produit: string;
   description_douane: string;
   hs_code: string | null;
+  synonymes?: string[];
 };
 
 function normalise(texte: string): string {
@@ -40,19 +42,29 @@ export async function rechercherReferentiel(
 
   const texteNormalise = normalise(rawDescription);
   const mots = new Set(texteNormalise.split(/[^a-z0-9]+/).filter(Boolean));
+  // Variantes d'écriture (wolof surtout) : même comparaison sur la clé sonore.
+  const texteSonore = cleSonore(rawDescription);
+  const motsSonores = new Set(texteSonore.split(/[^a-z0-9]+/).filter(Boolean));
 
   const matches: ReferentielMatch[] = [];
   for (const entree of data) {
-    const candidats = [entree.nom_normalise, ...entree.synonymes].map(normalise);
-    const trouve = candidats.some(
-      (c) => mots.has(c) || (c.length > 3 && texteNormalise.includes(c))
-    );
+    const bruts = [entree.nom_normalise, ...entree.synonymes];
+    const trouve = bruts.some((brut) => {
+      const c = normalise(brut);
+      const cs = cleSonore(brut);
+      return (
+        mots.has(c) ||
+        (c.length > 3 && texteNormalise.includes(c)) ||
+        (cs.length > 3 && (motsSonores.has(cs) || texteSonore.includes(cs)))
+      );
+    });
     if (trouve) {
       matches.push({
         nom_local: entree.nom_local,
         type_produit: entree.type_produit,
         description_douane: entree.description_douane,
         hs_code: entree.hs_code,
+        synonymes: entree.synonymes,
       });
     }
   }

@@ -17,6 +17,12 @@ export type EntreeReferentiel = {
   hs_code: string | null;
   synonymes: string[];
   actif: boolean;
+  // Mémoire des corrections (absent tant que la migration n'est pas passée).
+  source?: string;
+  nb_corrections?: number;
+  derniere_correction_at?: string | null;
+  ancien_hs_code?: string | null;
+  ancienne_description_douane?: string | null;
 };
 
 type FormValues = {
@@ -85,6 +91,17 @@ export function ReferentielTable({ entrees }: { entrees: EntreeReferentiel[] }) 
   const [editionValues, setEditionValues] = useState<FormValues>(FORM_VIDE);
   const [isPending, startTransition] = useTransition();
   const [erreur, setErreur] = useState<string | null>(null);
+  const [seulementAppris, setSeulementAppris] = useState(false);
+  const nbAppris = entrees.filter((e) => e.source === "correction").length;
+  // Même nom saisi plusieurs fois (ex. deux sens différents) : l'IA reçoit alors
+  // des consignes contradictoires, mieux vaut les voir pour n'en garder qu'une.
+  const occurrences = new Map<string, number>();
+  for (const e of entrees) {
+    const cle = e.nom_local.trim().toLowerCase();
+    occurrences.set(cle, (occurrences.get(cle) ?? 0) + 1);
+  }
+  const estDoublon = (e: EntreeReferentiel) => (occurrences.get(e.nom_local.trim().toLowerCase()) ?? 0) > 1;
+  const entreesAffichees = seulementAppris ? entrees.filter((e) => e.source === "correction") : entrees;
 
   function ouvrirEdition(e: EntreeReferentiel) {
     setEditionId(e.id);
@@ -135,9 +152,25 @@ export function ReferentielTable({ entrees }: { entrees: EntreeReferentiel[] }) 
   return (
     <div className="rounded-xl border border-slate-200/70 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <p className="text-sm font-medium text-slate-700">
-          Référentiel produits ({entrees.length})
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm font-medium text-slate-700">
+            Référentiel produits ({entrees.length})
+          </p>
+          {nbAppris > 0 && (
+            <button
+              type="button"
+              onClick={() => setSeulementAppris((v) => !v)}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                seulementAppris
+                  ? "bg-emerald-600 text-white ring-emerald-600"
+                  : "bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100"
+              }`}
+              title="Entrées créées ou corrigées automatiquement à partir de vos corrections"
+            >
+              {nbAppris} appris de vos corrections
+            </button>
+          )}
+        </div>
         {!nouveau && (
           <button
             type="button"
@@ -175,7 +208,7 @@ export function ReferentielTable({ entrees }: { entrees: EntreeReferentiel[] }) 
       )}
 
       <div className="divide-y divide-slate-100">
-        {entrees.map((e) =>
+        {entreesAffichees.map((e) =>
           editionId === e.id ? (
             <div key={e.id} className="bg-slate-50 px-4 py-3">
               <ChampsFormulaire values={editionValues} onChange={setEditionValues} />
@@ -208,12 +241,40 @@ export function ReferentielTable({ entrees }: { entrees: EntreeReferentiel[] }) 
               <div>
                 <p className="font-medium text-slate-800">
                   {e.nom_local} <span className="text-slate-400">— {e.type_produit}</span>
+                  {estDoublon(e) && (
+                    <span
+                      className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-300"
+                      title="Plusieurs entrées portent ce nom : désactivez ou supprimez celles qui ne sont plus bonnes"
+                    >
+                      doublon
+                    </span>
+                  )}
+                  {e.source === "correction" && (
+                    <span
+                      className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200"
+                      title="Créé ou mis à jour automatiquement à partir d'une correction"
+                    >
+                      appris · {e.nb_corrections ?? 1} correction{(e.nb_corrections ?? 1) > 1 ? "s" : ""}
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-slate-500">{e.description_douane}</p>
                 <p className="text-xs text-slate-400">
                   {e.hs_code ? `HS ${e.hs_code}` : "HS à préciser"}
                   {e.synonymes.length > 0 && ` · synonymes : ${e.synonymes.join(", ")}`}
                 </p>
+                {e.source === "correction" && (e.ancien_hs_code || e.ancienne_description_douane) && (
+                  <p className="text-xs text-emerald-700">
+                    {e.ancien_hs_code && (
+                      <>
+                        L&apos;IA proposait <span className="font-mono">{e.ancien_hs_code}</span> → corrigé en{" "}
+                        <span className="font-mono">{e.hs_code ?? "—"}</span>
+                      </>
+                    )}
+                    {e.derniere_correction_at &&
+                      ` · le ${new Date(e.derniere_correction_at).toLocaleDateString("fr-FR")}`}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <button

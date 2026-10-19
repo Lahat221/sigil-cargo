@@ -2,7 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { mettreAJourProduit, relancerHsCode } from "@/app/(dashboard)/gestion-douaniere/actions";
+import {
+  appliquerCorrectionAuxSimilaires,
+  mettreAJourProduit,
+  relancerHsCode,
+  type ResultatMiseAJourProduit,
+} from "@/app/(dashboard)/gestion-douaniere/actions";
 import { IconPencil, IconRefresh } from "@/components/ui/Icons";
 
 export type ProduitLigne = {
@@ -37,7 +42,7 @@ function LigneEdition({
 }: {
   produit: ProduitLigne;
   onAnnuler: () => void;
-  onEnregistre: () => void;
+  onEnregistre: (resultat: Extract<ResultatMiseAJourProduit, { success: true }>) => void;
 }) {
   const [champs, setChamps] = useState({
     type_produit: produit.type_produit,
@@ -65,7 +70,7 @@ function LigneEdition({
         setErreur(resultat.error);
         return;
       }
-      onEnregistre();
+      onEnregistre(resultat);
     });
   }
 
@@ -165,9 +170,29 @@ function BoutonRelancer({ produit, onFait }: { produit: ProduitLigne; onFait: ()
   );
 }
 
+type Apprentissage = { produitId: string; nom: string; hsCode: string | null; appris: "cree" | "maj"; similaires: number };
+
 export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
   const router = useRouter();
   const [editionId, setEditionId] = useState<string | null>(null);
+  const [apprentissage, setApprentissage] = useState<Apprentissage | null>(null);
+  const [similairesCorriges, setSimilairesCorriges] = useState<number | null>(null);
+  const [similairesPending, startSimilaires] = useTransition();
+  const [similairesErreur, setSimilairesErreur] = useState<string | null>(null);
+
+  function corrigerSimilaires() {
+    if (!apprentissage) return;
+    setSimilairesErreur(null);
+    startSimilaires(async () => {
+      const r = await appliquerCorrectionAuxSimilaires(apprentissage.produitId);
+      if ("error" in r) {
+        setSimilairesErreur(r.error);
+        return;
+      }
+      setSimilairesCorriges(r.nbCorriges);
+      router.refresh();
+    });
+  }
 
   if (produits.length === 0) {
     return <p className="py-6 text-center text-sm text-slate-400">Aucun produit détecté.</p>;
@@ -175,6 +200,40 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
 
   return (
     <div className="overflow-x-auto">
+      {apprentissage && (
+        <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          <p>
+            <span className="font-semibold">✓ Le référentiel a appris</span> : « {apprentissage.nom} »
+            {apprentissage.hsCode && (
+              <>
+                {" "}
+                → <span className="font-mono text-xs">{apprentissage.hsCode}</span>
+              </>
+            )}{" "}
+            ({apprentissage.appris === "cree" ? "nouvelle entrée" : "entrée mise à jour"}). Les prochains colis
+            contenant ce produit seront classés ainsi.
+          </p>
+          {apprentissage.similaires > 0 && similairesCorriges === null && (
+            <p className="mt-1">
+              {apprentissage.similaires} autre{apprentissage.similaires > 1 ? "s" : ""} ligne
+              {apprentissage.similaires > 1 ? "s" : ""} « {apprentissage.nom} » ont un autre code (colis pas encore
+              validés).{" "}
+              <button
+                type="button"
+                onClick={corrigerSimilaires}
+                disabled={similairesPending}
+                className="font-semibold underline hover:no-underline disabled:opacity-50"
+              >
+                {similairesPending ? "Correction..." : "Les corriger aussi"}
+              </button>
+            </p>
+          )}
+          {similairesCorriges !== null && (
+            <p className="mt-1">{similairesCorriges} autre(s) ligne(s) corrigée(s).</p>
+          )}
+          {similairesErreur && <p className="mt-1 text-red-700">{similairesErreur}</p>}
+        </div>
+      )}
       <table className="w-full text-left text-sm">
         <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
           <tr>
@@ -194,8 +253,21 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
                 key={p.id}
                 produit={p}
                 onAnnuler={() => setEditionId(null)}
-                onEnregistre={() => {
+                onEnregistre={(resultat) => {
                   setEditionId(null);
+                  setSimilairesCorriges(null);
+                  setSimilairesErreur(null);
+                  setApprentissage(
+                    resultat.appris
+                      ? {
+                          produitId: p.id,
+                          nom: resultat.nom ?? p.description_produit,
+                          hsCode: resultat.hsCode ?? null,
+                          appris: resultat.appris,
+                          similaires: resultat.similaires ?? 0,
+                        }
+                      : null
+                  );
                   router.refresh();
                 }}
               />

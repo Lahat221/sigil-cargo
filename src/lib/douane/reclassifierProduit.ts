@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { getOpenAIClient, douaneModel, douaneReasoning } from "./openai";
 import { rechercherReferentiel } from "./referentiel";
+import { glossaireWolof } from "./glossaire";
 
 const HS_CODE_REGEX = /^\d{4}\.\d{2}\.\d{2}\.\d{2}$/;
 
@@ -90,6 +91,8 @@ export async function reclassifierProduit(
         content: `Tu es l'assistant de classification douanière d'une société de transport de colis entre le
 Sénégal et la France. On te donne le nom LOCAL d'un seul produit (corrigé à la main par un agent) et tu dois
 le classer pour préparer une déclaration douanière — une seule ligne, pas une liste.
+
+${glossaireWolof()}
 
 RÈGLES :
 1. Corrige silencieusement les fautes d'orthographe et graphies phonétiques courantes (produits sénégalais :

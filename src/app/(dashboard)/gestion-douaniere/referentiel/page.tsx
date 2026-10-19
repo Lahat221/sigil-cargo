@@ -9,7 +9,9 @@ export default async function ReferentielPage() {
 
   const { data } = await supabase
     .from("douane_produits_referentiel")
-    .select("id, nom_local, type_produit, description_douane, hs_code, synonymes, actif")
+    .select(
+      "id, nom_local, type_produit, description_douane, hs_code, synonymes, actif, source, nb_corrections, derniere_correction_at, ancien_hs_code, ancienne_description_douane"
+    )
     .order("nom_local")
     .returns<EntreeReferentiel[]>();
 

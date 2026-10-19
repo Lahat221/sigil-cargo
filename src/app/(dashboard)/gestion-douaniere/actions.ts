@@ -6,6 +6,7 @@ import { traiterColis } from "@/lib/douane/extraction";
 import { reclassifierProduit } from "@/lib/douane/reclassifierProduit";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { genererDeclarationBuffer } from "@/lib/douane/declarationXlsx";
+import { apprendreDeCorrection, trouverLignesSimilaires } from "@/lib/douane/apprentissage";
 import type { HsCodeSource, HsStatus } from "@/types/database.types";
 
 type ColisMinimal = {
@@ -294,10 +295,22 @@ type ChampsProduit = {
   unite?: string;
 };
 
+export type ResultatMiseAJourProduit =
+  | { error: string }
+  | {
+      success: true;
+      /** Le référentiel a appris de cette correction (entrée créée ou mise à jour). */
+      appris?: "cree" | "maj";
+      nom?: string;
+      hsCode?: string | null;
+      /** Autres lignes au même nom et au code différent, pas encore validées. */
+      similaires?: number;
+    };
+
 export async function mettreAJourProduit(
   produitId: string,
   champs: ChampsProduit
-): Promise<{ error: string } | { success: true }> {
+): Promise<ResultatMiseAJourProduit> {
   const supabase = createClient();
   const {
     data: { user },
@@ -337,8 +350,108 @@ export async function mettreAJourProduit(
     await supabase.from("douane_historique").insert(historiqueEntries);
   }
 
+  // Le référentiel apprend de la correction (jamais bloquant pour l'enregistrement).
+  let appris: "cree" | "maj" | null = null;
+  let similaires = 0;
+  try {
+    const apres = {
+      type_produit: champs.type_produit ?? avant.type_produit,
+      description_douane: champs.description_douane ?? avant.description_douane,
+      hs_code: champs.hs_code !== undefined ? champs.hs_code : avant.hs_code,
+      description_produit: champs.description_produit ?? avant.description_produit,
+    };
+    appris = await apprendreDeCorrection(supabase, {
+      avant: {
+        type_produit: avant.type_produit,
+        description_douane: avant.description_douane,
+        hs_code: avant.hs_code,
+        description_produit: avant.description_produit,
+      },
+      apres,
+    });
+    if (appris && apres.hs_code) {
+      similaires = (
+        await trouverLignesSimilaires(supabase, {
+          produitId,
+          nom: apres.description_produit,
+          hsCode: apres.hs_code,
+        })
+      ).length;
+    }
+    if (appris) revalidatePath("/gestion-douaniere/referentiel");
+  } catch {
+    // Colonnes d'apprentissage absentes (migration pas passée) : on n'apprend simplement pas.
+  }
+
   revalidatePath("/gestion-douaniere");
-  return { success: true };
+  return {
+    success: true,
+    ...(appris
+      ? {
+          appris,
+          nom: champs.description_produit ?? avant.description_produit,
+          hsCode: champs.hs_code !== undefined ? champs.hs_code : avant.hs_code,
+          similaires,
+        }
+      : {}),
+  };
+}
+
+/**
+ * Applique la correction d'un produit à toutes les AUTRES lignes de même nom
+ * (colis pas encore validés, jamais corrigés à la main) : même erreur, même
+ * correction, en un clic. Chaque ligne modifiée est tracée dans l'historique.
+ */
+export async function appliquerCorrectionAuxSimilaires(
+  produitId: string
+): Promise<{ error: string } | { success: true; nbCorriges: number }> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: source } = await supabase
+    .from("douane_produits")
+    .select("type_produit, description_douane, hs_code, description_produit")
+    .eq("id", produitId)
+    .maybeSingle();
+  if (!source?.hs_code) return { error: "Produit introuvable ou sans code HS." };
+
+  const lignes = await trouverLignesSimilaires(supabase, {
+    produitId,
+    nom: source.description_produit,
+    hsCode: source.hs_code,
+  });
+  if (lignes.length === 0) return { success: true, nbCorriges: 0 };
+
+  const { error } = await supabase
+    .from("douane_produits")
+    .update({
+      type_produit: source.type_produit,
+      description_douane: source.description_douane,
+      hs_code: source.hs_code,
+      hs_status: "propose",
+      hs_code_source: "referentiel",
+    })
+    .in(
+      "id",
+      lignes.map((l) => l.id)
+    );
+  if (error) return { error: error.message };
+
+  await supabase.from("douane_historique").insert(
+    lignes.map((l) => ({
+      produit_id: l.id,
+      extraction_id: l.extraction_id,
+      champ: "hs_code",
+      ancienne_valeur: l.hs_code,
+      nouvelle_valeur: source.hs_code,
+      modifie_par: user?.id ?? null,
+    }))
+  );
+
+  revalidatePath("/gestion-douaniere");
+  return { success: true, nbCorriges: lignes.length };
 }
 
 function normaliserNomReferentiel(nom: string): string {

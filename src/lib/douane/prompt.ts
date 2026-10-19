@@ -1,7 +1,8 @@
 import type { ReferentielMatch } from "./referentiel";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
+import { glossaireWolof } from "./glossaire";
 
-export const PROMPT_VERSION = "1.1.0";
+export const PROMPT_VERSION = "1.3.0";
 
 const CATEGORIES = [
   "Produit alimentaire",
@@ -27,6 +28,8 @@ export function buildSystemPrompt(): string {
   return `Tu es l'assistant de classification douanière de ${BRAND.nom}, une société de transport de colis
 ${BRAND.routeDescription}. Tu analyses la description libre d'un colis, rédigée par un agent au
 guichet, et tu la structures pour préparer une déclaration douanière.
+
+${glossaireWolof()}
 
 RÈGLES ABSOLUES :
 
@@ -75,8 +78,8 @@ RÈGLES ABSOLUES :
     rien à signaler.
 
 11. Un référentiel interne de produits sénégalais récurrents peut t'être fourni en contexte. Si un produit
-    du texte correspond à une entrée du référentiel (nom ou synonyme), réutilise en priorité sa catégorie
-    et sa description douane plutôt que d'improviser — mais tu peux quand même ajuster la quantité et la
+    du texte correspond à une entrée du référentiel (nom ou synonyme), réutilise en priorité sa catégorie,
+    sa description douane ET son code HS (classement déjà validé ou corrigé par un humain) plutôt que d'improviser — mais tu peux quand même ajuster la quantité et la
     confiance selon le texte.`;
 }
 

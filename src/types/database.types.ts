@@ -751,6 +751,13 @@ export interface Database {
           hs_code: string | null;
           synonymes: string[];
           actif: boolean;
+          // Mémoire des corrections : d'où vient l'entrée (manuel | correction | relance)
+          // et ce que l'IA proposait avant qu'un agent ne corrige.
+          source: string;
+          nb_corrections: number;
+          derniere_correction_at: string | null;
+          ancien_hs_code: string | null;
+          ancienne_description_douane: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -763,6 +770,11 @@ export interface Database {
           hs_code?: string | null;
           synonymes?: string[];
           actif?: boolean;
+          source?: string;
+          nb_corrections?: number;
+          derniere_correction_at?: string | null;
+          ancien_hs_code?: string | null;
+          ancienne_description_douane?: string | null;
           created_at?: string;
           updated_at?: string;
         };

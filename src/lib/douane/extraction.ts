@@ -5,6 +5,7 @@ import { getOpenAIClient, douaneModel, douaneReasoning } from "./openai";
 import { buildSystemPrompt, buildUserPrompt, PROMPT_VERSION } from "./prompt";
 import { ExtractionDouaneSchema, type ProduitExtrait } from "./schema";
 import { rechercherReferentiel } from "./referentiel";
+import { appliquerReferentielAuxProduits } from "./apprentissage";
 import { produitDoitEtreVerifie, statutExtractionPour } from "./confiance";
 import { estimerCoutUsd } from "./cout";
 
@@ -160,11 +161,29 @@ export async function traiterColis(
     });
 
     const dureeMs = Date.now() - debut;
-    const resultat = response.output_parsed;
+    const resultatIA = response.output_parsed;
 
-    if (!resultat) {
+    if (!resultatIA) {
       throw new Error("Réponse IA vide ou hors-schéma.");
     }
+
+    // Ce que vous avez corrigé auparavant (référentiel) prime sur l'avis de
+    // l'IA : un produit connu garde son classement validé.
+    const { produits: produitsRef, corriges } = appliquerReferentielAuxProduits(
+      resultatIA.produits,
+      referentielMatches
+    );
+    const resultat = {
+      ...resultatIA,
+      produits: produitsRef,
+      anomalies:
+        corriges.length > 0
+          ? [
+              ...resultatIA.anomalies,
+              `${corriges.length} produit(s) reclassé(s) d'après le référentiel (vos corrections précédentes).`,
+            ]
+          : resultatIA.anomalies,
+    };
 
     const { data: extraction, error: upsertError } = await supabase
       .from("douane_extractions")
