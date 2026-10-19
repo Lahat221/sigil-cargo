@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FiltresBar } from "@/components/commandes/FiltresBar";
 import { chargerDestinations } from "@/lib/commandes/destinations";
+import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
+import { verifierPrixColis } from "@/lib/commandes/verifPrix";
 import { CommandesListe } from "@/components/commandes/CommandesListe";
 import { Pagination } from "@/components/commandes/Pagination";
 import { ExportCommandesButton } from "@/components/commandes/ExportCommandesButton";
@@ -44,7 +46,7 @@ export default async function CommandesPage({
 
   const page = Math.max(1, Number(searchParams.page) || 1);
   const SELECT_COLONNES =
-    "id, numero, statut, poids_kg, montant_total, destination, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), paiements(montant_base)";
+    "id, numero, statut, poids_kg, montant_total, destination, prix_par_kg, mode_fret, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), paiements(montant_base)";
 
   const q = searchParams.q?.trim();
   let clientIds: string[] = [];
@@ -116,6 +118,16 @@ export default async function CommandesPage({
   }
   commandesExport = exportResultat.data ?? [];
 
+  // Contrôle du prix au kilo (destination + règle « petit colis ») sur chaque colis.
+  const regles = reglesPrix(await chargerParametresSite(supabase));
+  const avecVerif = (c: CommandeListItem): CommandeListItem => ({
+    ...c,
+    verif_prix: verifierPrixColis(c, destinations, regles),
+  });
+  commandes = commandes.map(avecVerif);
+  commandesExport = commandesExport.map(avecVerif);
+  const prixAVerifier = commandesExport.filter((c) => c.verif_prix?.ecart);
+
   const totalPages = Math.max(1, Math.ceil(total / PAR_PAGE));
 
   return (
@@ -142,6 +154,32 @@ export default async function CommandesPage({
           </Link>
         </div>
       </div>
+
+      {prixAVerifier.length > 0 && (
+        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">
+            ⚠ {prixAVerifier.length} colis {prixAVerifier.length > 1 ? "ont" : "a"} un prix au kilo différent du
+            tarif attendu
+          </p>
+          <p className="mb-2 text-xs">
+            Tarif de la destination, ou tarif petit colis sous le seuil de poids. Un prix négocié apparaît aussi ici :
+            vérifiez chaque colis.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {prixAVerifier.slice(0, 30).map((c) => (
+              <Link
+                key={c.id}
+                href={`/commandes/${c.id}/modifier`}
+                className="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
+                title={`${c.verif_prix?.prixParKg} €/kg appliqué — ${c.verif_prix?.raison}`}
+              >
+                #{c.numero}
+              </Link>
+            ))}
+            {prixAVerifier.length > 30 && <span className="text-xs">+ {prixAVerifier.length - 30} autres</span>}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
         <FiltresBar projets={projets ?? []} destinations={destinations} />

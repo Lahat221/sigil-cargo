@@ -26,6 +26,9 @@ export function ExportCommandesButton({
       "projet",
       "statut",
       "poids_kg",
+      "prix_par_kg",
+      "prix_attendu_par_kg",
+      "alerte_prix",
       "montant_total_eur",
       "description_contenu",
     ];
@@ -41,6 +44,9 @@ export function ExportCommandesButton({
         c.projets?.nom ?? "",
         STATUT_LABELS[c.statut],
         c.poids_kg !== null ? c.poids_kg.toString() : "",
+        c.prix_par_kg != null ? c.prix_par_kg.toString() : "",
+        c.verif_prix?.attendu != null ? c.verif_prix.attendu.toString() : "",
+        c.verif_prix?.ecart ? "A VERIFIER" : "",
         c.montant_total.toString(),
         c.description ?? "",
       ]

@@ -1,4 +1,5 @@
 import type { StatutCommande } from "@/types/database.types";
+import type { VerifPrix } from "@/lib/commandes/verifPrix";
 
 export type CommandeListItem = {
   id: string;
@@ -23,6 +24,10 @@ export type CommandeListItem = {
   // Suivi : colis vérifié à Dakar et dates de passage à chaque étape.
   contenu_verifie?: boolean;
   nombre_paquets?: number | null;
+  // Prix au kilo appliqué et contrôle par rapport au tarif attendu.
+  prix_par_kg?: number | null;
+  mode_fret?: "aerien" | "conteneur" | null;
+  verif_prix?: VerifPrix;
   client_id?: string | null;
   commandes_historique?: { nouveau_statut: StatutCommande; created_at: string }[] | null;
 };

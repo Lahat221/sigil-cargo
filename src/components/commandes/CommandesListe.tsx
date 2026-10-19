@@ -44,6 +44,34 @@ function texteRetrait(c: CommandeListItem): string {
   });
 }
 
+// Prix au kilo appliqué au colis + alerte s'il diffère du tarif attendu
+// (tarif de la destination, ou « petit colis » sous le seuil de poids).
+function PrixParKg({ c }: { c: CommandeListItem }) {
+  const v = c.verif_prix;
+  const prix = v?.prixParKg ?? c.prix_par_kg ?? null;
+  if (c.mode_fret === "conteneur" || prix === null) return <span className="text-slate-400">—</span>;
+  return (
+    <span className="inline-flex flex-col items-start">
+      <span className={`whitespace-nowrap font-medium ${v?.ecart ? "text-amber-700" : "text-slate-800"}`}>
+        {montantFormatter.format(prix)}/kg
+      </span>
+      {v?.ecart && v.attendu !== null && (
+        <span
+          className="mt-0.5 inline-block whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-300"
+          title={`Prix appliqué ${montantFormatter.format(prix)}/kg — attendu : ${v.raison}`}
+        >
+          ⚠ attendu {montantFormatter.format(v.attendu)}
+        </span>
+      )}
+      {!v?.ecart && v?.petitColis && (
+        <span className="mt-0.5 text-[10px] text-slate-400" title={v.raison ?? undefined}>
+          petit colis
+        </span>
+      )}
+    </span>
+  );
+}
+
 // Pastille « Payé / Acompte / Non payé » + reste dû, sous le montant.
 function BadgePaiement({ c }: { c: CommandeListItem }) {
   const r = resumePaiements(c.montant_total, c.paiements);
@@ -202,6 +230,7 @@ export function CommandesListe({
                 <th className="px-4 py-3 font-medium">Destination</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3 font-medium">Poids</th>
+                <th className="px-4 py-3 font-medium">Prix/kg</th>
                 <th className="px-4 py-3 font-medium">Montant</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
@@ -239,6 +268,9 @@ export function CommandesListe({
                   </td>
                   <td className="px-4 py-3 text-slate-700">
                     {formatPoids(c.poids_kg)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <PrixParKg c={c} />
                   </td>
                   <td className="px-4 py-3 font-medium text-slate-900">
                     {montantFormatter.format(c.montant_total)}
@@ -332,6 +364,9 @@ export function CommandesListe({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-600">
                     {formatPoids(c.poids_kg)}
+                    <span className="ml-2">
+                      <PrixParKg c={c} />
+                    </span>
                   </span>
                   <span className="text-right font-medium text-slate-900">
                     {montantFormatter.format(c.montant_total)}
