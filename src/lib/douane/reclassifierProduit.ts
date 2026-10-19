@@ -2,7 +2,7 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
-import { getOpenAIClient, douaneModel } from "./openai";
+import { getOpenAIClient, douaneModel, douaneReasoning } from "./openai";
 import { rechercherReferentiel } from "./referentiel";
 
 const HS_CODE_REGEX = /^\d{4}\.\d{2}\.\d{2}\.\d{2}$/;
@@ -83,6 +83,7 @@ export async function reclassifierProduit(
   const client = getOpenAIClient();
   const response = await client.responses.parse({
     model: douaneModel(),
+    ...douaneReasoning(),
     input: [
       {
         role: "system",

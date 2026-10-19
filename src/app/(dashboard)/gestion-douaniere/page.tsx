@@ -15,6 +15,8 @@ import { IconBell } from "@/components/ui/Icons";
 import type { StatutExtractionDouane } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
+// L'analyse IA des colis (traiterLot) s'exécute depuis cette page : ~11 s par colis avec gpt-5.4.
+export const maxDuration = 300;
 
 type ColisRow = {
   id: string;

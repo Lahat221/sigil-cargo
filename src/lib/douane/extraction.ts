@@ -1,7 +1,7 @@
 import { zodTextFormat } from "openai/helpers/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
-import { getOpenAIClient, douaneModel } from "./openai";
+import { getOpenAIClient, douaneModel, douaneReasoning } from "./openai";
 import { buildSystemPrompt, buildUserPrompt, PROMPT_VERSION } from "./prompt";
 import { ExtractionDouaneSchema, type ProduitExtrait } from "./schema";
 import { rechercherReferentiel } from "./referentiel";
@@ -144,6 +144,7 @@ export async function traiterColis(
     const client = getOpenAIClient();
     const response = await client.responses.parse({
       model: douaneModel(),
+      ...douaneReasoning(),
       input: [
         { role: "system", content: buildSystemPrompt() },
         {
