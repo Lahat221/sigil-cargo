@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { IconCalculator, IconTruck, IconWhatsApp } from "@/components/ui/Icons";
 import type { ReglesPrix } from "@/lib/parametres";
 
-export type DestinationPrix = { nom: string; tarif: number | null };
+export type DestinationPrix = {
+  nom: string;
+  /** Tarif « autres produits » (€/kg). */
+  tarif: number | null;
+  /** Tarif spécial produits alimentaires (€/kg), s'il existe. */
+  tarifAlimentaire?: number | null;
+};
 
 type Onglet = "estimer" | "suivi";
 
@@ -27,6 +33,8 @@ export function HeroCard({
 
   const [destination, setDestination] = useState(destinations[0]?.nom ?? "");
   const [type, setType] = useState<"colis" | "enveloppe">("colis");
+  const [alimentaire, setAlimentaire] = useState(false);
+  const tarifAlimentaireDispo = destinations.some((d) => d.tarifAlimentaire != null);
   const [poids, setPoids] = useState("");
 
   // Les liens de la page (#suivi, #estimer) ouvrent le bon onglet.
@@ -54,21 +62,24 @@ export function HeroCard({
     const kg = parseFloat(poids.replace(",", "."));
     if (Number.isNaN(kg) || kg <= 0) return null;
     const petit = kg < regles.seuilPetitColisKg;
-    const tarif = petit ? regles.petitColisParKg : dest.tarif;
+    const tarifAlim = alimentaire && dest.tarifAlimentaire != null ? dest.tarifAlimentaire : null;
+    const tarif = petit ? regles.petitColisParKg : tarifAlim ?? dest.tarif;
     if (tarif === null) return { total: null, detail: "Tarif sur demande pour cette destination" };
     return {
       total: kg * tarif,
       detail: `${kg.toLocaleString("fr-FR")} kg × ${format.format(tarif)}/kg${
-        petit ? " (tarif petit colis)" : ""
+        petit ? " (tarif petit colis)" : !petit && tarifAlim !== null ? " (produits alimentaires)" : ""
       }`,
     };
-  }, [destinations, destination, type, poids, regles, format]);
+  }, [destinations, destination, type, poids, regles, format, alimentaire]);
 
   const lienWhatsapp =
     whatsapp && resultat
       ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(
           `Bonjour, je souhaite envoyer ${
-            type === "enveloppe" ? "une enveloppe" : `${poids} kg`
+            type === "enveloppe"
+              ? "une enveloppe"
+              : `${poids} kg${alimentaire && tarifAlimentaireDispo ? " de produits alimentaires" : ""}`
           } vers ${destination}${
             resultat.total !== null ? ` (estimation ${format.format(resultat.total)})` : ""
           }.`
@@ -131,7 +142,10 @@ export function HeroCard({
                 {destinations.map((d) => (
                   <option key={d.nom} value={d.nom}>
                     {d.nom}
-                    {d.tarif !== null && ` — ${format.format(d.tarif)}/kg`}
+                    {d.tarif !== null &&
+                      (d.tarifAlimentaire != null
+                        ? ` — ${format.format(d.tarifAlimentaire)} alim. / ${format.format(d.tarif)}/kg`
+                        : ` — ${format.format(d.tarif)}/kg`)}
                   </option>
                 ))}
               </select>
@@ -156,6 +170,28 @@ export function HeroCard({
                 </button>
               ))}
             </div>
+
+            {type === "colis" && tarifAlimentaireDispo && (
+              <div className="grid grid-cols-2 gap-1 rounded-lg bg-black/20 p-1 text-sm">
+                {(
+                  [
+                    [false, "Autres produits"],
+                    [true, "Produits alimentaires"],
+                  ] as const
+                ).map(([valeur, label]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setAlimentaire(valeur)}
+                    className={`rounded-md px-3 py-2 font-medium transition-colors ${
+                      alimentaire === valeur ? "bg-white/15 text-white" : "text-white/55 hover:text-white"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {type === "colis" && (
               <div>

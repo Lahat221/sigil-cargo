@@ -49,6 +49,11 @@ export const OUTILS: Anthropic.Tool[] = [
       properties: {
         destination: { type: "string", description: "Ville de destination (ex. Lyon)." },
         type: { type: "string", enum: ["colis", "enveloppe"] },
+        alimentaire: {
+          type: "boolean",
+          description:
+            "true si le colis ne contient que des produits alimentaires (tarif spécial par destination). Demande au client en cas de doute.",
+        },
         poids_kg: { type: "number", description: "Poids en kg (inutile pour une enveloppe)." },
       },
       required: ["destination", "type"],
@@ -215,12 +220,20 @@ async function estimer(entree: Record<string, unknown>, ctx: ContexteOutils) {
   const regles = reglesPrix(await chargerParametresSite(ctx.supabase));
   const type = entree.type === "enveloppe" ? "enveloppe" : "colis";
   const poids = typeof entree.poids_kg === "number" ? entree.poids_kg : null;
-  const r = estimerPrix({ nom: dest.nom, tarif: dest.tarif_par_kg }, type, poids, regles);
+  const alimentaire = entree.alimentaire === true;
+  const r = estimerPrix(
+    { nom: dest.nom, tarif: dest.tarif_par_kg, tarifAlimentaire: dest.tarif_alimentaire_par_kg },
+    type,
+    poids,
+    regles,
+    alimentaire
+  );
   if (!r) return { erreur: "Poids manquant ou invalide : demande le poids au client." };
   return {
     destination: dest.nom,
     total_euros: r.total === null ? null : Math.round(r.total * 100) / 100,
     tarif_par_kg: r.tarifParKg,
+    tarif_alimentaire_applique: r.alimentaire,
     petit_colis: r.petitColis,
     enveloppe: r.enveloppe,
     note: "Estimation indicative : le montant définitif est confirmé au dépôt.",
@@ -246,7 +259,11 @@ async function prochainsDeparts(ctx: ContexteOutils) {
       depart: p.date_depart ? jourFormat.format(new Date(p.date_depart)) : "date à venir",
       arrivee: p.date_arrivee ? jourFormat.format(new Date(p.date_arrivee)) : null,
     })),
-    destinations: destinations.map((d) => ({ nom: d.nom, tarif_par_kg: d.tarif_par_kg })),
+    destinations: destinations.map((d) => ({
+      nom: d.nom,
+      tarif_autres_produits_par_kg: d.tarif_par_kg,
+      tarif_produits_alimentaires_par_kg: d.tarif_alimentaire_par_kg,
+    })),
   };
 }
 

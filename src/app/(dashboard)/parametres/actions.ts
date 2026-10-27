@@ -151,6 +151,8 @@ export async function sauvegarderDestination(input: {
   id?: string;
   nom: string;
   tarif: number | null;
+  /** undefined : tenant sans tarif alimentaire (la colonne n'est pas touchée). */
+  tarifAlimentaire?: number | null;
   ordre: number;
   actif: boolean;
 }): Promise<Resultat> {
@@ -159,11 +161,18 @@ export async function sauvegarderDestination(input: {
   if (input.tarif !== null && (Number.isNaN(input.tarif) || input.tarif < 0)) {
     return { error: "Tarif par kg invalide." };
   }
+  if (
+    input.tarifAlimentaire != null &&
+    (Number.isNaN(input.tarifAlimentaire) || input.tarifAlimentaire < 0)
+  ) {
+    return { error: "Tarif alimentaire par kg invalide." };
+  }
 
   const admin = createAdminClient();
   const valeurs = {
     nom: input.nom.trim(),
     tarif_par_kg: input.tarif,
+    ...(input.tarifAlimentaire !== undefined ? { tarif_alimentaire_par_kg: input.tarifAlimentaire } : {}),
     ordre: input.ordre,
     actif: input.actif,
   };
@@ -222,6 +231,8 @@ export async function sauvegarderParametresSite(
       { cle: CLES_SITE.whatsapp, valeur: valeurs.whatsapp.trim() },
       { cle: CLES_SITE.adresse, valeur: valeurs.adresse.trim() },
       { cle: CLES_SITE.adresseDakar, valeur: valeurs.adresseDakar.trim() },
+      { cle: CLES_SITE.horairesDepot, valeur: valeurs.horairesDepot.trim() },
+      { cle: CLES_SITE.pointsRetrait, valeur: valeurs.pointsRetrait.trim() },
       { cle: CLES_SITE.horaires, valeur: valeurs.horaires.trim() },
       { cle: CLES_SITE.email, valeur: valeurs.email.trim() },
       { cle: CLES_SITE.siteWeb, valeur: valeurs.siteWeb.trim() },

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NouvelleCommandeForm } from "@/components/commandes/NouvelleCommandeForm";
 import { chargerDestinations } from "@/lib/commandes/destinations";
+import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,8 @@ export default async function NouvelleCommandePage() {
       .order("created_at", { ascending: false }),
     chargerDestinations(supabase),
   ]);
+
+  const regles = reglesPrix(await chargerParametresSite(supabase));
 
   return (
     <div>
@@ -47,6 +50,7 @@ export default async function NouvelleCommandePage() {
         produits={produits ?? []}
         projets={projets ?? []}
         destinations={destinations}
+        regles={regles}
       />
     </div>
   );

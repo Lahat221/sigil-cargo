@@ -4,8 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   DestinationsEditeur,
   ProduitsEditeur,
+  type DestinationLigne,
 } from "@/components/parametres/TarifsEditeurs";
 import { CARTE } from "@/components/parametres/styles";
+import { TARIF_ALIMENTAIRE_ACTIF } from "@/lib/commandes/tarifAlimentaire";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,11 @@ export default async function TarifsPage() {
   const [{ data: destinations }, { data: produits }] = await Promise.all([
     supabase
       .from("destinations")
-      .select("id, nom, tarif_par_kg, ordre, actif")
+      .select(
+        TARIF_ALIMENTAIRE_ACTIF
+          ? "id, nom, tarif_par_kg, tarif_alimentaire_par_kg, ordre, actif"
+          : "id, nom, tarif_par_kg, ordre, actif"
+      )
       .order("ordre", { ascending: true })
       .order("nom", { ascending: true }),
     supabase
@@ -32,10 +38,16 @@ export default async function TarifsPage() {
         <h2 className="font-semibold text-slate-900">Destinations</h2>
         <p className="mb-3 mt-1 text-sm text-slate-500">
           Villes proposées sur le formulaire colis et dans les filtres. Le tarif/kg
-          de la destination est proposé automatiquement à la création d&apos;un colis
-          (toujours modifiable). Le dernier champ est l&apos;ordre d&apos;affichage.
+          est proposé automatiquement à la création d&apos;un colis (toujours
+          modifiable) : « Autres » pour les produits courants, « Aliment. » pour les
+          produits alimentaires (champ vide = pas de tarif spécial). Sous le seuil
+          « petit colis » (Site public), c&apos;est le tarif petit colis qui s&apos;applique.
+          Le dernier champ est l&apos;ordre d&apos;affichage.
         </p>
-        <DestinationsEditeur destinations={destinations ?? []} />
+        <DestinationsEditeur
+          destinations={(destinations ?? []) as unknown as DestinationLigne[]}
+          avecTarifAlimentaire={TARIF_ALIMENTAIRE_ACTIF}
+        />
       </section>
 
       <section className={CARTE}>

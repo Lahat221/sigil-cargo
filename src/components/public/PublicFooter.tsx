@@ -8,6 +8,8 @@ export type Reseau = { id: string; titre: string; lien: string };
 
 export function PublicFooter({
   adresseDakar,
+  horairesDepot = "",
+  pointsRetrait = [],
   adresse,
   horaires,
   email,
@@ -17,6 +19,8 @@ export function PublicFooter({
   racine = "",
 }: {
   adresseDakar: string;
+  horairesDepot?: string;
+  pointsRetrait?: { ville: string; adresse: string; horaires: string }[];
   adresse: string;
   horaires: string;
   email: string;
@@ -134,10 +138,33 @@ export function PublicFooter({
                     Dépôt à {BRAND.villeDepart}
                   </span>
                   {adresseDakar}
+                  {horairesDepot && (
+                    <>
+                      <br />
+                      {horairesDepot}
+                    </>
+                  )}
                 </span>
               </li>
             )}
-            {(adresse || horaires) && (
+            {pointsRetrait.map((p) => (
+              <li key={p.ville} className="flex items-start gap-2">
+                <IconMapPin size={15} className="mt-0.5 shrink-0 text-gold-1" />
+                <span>
+                  <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/40">
+                    Retrait à {p.ville}
+                  </span>
+                  {p.adresse}
+                  {p.horaires && (
+                    <>
+                      <br />
+                      {p.horaires}
+                    </>
+                  )}
+                </span>
+              </li>
+            ))}
+            {pointsRetrait.length === 0 && (adresse || horaires) && (
               <li className="flex items-start gap-2">
                 <IconMapPin size={15} className="mt-0.5 shrink-0 text-gold-1" />
                 <span>

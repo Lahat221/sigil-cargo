@@ -63,6 +63,11 @@ function PrixParKg({ c }: { c: CommandeListItem }) {
           ⚠ attendu {montantFormatter.format(v.attendu)}
         </span>
       )}
+      {c.alimentaire && !v?.petitColis && (
+        <span className="mt-0.5 text-[10px] text-emerald-700" title="Tarif spécial produits alimentaires">
+          alimentaire
+        </span>
+      )}
       {!v?.ecart && v?.petitColis && (
         <span className="mt-0.5 text-[10px] text-slate-400" title={v.raison ?? undefined}>
           petit colis

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EditCommandeForm } from "@/components/commandes/EditCommandeForm";
 import { chargerDestinations } from "@/lib/commandes/destinations";
+import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
+import { TARIF_ALIMENTAIRE_ACTIF } from "@/lib/commandes/tarifAlimentaire";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,13 @@ export default async function ModifierCommandePage({
       .order("created_at", { ascending: false }),
     chargerDestinations(supabase),
   ]);
+
+  const regles = reglesPrix(await chargerParametresSite(supabase));
+  const alimentaire = TARIF_ALIMENTAIRE_ACTIF
+    ? (
+        await supabase.from("commandes").select("alimentaire").eq("id", params.id).maybeSingle()
+      ).data?.alimentaire ?? false
+    : false;
 
   const existingPhotos = [];
   if (commande.photo_urls) {
@@ -81,6 +90,7 @@ export default async function ModifierCommandePage({
         initialVolumeM3={commande.volume_m3}
         initialPrixParM3={commande.prix_par_m3}
         initialEnveloppe={commande.enveloppe}
+        initialAlimentaire={alimentaire}
         initialNombrePaquets={commande.nombre_paquets}
         initialAdresseLivraison={commande.adresse_livraison ?? ""}
         initialDestination={commande.destination ?? ""}
@@ -95,6 +105,7 @@ export default async function ModifierCommandePage({
         produits={produits ?? []}
         projets={projets ?? []}
         destinations={destinations}
+        regles={regles}
       />
     </div>
   );

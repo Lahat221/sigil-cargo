@@ -1,3 +1,4 @@
+import { TARIF_ALIMENTAIRE_ACTIF } from "@/lib/commandes/tarifAlimentaire";
 import { deviseBase, formaterMontant, libelleMode, resumePaiements } from "@/lib/paiements";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -48,6 +49,12 @@ export default async function FactureCommandePage({
     .maybeSingle();
 
   if (!commande) notFound();
+
+  const alimentaire = TARIF_ALIMENTAIRE_ACTIF
+    ? (
+        await supabase.from("commandes").select("alimentaire").eq("id", params.id).maybeSingle()
+      ).data?.alimentaire ?? false
+    : false;
 
   const { data: paiementsData } = await supabase
     .from("paiements")
@@ -148,7 +155,7 @@ export default async function FactureCommandePage({
                 <td className="py-2 text-slate-900">
                   {enModeConteneur
                     ? `Groupage conteneur ${BRAND.nom.split(" ")[0]}`
-                    : `Fret aérien ${BRAND.nom.split(" ")[0]}`}
+                    : `Fret aérien ${BRAND.nom.split(" ")[0]}${alimentaire ? " — produits alimentaires" : ""}`}
                 </td>
                 <td className="py-2 text-right text-slate-700">
                   {enModeConteneur ? commande.volume_m3 : commande.poids_kg}

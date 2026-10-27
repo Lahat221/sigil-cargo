@@ -132,7 +132,9 @@ export interface Database {
         Row: {
           id: string;
           nom: string;
+          // Tarif « autres produits » ; le tarif spécial alimentaire est séparé.
           tarif_par_kg: number | null;
+          tarif_alimentaire_par_kg: number | null;
           actif: boolean;
           ordre: number;
           created_at: string;
@@ -141,6 +143,7 @@ export interface Database {
           id?: string;
           nom: string;
           tarif_par_kg?: number | null;
+          tarif_alimentaire_par_kg?: number | null;
           actif?: boolean;
           ordre?: number;
           created_at?: string;
@@ -241,6 +244,8 @@ export interface Database {
           volume_m3: number | null;
           prix_par_m3: number | null;
           enveloppe: boolean;
+          // Colis de produits alimentaires : tarif spécial de la destination.
+          alimentaire: boolean;
           nombre_paquets: number;
           montant_total: number;
           statut: StatutCommande;
@@ -283,6 +288,7 @@ export interface Database {
           volume_m3?: number | null;
           prix_par_m3?: number | null;
           enveloppe?: boolean;
+          alimentaire?: boolean;
           nombre_paquets?: number;
           statut?: StatutCommande;
           paye?: boolean;

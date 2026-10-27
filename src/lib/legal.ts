@@ -93,7 +93,7 @@ export function contenuLegal(
         {
           titre: "2. Tarifs",
           paragraphes: [
-            `Les tarifs sont exprimés en euros, au kilogramme et selon la destination ; ils sont indiqués sur ce site et sur nos affiches de départ. Les colis de moins de ${regles.seuilPetitColisKg} kg sont facturés ${euro(regles.petitColisParKg)} par kilogramme ; les enveloppes (documents) sont facturées au forfait de ${euro(regles.forfaitEnveloppe)}.`,
+            `Les tarifs sont exprimés en euros, au kilogramme et selon la destination ; ils sont indiqués sur ce site et sur nos affiches de départ${BRAND.moduleFranceActif ? ", avec un tarif spécial pour les produits alimentaires selon la destination" : ""}. Les colis de moins de ${regles.seuilPetitColisKg} kg sont facturés ${euro(regles.petitColisParKg)} par kilogramme ; les enveloppes (documents) sont facturées au forfait de ${euro(regles.forfaitEnveloppe)}.`,
             "Le calculateur du site fournit une estimation indicative. Le montant définitif est établi d'après le poids constaté lors du dépôt du colis.",
           ],
         },

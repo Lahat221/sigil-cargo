@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BRAND } from "@/lib/brand";
-import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
+import { chargerParametresSite, listerPointsRetrait, reglesPrix } from "@/lib/parametres";
 import { MISE_A_JOUR, SLUGS_LEGAUX, contenuLegal, type SlugLegal } from "@/lib/legal";
 import { PublicNav } from "@/components/public/PublicNav";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -72,6 +72,8 @@ export default async function PageLegale({ params }: { params: { page: string } 
 
       <PublicFooter
         adresseDakar={site.adresseDakar}
+        horairesDepot={site.horairesDepot}
+        pointsRetrait={listerPointsRetrait(site.pointsRetrait)}
         adresse={site.adresse}
         horaires={site.horaires}
         email={site.email}

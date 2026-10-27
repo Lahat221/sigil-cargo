@@ -70,7 +70,36 @@ export function SiteForm({ initial }: { initial: ParametresSite }) {
         </p>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Horaires</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Horaires du point de dépôt (Dakar)
+        </label>
+        <input
+          value={valeurs.horairesDepot}
+          onChange={(e) => maj("horairesDepot", e.target.value)}
+          placeholder="Ex. Tous les jours, de 9h à 20h30"
+          className={INPUT_CLASS}
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Points de retrait en France
+        </label>
+        <textarea
+          value={valeurs.pointsRetrait}
+          onChange={(e) => maj("pointsRetrait", e.target.value)}
+          rows={4}
+          placeholder={"Lyon | Gare de Parilly (métro D), Vénissieux | Tous les jours, de 17h à 20h30\nParis | Paris 19ème, rue Riquet | Tous les jours, de 9h à 19h"}
+          className={INPUT_CLASS}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Un point par ligne : Ville | Adresse | Horaires. S&apos;affichent sur le site, dans la FAQ et
+          dans les réponses de l&apos;agent WhatsApp. Vide : l&apos;adresse et les horaires ci-dessous sont utilisés.
+        </p>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Horaires de retrait (si aucun point ci-dessus)
+        </label>
         <input
           value={valeurs.horaires}
           onChange={(e) => maj("horaires", e.target.value)}

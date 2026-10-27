@@ -21,6 +21,7 @@ export type DestinationLigne = {
   id: string;
   nom: string;
   tarif_par_kg: number | null;
+  tarif_alimentaire_par_kg: number | null;
   ordre: number;
   actif: boolean;
 };
@@ -30,7 +31,7 @@ function ligneVideProduit(): ProduitLigne {
 }
 
 function ligneVideDestination(ordre: number): DestinationLigne {
-  return { id: "", nom: "", tarif_par_kg: null, ordre, actif: true };
+  return { id: "", nom: "", tarif_par_kg: null, tarif_alimentaire_par_kg: null, ordre, actif: true };
 }
 
 function LigneProduit({ produit }: { produit: ProduitLigne }) {
@@ -122,12 +123,21 @@ export function ProduitsEditeur({ produits }: { produits: ProduitLigne[] }) {
   );
 }
 
-function LigneDestination({ destination }: { destination: DestinationLigne }) {
+function LigneDestination({
+  destination,
+  avecTarifAlimentaire,
+}: {
+  destination: DestinationLigne;
+  avecTarifAlimentaire: boolean;
+}) {
   const router = useRouter();
   const nouveau = destination.id === "";
   const [nom, setNom] = useState(destination.nom);
   const [tarif, setTarif] = useState(
     destination.tarif_par_kg === null ? "" : String(destination.tarif_par_kg)
+  );
+  const [tarifAlim, setTarifAlim] = useState(
+    destination.tarif_alimentaire_par_kg === null ? "" : String(destination.tarif_alimentaire_par_kg)
   );
   const [ordre, setOrdre] = useState(String(destination.ordre));
   const [actif, setActif] = useState(destination.actif);
@@ -138,6 +148,8 @@ function LigneDestination({ destination }: { destination: DestinationLigne }) {
     nouveau ||
     nom !== destination.nom ||
     tarif !== (destination.tarif_par_kg === null ? "" : String(destination.tarif_par_kg)) ||
+    tarifAlim !==
+      (destination.tarif_alimentaire_par_kg === null ? "" : String(destination.tarif_alimentaire_par_kg)) ||
     ordre !== String(destination.ordre) ||
     actif !== destination.actif;
 
@@ -148,6 +160,11 @@ function LigneDestination({ destination }: { destination: DestinationLigne }) {
         id: nouveau ? undefined : destination.id,
         nom,
         tarif: tarif.trim() === "" ? null : parseFloat(tarif),
+        tarifAlimentaire: avecTarifAlimentaire
+          ? tarifAlim.trim() === ""
+            ? null
+            : parseFloat(tarifAlim)
+          : undefined,
         ordre: parseInt(ordre, 10) || 0,
         actif,
       });
@@ -158,6 +175,7 @@ function LigneDestination({ destination }: { destination: DestinationLigne }) {
       if (nouveau) {
         setNom("");
         setTarif("");
+        setTarifAlim("");
         setActif(true);
       }
       router.refresh();
@@ -193,9 +211,22 @@ function LigneDestination({ destination }: { destination: DestinationLigne }) {
           min="0"
           value={tarif}
           onChange={(e) => setTarif(e.target.value)}
-          placeholder="Tarif / kg"
+          placeholder="Autres / kg"
+          title="Tarif au kilo des autres produits"
           className={`${INPUT_CLASS} w-28`}
         />
+        {avecTarifAlimentaire && (
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={tarifAlim}
+          onChange={(e) => setTarifAlim(e.target.value)}
+          placeholder="Aliment. / kg"
+          title="Tarif spécial au kilo des produits alimentaires (laisser vide : pas de tarif spécial)"
+          className={`${INPUT_CLASS} w-28`}
+        />
+        )}
         <input
           type="number"
           value={ordre}
@@ -239,8 +270,10 @@ function LigneDestination({ destination }: { destination: DestinationLigne }) {
 
 export function DestinationsEditeur({
   destinations,
+  avecTarifAlimentaire,
 }: {
   destinations: DestinationLigne[];
+  avecTarifAlimentaire: boolean;
 }) {
   const prochainOrdre =
     destinations.reduce((max, d) => Math.max(max, d.ordre), 0) + 1;
@@ -249,11 +282,15 @@ export function DestinationsEditeur({
     <div className="divide-y divide-slate-100">
       {destinations.map((d) => (
         <LigneDestination
-          key={`${d.id}-${d.nom}-${d.tarif_par_kg}-${d.ordre}-${d.actif}`}
+          key={`${d.id}-${d.nom}-${d.tarif_par_kg}-${d.tarif_alimentaire_par_kg}-${d.ordre}-${d.actif}`}
           destination={d}
+          avecTarifAlimentaire={avecTarifAlimentaire}
         />
       ))}
-      <LigneDestination destination={ligneVideDestination(prochainOrdre)} />
+      <LigneDestination
+        destination={ligneVideDestination(prochainOrdre)}
+        avecTarifAlimentaire={avecTarifAlimentaire}
+      />
     </div>
   );
 }

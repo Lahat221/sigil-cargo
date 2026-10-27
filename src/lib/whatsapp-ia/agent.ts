@@ -3,7 +3,7 @@ import type OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
-import { chargerParametresSite } from "@/lib/parametres";
+import { chargerParametresSite, listerPointsRetrait } from "@/lib/parametres";
 import { anthropicModel, getAnthropicClient } from "@/lib/dedouanement-france/anthropic";
 import { getOpenAIClient } from "@/lib/douane/openai";
 import {
@@ -30,6 +30,7 @@ export async function construirePrompt(
   contacts: string
 ): Promise<string> {
   const site = await chargerParametresSite(supabase);
+  const pointsRetrait = listerPointsRetrait(site.pointsRetrait);
   const aujourdhui = new Intl.DateTimeFormat("fr-FR", {
     dateStyle: "full",
     timeZone: "Africa/Dakar",
@@ -45,9 +46,14 @@ TON RÔLE
 Être un vrai conseiller du service client : répondre à TOUTES les questions des clients et prospects sur l'entreprise et son service, sauf ce qui est confidentiel (voir plus bas). Sujets typiques : suivi de colis, tarifs et estimation, prochains départs, comment ça marche, ce qu'on peut envoyer ou non, délais, adresses de dépôt et de retrait, horaires, suivi par QR code, devis (grands colis, professionnels), conseils d'emballage et de préparation, démarches de base pour l'envoi et le retrait.
 
 FICHE D'INFORMATION (ce que l'entreprise affiche publiquement sur son site)
-- Dépôt à ${BRAND.villeDepart} : ${site.adresseDakar || "adresse non renseignée"}
-- Retrait en France : ${site.adresse || "adresse non renseignée"}
-- Horaires : ${site.horaires || "non renseignés"}
+- Dépôt à ${BRAND.villeDepart} : ${site.adresseDakar || "adresse non renseignée"}${site.horairesDepot ? ` — ${site.horairesDepot}` : ""}
+${
+  pointsRetrait.length > 0
+    ? pointsRetrait
+        .map((p) => `- Retrait à ${p.ville} : ${p.adresse}${p.horaires ? ` — ${p.horaires}` : ""}`)
+        .join("\n")
+    : `- Retrait en France : ${site.adresse || "adresse non renseignée"}\n- Horaires de retrait : ${site.horaires || "non renseignés"}`
+}
 - Site web : ${site.siteWeb || "non renseigné"}${BRAND.retrait ? `\n- Retrait : ${BRAND.retrait.adresse} (${BRAND.retrait.horaires}). ${BRAND.retrait.livraisonDomicile}.` : ""}
 - Comment ça marche : 1) le client dépose son colis à ${BRAND.villeDepart} auprès de l'équipe (valise, carton, enveloppe ou marchandises commerciales) et reçoit un accusé de réception ; 2) le colis est pesé, photographié, filmé, enregistré et reçoit une étiquette avec QR code ; 3) il part sur le prochain vol et les formalités douanières sont prises en charge par l'équipe ; 4) retrait au point de retrait (ou livraison à domicile selon les cas), avec suivi à chaque étape.
 - Ce qu'on peut envoyer : valises (jusqu'à 23 kg), cartons, enveloppes (documents) et marchandises commerciales. Chaque colis est pesé, photographié et enregistré à la réception.

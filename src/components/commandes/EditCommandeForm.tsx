@@ -10,6 +10,14 @@ import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
 import { VideoPreviewList } from "./VideoPreviewList";
 import { BRAND } from "@/lib/brand";
 import type { Destination } from "@/lib/commandes/destinations";
+import { tarifProposeParKg } from "@/lib/prix";
+import type { ReglesPrix } from "@/lib/parametres";
+import {
+  CaseAlimentaire,
+  IndicationTarif,
+  tarifAlimentaireDisponible,
+  versDestinationTarif,
+} from "./TarifColisInfo";
 
 const MAX_PHOTOS = 5;
 const MAX_VIDEOS = 4;
@@ -32,6 +40,7 @@ export function EditCommandeForm({
   initialVolumeM3,
   initialPrixParM3,
   initialEnveloppe,
+  initialAlimentaire,
   initialNombrePaquets,
   initialAdresseLivraison,
   initialDestination,
@@ -46,6 +55,7 @@ export function EditCommandeForm({
   produits,
   projets,
   destinations,
+  regles,
 }: {
   commandeId: string;
   initialClient: ClientMatch;
@@ -56,6 +66,7 @@ export function EditCommandeForm({
   initialVolumeM3: number | null;
   initialPrixParM3: number | null;
   initialEnveloppe: boolean;
+  initialAlimentaire: boolean;
   initialNombrePaquets: number;
   initialAdresseLivraison: string;
   initialDestination: string;
@@ -70,6 +81,7 @@ export function EditCommandeForm({
   produits: Produit[];
   projets: Projet[];
   destinations: Destination[];
+  regles: ReglesPrix;
 }) {
   const router = useRouter();
 
@@ -92,6 +104,9 @@ export function EditCommandeForm({
     initialPrixParM3 !== null ? initialPrixParM3.toString() : ""
   );
   const [enveloppe, setEnveloppe] = useState(initialEnveloppe);
+  const [alimentaire, setAlimentaire] = useState(initialAlimentaire);
+  // Prix déjà enregistré : on ne le remplace pas à l'ouverture, seulement si on change destination / alimentaire.
+  const [prixManuel, setPrixManuel] = useState(true);
   const [nombrePaquets, setNombrePaquets] = useState(initialNombrePaquets);
   const [adresseLivraison, setAdresseLivraison] = useState(
     initialAdresseLivraison
@@ -120,28 +135,51 @@ export function EditCommandeForm({
   // désactivée depuis (sinon elle serait perdue à la prochaine sauvegarde).
   const optionsDestination: Destination[] =
     initialDestination && !destinations.some((d) => d.nom === initialDestination)
-      ? [...destinations, { nom: initialDestination, tarif_par_kg: null }]
+      ? [...destinations, { nom: initialDestination, tarif_par_kg: null, tarif_alimentaire_par_kg: null }]
       : destinations;
 
-  function tarifDestination(nom: string): number | undefined {
-    return destinations.find((d) => d.nom === nom)?.tarif_par_kg ?? undefined;
+  // Tarif au kilo proposé : destination (alimentaire ou autres produits) et
+  // tarif « petit colis » sous le seuil de poids. Modifiable ensuite à la main.
+  function proposer(dest: string, alim: boolean, poidsTexte: string): number | undefined {
+    const poids = parseFloat(poidsTexte);
+    return tarifProposeParKg(
+      versDestinationTarif(destinations, dest),
+      Number.isNaN(poids) ? null : poids,
+      regles,
+      alim
+    )?.tarif;
+  }
+
+  function appliquerProposition(dest: string, alim: boolean, poidsTexte: string) {
+    if (enModeConteneur) return;
+    const tarif = proposer(dest, alim, poidsTexte);
+    if (tarif !== undefined) setPrixParKg(tarif.toString());
+    setPrixManuel(false);
   }
 
   function handleProduitChange(id: string) {
     setProduitId(id);
     const p = produits.find((p) => p.id === id);
     if (p) {
-      const tarif = destination ? tarifDestination(destination) : undefined;
+      const tarif = destination ? proposer(destination, alimentaire, poidsKg) : undefined;
       setPrixParKg((tarif ?? p.prix_par_kg).toString());
+      setPrixManuel(false);
     }
   }
 
   function handleDestinationChange(value: string) {
     setDestination(value);
-    if (!enModeConteneur) {
-      const tarif = tarifDestination(value);
-      if (tarif !== undefined) setPrixParKg(tarif.toString());
-    }
+    appliquerProposition(value, alimentaire, poidsKg);
+  }
+
+  function handleAlimentaireChange(value: boolean) {
+    setAlimentaire(value);
+    appliquerProposition(destination, value, poidsKg);
+  }
+
+  function handlePoidsChange(value: string) {
+    setPoidsKg(value);
+    if (!prixManuel) appliquerProposition(destination, alimentaire, value);
   }
 
   const modeFret =
@@ -272,6 +310,7 @@ export function EditCommandeForm({
         volumeM3: volume,
         prixParM3: prixM3,
         enveloppe,
+        alimentaire,
         nombrePaquets,
         adresseLivraison,
         destination,
@@ -353,7 +392,7 @@ export function EditCommandeForm({
             step="0.001"
             min="0"
             value={poidsKg}
-            onChange={(e) => setPoidsKg(e.target.value)}
+            onChange={(e) => handlePoidsChange(e.target.value)}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
           />
         </div>
@@ -400,8 +439,19 @@ export function EditCommandeForm({
               min="0"
               required
               value={prixParKg}
-              onChange={(e) => setPrixParKg(e.target.value)}
+              onChange={(e) => {
+                setPrixParKg(e.target.value);
+                setPrixManuel(true);
+              }}
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
+            />
+            <IndicationTarif
+              destinations={destinations}
+              regles={regles}
+              destination={destination}
+              poidsKg={poidsKg}
+              alimentaire={alimentaire}
+              prixSaisi={prixParKg}
             />
           </div>
         )}
@@ -429,6 +479,10 @@ export function EditCommandeForm({
         />
         Option enveloppe (+{montantFormatter.format(15)})
       </label>
+
+      {tarifAlimentaireDisponible(destinations) && (
+        <CaseAlimentaire checked={alimentaire} onChange={handleAlimentaireChange} />
+      )}
 
       <div className="rounded-md bg-slate-50 px-3 py-2 text-sm">
         <span className="text-slate-500">Montant estimé : </span>

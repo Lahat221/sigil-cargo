@@ -3,7 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { BRAND } from "@/lib/brand";
 import { Logo } from "@/components/layout/Logo";
 import { chargerDestinations } from "@/lib/commandes/destinations";
-import { chargerParametresSite, listeDestinationsBientot, nombreSaisi, reglesPrix } from "@/lib/parametres";
+import { chargerParametresSite, listeDestinationsBientot,
+  listerPointsRetrait, nombreSaisi, reglesPrix } from "@/lib/parametres";
 import { PublicNav, type LienNav } from "@/components/public/PublicNav";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { HeroCard } from "@/components/public/HeroCard";
@@ -129,12 +130,15 @@ export default async function HomePage() {
   const whatsapp = chiffresWhatsapp.length >= 6 ? chiffresWhatsapp : null;
   const regles = reglesPrix(site);
   const villesBientot = listeDestinationsBientot(site);
+  const pointsRetrait = listerPointsRetrait(site.pointsRetrait);
   const devise = new Intl.NumberFormat("fr-FR", { style: "currency", currency: BRAND.devise });
 
   const sigil = BRAND.moduleFranceActif;
   const legalDisponible = !BRAND.identite.destinataireNom.includes("RENSEIGNER");
   const calculateurActif = destinations.length > 0;
-  const tarifs = destinations.map((d) => d.tarif_par_kg).filter((t): t is number => t !== null);
+  const tarifs = destinations
+    .flatMap((d) => [d.tarif_par_kg, d.tarif_alimentaire_par_kg])
+    .filter((t): t is number => t !== null);
   const tarifMin = tarifs.length > 0 ? Math.min(...tarifs) : null;
   const arrivee =
     destinations.length > 0 ? destinations.map((d) => d.nom).join(" · ") : BRAND.villeArriveeDefaut;
@@ -246,7 +250,11 @@ export default async function HomePage() {
     destinations.filter((d) => d.tarif_par_kg !== null).length > 0
       ? destinations
           .filter((d) => d.tarif_par_kg !== null)
-          .map((d) => `${d.nom} : ${devise.format(d.tarif_par_kg!)}/kg`)
+          .map((d) =>
+            d.tarif_alimentaire_par_kg !== null
+              ? `${d.nom} : ${devise.format(d.tarif_alimentaire_par_kg)}/kg produits alimentaires, ${devise.format(d.tarif_par_kg!)}/kg autres produits`
+              : `${d.nom} : ${devise.format(d.tarif_par_kg!)}/kg`
+          )
           .join(" · ")
       : null;
 
@@ -284,7 +292,7 @@ export default async function HomePage() {
       ? [
           {
             question: `Où déposer mon colis à ${BRAND.villeDepart} ?`,
-            reponse: `Le dépôt se fait à l'adresse suivante : ${site.adresseDakar}. Contactez-nous sur WhatsApp pour convenir du moment de votre passage.`,
+            reponse: `Le dépôt se fait à l'adresse suivante : ${site.adresseDakar}${site.horairesDepot ? ` (${site.horairesDepot})` : ""}. Contactez-nous sur WhatsApp pour convenir du moment de votre passage.`,
           },
         ]
       : []),
@@ -295,7 +303,11 @@ export default async function HomePage() {
     },
     {
       question: "Comment récupérer mon colis ?",
-      reponse: BRAND.retrait
+      reponse: pointsRetrait.length > 0
+        ? `Retrait dans l'un de nos points : ${pointsRetrait
+            .map((p) => `${p.ville} — ${p.adresse}${p.horaires ? ` (${p.horaires})` : ""}`)
+            .join(" ; ")}.`
+        : BRAND.retrait
         ? `Retrait au ${BRAND.retrait.adresse} (${BRAND.retrait.horaires}). ${BRAND.retrait.livraisonDomicile}.`
         : "Notre équipe vous contacte dès l'arrivée de votre colis pour convenir de la remise.",
     },
@@ -383,7 +395,11 @@ export default async function HomePage() {
           </div>
 
           <HeroCard
-            destinations={destinations.map((d) => ({ nom: d.nom, tarif: d.tarif_par_kg }))}
+            destinations={destinations.map((d) => ({
+              nom: d.nom,
+              tarif: d.tarif_par_kg,
+              tarifAlimentaire: d.tarif_alimentaire_par_kg,
+            }))}
             regles={regles}
             whatsapp={whatsapp}
             devise={BRAND.devise}
@@ -434,8 +450,14 @@ export default async function HomePage() {
                           ? villes.map((v) => ({
                               nom: v,
                               tarif: destinations.find((d) => d.nom === v)?.tarif_par_kg ?? null,
+                              tarifAlim:
+                                destinations.find((d) => d.nom === v)?.tarif_alimentaire_par_kg ?? null,
                             }))
-                          : destinations.map((d) => ({ nom: d.nom, tarif: d.tarif_par_kg }));
+                          : destinations.map((d) => ({
+                              nom: d.nom,
+                              tarif: d.tarif_par_kg,
+                              tarifAlim: d.tarif_alimentaire_par_kg,
+                            }));
                       const dateDepart = p.date_depart ? new Date(p.date_depart) : null;
                       const dateArrivee = p.date_arrivee ? new Date(p.date_arrivee) : null;
                       return (
@@ -500,7 +522,10 @@ export default async function HomePage() {
                                     key={x.nom}
                                     className="rounded-full bg-gold-1/12 px-2.5 py-1 text-xs font-semibold text-gold-1"
                                   >
-                                    {x.nom} · {devise.format(x.tarif!)}/kg
+                                    {x.nom} ·{" "}
+                                    {x.tarifAlim !== null
+                                      ? `${devise.format(x.tarifAlim)} alim. · ${devise.format(x.tarif!)} autres /kg`
+                                      : `${devise.format(x.tarif!)}/kg`}
                                   </span>
                                 ))}
                             </div>
@@ -741,9 +766,18 @@ export default async function HomePage() {
                   <AdresseCarte
                     titre={`Dépôt à ${BRAND.villeDepart}`}
                     adresse={site.adresseDakar}
+                    detail={site.horairesDepot || undefined}
                   />
                 )}
-                {(site.adresse || site.horaires) && (
+                {pointsRetrait.map((p) => (
+                  <AdresseCarte
+                    key={p.ville}
+                    titre={`Retrait à ${p.ville}`}
+                    adresse={p.adresse}
+                    detail={p.horaires || undefined}
+                  />
+                ))}
+                {pointsRetrait.length === 0 && (site.adresse || site.horaires) && (
                   <AdresseCarte
                     titre={site.adresseDakar ? "Retrait en France" : "Adresse"}
                     adresse={site.adresse}
@@ -765,6 +799,8 @@ export default async function HomePage() {
 
       <PublicFooter
         adresseDakar={site.adresseDakar}
+        horairesDepot={site.horairesDepot}
+        pointsRetrait={pointsRetrait}
         adresse={site.adresse}
         horaires={site.horaires}
         email={site.email}

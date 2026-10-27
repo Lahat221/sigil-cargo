@@ -18,6 +18,7 @@ type ColisPrix = {
   destination: string | null;
   poids_kg: number | null;
   prix_par_kg?: number | null;
+  alimentaire?: boolean | null;
   mode_fret?: "aerien" | "conteneur" | null;
 };
 
@@ -51,10 +52,15 @@ export function verifierPrixColis(
   if (!destination || destination.tarif_par_kg === null) return base;
 
   const estimation = estimerPrix(
-    { nom: destination.nom, tarif: destination.tarif_par_kg },
+    {
+      nom: destination.nom,
+      tarif: destination.tarif_par_kg,
+      tarifAlimentaire: destination.tarif_alimentaire_par_kg,
+    },
     "colis",
     colis.poids_kg,
-    regles
+    regles,
+    !!colis.alimentaire
   );
   if (!estimation || estimation.tarifParKg === null) return base;
 
@@ -66,6 +72,8 @@ export function verifierPrixColis(
     petitColis: estimation.petitColis,
     raison: estimation.petitColis
       ? `moins de ${regles.seuilPetitColisKg} kg : tarif petit colis ${euro.format(attendu)} €/kg`
-      : `tarif ${destination.nom} : ${euro.format(attendu)} €/kg`,
+      : estimation.alimentaire
+        ? `tarif produits alimentaires ${destination.nom} : ${euro.format(attendu)} €/kg`
+        : `tarif ${destination.nom} : ${euro.format(attendu)} €/kg`,
   };
 }

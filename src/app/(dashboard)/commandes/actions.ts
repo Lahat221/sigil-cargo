@@ -6,6 +6,10 @@ import { resolveClientId } from "@/lib/commandes/resolveClient";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
+import { chargerDestinations } from "@/lib/commandes/destinations";
+import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
+import { verifierPrixColis } from "@/lib/commandes/verifPrix";
+import { TARIF_ALIMENTAIRE_ACTIF } from "@/lib/commandes/tarifAlimentaire";
 import {
   SUIVI_FRET_FRANCE,
   exigeVerification,
@@ -249,6 +253,7 @@ type UpdateCommandeInput = {
   volumeM3: number | null;
   prixParM3: number | null;
   enveloppe: boolean;
+  alimentaire: boolean;
   nombrePaquets: number;
   adresseLivraison: string;
   destination: string;
@@ -287,6 +292,7 @@ export async function updateCommande(
       volume_m3: input.volumeM3,
       prix_par_m3: input.prixParM3,
       enveloppe: input.enveloppe,
+      ...(TARIF_ALIMENTAIRE_ACTIF ? { alimentaire: input.alimentaire } : {}),
       nombre_paquets: input.nombrePaquets,
       adresse_livraison: input.adresseLivraison.trim() || null,
       destination: input.destination.trim() || null,
@@ -441,8 +447,21 @@ export async function recalculerPrix(): Promise<
 
   const { data: commandes, error: fetchError } = await supabase
     .from("commandes")
-    .select("id, produit_id, prix_par_kg")
-    .not("statut", "in", "(livree,annulee)");
+    .select(
+      `id, produit_id, prix_par_kg, destination, poids_kg, ${TARIF_ALIMENTAIRE_ACTIF ? "alimentaire, " : ""}mode_fret`
+    )
+    .not("statut", "in", "(livree,annulee)")
+    .returns<
+      {
+        id: string;
+        produit_id: string;
+        prix_par_kg: number | null;
+        destination: string | null;
+        poids_kg: number | null;
+        alimentaire?: boolean | null;
+        mode_fret: "aerien" | "conteneur";
+      }[]
+    >();
 
   if (fetchError) return { error: fetchError.message };
   if (!commandes || commandes.length === 0) {
@@ -459,9 +478,17 @@ export async function recalculerPrix(): Promise<
     (produits ?? []).map((p) => [p.id, p.prix_par_kg])
   );
 
+  // Prix attendu d'après la destination, le tarif alimentaire et la règle
+  // « petit colis » quand ils sont connus ; sinon prix du produit (ancien
+  // comportement) — sans quoi un colis alimentaire ou petit colis reprendrait
+  // le tarif standard.
+  const destinations = await chargerDestinations(supabase, { inclureInactives: true });
+  const regles = reglesPrix(await chargerParametresSite(supabase));
+
   let nbMisAJour = 0;
   for (const c of commandes) {
-    const prixActuel = prixParProduit.get(c.produit_id);
+    const attendu = verifierPrixColis(c, destinations, regles).attendu;
+    const prixActuel = attendu ?? prixParProduit.get(c.produit_id);
     if (prixActuel === undefined || prixActuel === c.prix_par_kg) continue;
 
     const { error } = await supabase

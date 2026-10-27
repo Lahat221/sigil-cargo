@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { resolveClientId } from "@/lib/commandes/resolveClient";
-import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
+import { BRAND } from "@/lib/brand";
+import { TARIF_ALIMENTAIRE_ACTIF } from "@/lib/commandes/tarifAlimentaire"; // cache-bust: force recompile after BRAND fix
 import { preparerPaiement, type PaiementInput } from "@/lib/paiements";
 
 export type ClientMatch = {
@@ -44,6 +45,7 @@ type CreateCommandeInput = {
   volumeM3: number | null;
   prixParM3: number | null;
   enveloppe: boolean;
+  alimentaire: boolean;
   nombrePaquets: number;
   adresseLivraison: string;
   destination: string;
@@ -96,6 +98,7 @@ export async function createCommande(
     volume_m3: input.volumeM3,
     prix_par_m3: input.prixParM3,
     enveloppe: input.enveloppe,
+    ...(TARIF_ALIMENTAIRE_ACTIF ? { alimentaire: input.alimentaire } : {}),
     nombre_paquets: input.nombrePaquets,
     adresse_livraison: input.adresseLivraison.trim() || null,
     destination: input.destination.trim() || null,
