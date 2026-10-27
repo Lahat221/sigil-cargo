@@ -45,7 +45,9 @@ type CreateCommandeInput = {
   volumeM3: number | null;
   prixParM3: number | null;
   enveloppe: boolean;
-  alimentaire: boolean;
+  /** Part alimentaire du colis (kg, comprise dans poidsKg) et son prix au kilo. */
+  poidsAlimentaireKg: number | null;
+  prixAlimentaireParKg: number | null;
   nombrePaquets: number;
   adresseLivraison: string;
   destination: string;
@@ -98,7 +100,12 @@ export async function createCommande(
     volume_m3: input.volumeM3,
     prix_par_m3: input.prixParM3,
     enveloppe: input.enveloppe,
-    ...(TARIF_ALIMENTAIRE_ACTIF ? { alimentaire: input.alimentaire } : {}),
+    ...(TARIF_ALIMENTAIRE_ACTIF
+      ? {
+          poids_alimentaire_kg: input.poidsAlimentaireKg,
+          prix_alimentaire_par_kg: input.prixAlimentaireParKg,
+        }
+      : {}),
     nombre_paquets: input.nombrePaquets,
     adresse_livraison: input.adresseLivraison.trim() || null,
     destination: input.destination.trim() || null,

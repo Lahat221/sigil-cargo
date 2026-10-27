@@ -1,6 +1,6 @@
 import type { Destination } from "./destinations";
 import type { ReglesPrix } from "@/lib/parametres";
-import { estimerPrix } from "@/lib/prix";
+import { estimerPrix, partAlimentaireKg } from "@/lib/prix";
 
 export type VerifPrix = {
   /** Prix au kilo réellement appliqué au colis. */
@@ -12,13 +12,20 @@ export type VerifPrix = {
   /** Pourquoi cette valeur est attendue (« moins de 8 kg : tarif petit colis »…). */
   raison: string | null;
   petitColis: boolean;
+  /** Part alimentaire du colis (kg) : 0 si le colis n'en a pas. */
+  poidsAlimentaireKg: number;
+  /** Prix au kilo appliqué à la part alimentaire. */
+  prixAlimentaireParKg: number | null;
+  /** Prix au kilo attendu pour la part alimentaire (null : pas de part alimentaire). */
+  attenduAlimentaire: number | null;
 };
 
 type ColisPrix = {
   destination: string | null;
   poids_kg: number | null;
   prix_par_kg?: number | null;
-  alimentaire?: boolean | null;
+  poids_alimentaire_kg?: number | null;
+  prix_alimentaire_par_kg?: number | null;
   mode_fret?: "aerien" | "conteneur" | null;
 };
 
@@ -41,7 +48,18 @@ export function verifierPrixColis(
   regles: ReglesPrix
 ): VerifPrix {
   const prixParKg = colis.prix_par_kg ?? null;
-  const base: VerifPrix = { prixParKg, attendu: null, ecart: false, raison: null, petitColis: false };
+  const part = partAlimentaireKg(colis.poids_kg, colis.poids_alimentaire_kg);
+  const prixAlimentaire = part > 0 ? colis.prix_alimentaire_par_kg ?? prixParKg : null;
+  const base: VerifPrix = {
+    prixParKg,
+    attendu: null,
+    ecart: false,
+    raison: null,
+    petitColis: false,
+    poidsAlimentaireKg: part,
+    prixAlimentaireParKg: prixAlimentaire,
+    attenduAlimentaire: null,
+  };
 
   if (colis.mode_fret === "conteneur" || prixParKg === null) return base;
   if (colis.poids_kg === null || colis.poids_kg <= 0) return base;
@@ -60,20 +78,28 @@ export function verifierPrixColis(
     "colis",
     colis.poids_kg,
     regles,
-    !!colis.alimentaire
+    part
   );
   if (!estimation || estimation.tarifParKg === null) return base;
 
   const attendu = estimation.tarifParKg;
+  const attenduAlimentaire = estimation.tarifAlimentaireParKg;
+  const ecartAlimentaire =
+    attenduAlimentaire !== null &&
+    prixAlimentaire !== null &&
+    Math.abs(prixAlimentaire - attenduAlimentaire) > 0.005;
   return {
-    prixParKg,
+    ...base,
     attendu,
-    ecart: Math.abs(prixParKg - attendu) > 0.005,
+    attenduAlimentaire,
+    // Si tout le colis est alimentaire, le prix des « autres produits » ne compte pas.
+    ecart:
+      (colis.poids_kg > part && Math.abs(prixParKg - attendu) > 0.005) || ecartAlimentaire,
     petitColis: estimation.petitColis,
     raison: estimation.petitColis
       ? `moins de ${regles.seuilPetitColisKg} kg : tarif petit colis ${euro.format(attendu)} €/kg`
-      : estimation.alimentaire
-        ? `tarif produits alimentaires ${destination.nom} : ${euro.format(attendu)} €/kg`
+      : part > 0 && attenduAlimentaire !== null
+        ? `autres produits ${euro.format(attendu)} €/kg, alimentaire ${euro.format(attenduAlimentaire)} €/kg (${destination.nom})`
         : `tarif ${destination.nom} : ${euro.format(attendu)} €/kg`,
   };
 }

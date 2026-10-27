@@ -35,11 +35,15 @@ export default async function ModifierCommandePage({
   ]);
 
   const regles = reglesPrix(await chargerParametresSite(supabase));
-  const alimentaire = TARIF_ALIMENTAIRE_ACTIF
+  const partAlimentaire = TARIF_ALIMENTAIRE_ACTIF
     ? (
-        await supabase.from("commandes").select("alimentaire").eq("id", params.id).maybeSingle()
-      ).data?.alimentaire ?? false
-    : false;
+        await supabase
+          .from("commandes")
+          .select("poids_alimentaire_kg, prix_alimentaire_par_kg")
+          .eq("id", params.id)
+          .maybeSingle()
+      ).data
+    : null;
 
   const existingPhotos = [];
   if (commande.photo_urls) {
@@ -90,7 +94,8 @@ export default async function ModifierCommandePage({
         initialVolumeM3={commande.volume_m3}
         initialPrixParM3={commande.prix_par_m3}
         initialEnveloppe={commande.enveloppe}
-        initialAlimentaire={alimentaire}
+        initialPoidsAlimentaireKg={partAlimentaire?.poids_alimentaire_kg ?? null}
+        initialPrixAlimentaireParKg={partAlimentaire?.prix_alimentaire_par_kg ?? null}
         initialNombrePaquets={commande.nombre_paquets}
         initialAdresseLivraison={commande.adresse_livraison ?? ""}
         initialDestination={commande.destination ?? ""}

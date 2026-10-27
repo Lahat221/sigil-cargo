@@ -24,6 +24,7 @@ import { STYLE_STATUT_PAIEMENT } from "./PaiementsPanel";
 
 const STATUTS_ORDONNES: StatutCommande[] = STATUTS_AFFICHES;
 
+const montantKg = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 });
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
   currency: BRAND.devise,
@@ -63,9 +64,12 @@ function PrixParKg({ c }: { c: CommandeListItem }) {
           ⚠ attendu {montantFormatter.format(v.attendu)}
         </span>
       )}
-      {c.alimentaire && !v?.petitColis && (
-        <span className="mt-0.5 text-[10px] text-emerald-700" title="Tarif spécial produits alimentaires">
-          alimentaire
+      {v && v.poidsAlimentaireKg > 0 && v.prixAlimentaireParKg !== null && (
+        <span
+          className="mt-0.5 whitespace-nowrap text-[10px] text-emerald-700"
+          title="Part du colis facturée au tarif spécial produits alimentaires"
+        >
+          dont {montantKg.format(v.poidsAlimentaireKg)} kg alim. à {montantFormatter.format(v.prixAlimentaireParKg)}/kg
         </span>
       )}
       {!v?.ecart && v?.petitColis && (

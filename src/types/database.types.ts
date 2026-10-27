@@ -244,8 +244,12 @@ export interface Database {
           volume_m3: number | null;
           prix_par_m3: number | null;
           enveloppe: boolean;
-          // Colis de produits alimentaires : tarif spécial de la destination.
+          // Ancien drapeau « colis alimentaire » (plus utilisé : voir poids_alimentaire_kg).
           alimentaire: boolean;
+          // Part alimentaire du colis (kg, comprise dans poids_kg) et son prix au kilo ;
+          // le reste du colis est au prix prix_par_kg. SIGIL seulement.
+          poids_alimentaire_kg: number | null;
+          prix_alimentaire_par_kg: number | null;
           nombre_paquets: number;
           montant_total: number;
           statut: StatutCommande;
@@ -289,6 +293,8 @@ export interface Database {
           prix_par_m3?: number | null;
           enveloppe?: boolean;
           alimentaire?: boolean;
+          poids_alimentaire_kg?: number | null;
+          prix_alimentaire_par_kg?: number | null;
           nombre_paquets?: number;
           statut?: StatutCommande;
           paye?: boolean;

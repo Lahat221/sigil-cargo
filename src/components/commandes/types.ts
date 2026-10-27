@@ -26,7 +26,8 @@ export type CommandeListItem = {
   nombre_paquets?: number | null;
   // Prix au kilo appliqué et contrôle par rapport au tarif attendu.
   prix_par_kg?: number | null;
-  alimentaire?: boolean | null;
+  poids_alimentaire_kg?: number | null;
+  prix_alimentaire_par_kg?: number | null;
   mode_fret?: "aerien" | "conteneur" | null;
   verif_prix?: VerifPrix;
   client_id?: string | null;

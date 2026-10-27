@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { IconCalculator, IconTruck, IconWhatsApp } from "@/components/ui/Icons";
 import type { ReglesPrix } from "@/lib/parametres";
+import { estimerPrix, partAlimentaireKg } from "@/lib/prix";
 
 export type DestinationPrix = {
   nom: string;
@@ -33,7 +34,7 @@ export function HeroCard({
 
   const [destination, setDestination] = useState(destinations[0]?.nom ?? "");
   const [type, setType] = useState<"colis" | "enveloppe">("colis");
-  const [alimentaire, setAlimentaire] = useState(false);
+  const [poidsAlim, setPoidsAlim] = useState("");
   const tarifAlimentaireDispo = destinations.some((d) => d.tarifAlimentaire != null);
   const [poids, setPoids] = useState("");
 
@@ -61,17 +62,30 @@ export function HeroCard({
     }
     const kg = parseFloat(poids.replace(",", "."));
     if (Number.isNaN(kg) || kg <= 0) return null;
-    const petit = kg < regles.seuilPetitColisKg;
-    const tarifAlim = alimentaire && dest.tarifAlimentaire != null ? dest.tarifAlimentaire : null;
-    const tarif = petit ? regles.petitColisParKg : tarifAlim ?? dest.tarif;
-    if (tarif === null) return { total: null, detail: "Tarif sur demande pour cette destination" };
-    return {
-      total: kg * tarif,
-      detail: `${kg.toLocaleString("fr-FR")} kg × ${format.format(tarif)}/kg${
-        petit ? " (tarif petit colis)" : !petit && tarifAlim !== null ? " (produits alimentaires)" : ""
-      }`,
-    };
-  }, [destinations, destination, type, poids, regles, format, alimentaire]);
+    const kgAlim = partAlimentaireKg(kg, parseFloat(poidsAlim.replace(",", ".")));
+    const estimation = estimerPrix(
+      { nom: dest.nom, tarif: dest.tarif, tarifAlimentaire: dest.tarifAlimentaire },
+      "colis",
+      kg,
+      regles,
+      kgAlim
+    );
+    if (!estimation || estimation.total === null) {
+      return { total: null, detail: "Tarif sur demande pour cette destination" };
+    }
+    const n = (v: number) => v.toLocaleString("fr-FR");
+    const detail = estimation.petitColis
+      ? `${n(kg)} kg × ${format.format(estimation.tarifParKg ?? 0)}/kg (tarif petit colis)`
+      : kgAlim > 0
+        ? [
+            kg - kgAlim > 0 ? `${n(kg - kgAlim)} kg × ${format.format(estimation.tarifParKg ?? 0)}/kg` : null,
+            `${n(kgAlim)} kg alim. × ${format.format(estimation.tarifAlimentaireParKg ?? 0)}/kg`,
+          ]
+            .filter(Boolean)
+            .join(" + ")
+        : `${n(kg)} kg × ${format.format(estimation.tarifParKg ?? 0)}/kg`;
+    return { total: estimation.total, detail };
+  }, [destinations, destination, type, poids, poidsAlim, regles, format]);
 
   const lienWhatsapp =
     whatsapp && resultat
@@ -79,7 +93,9 @@ export function HeroCard({
           `Bonjour, je souhaite envoyer ${
             type === "enveloppe"
               ? "une enveloppe"
-              : `${poids} kg${alimentaire && tarifAlimentaireDispo ? " de produits alimentaires" : ""}`
+              : `${poids} kg${
+                  parseFloat(poidsAlim.replace(",", ".")) > 0 ? ` (dont ${poidsAlim} kg de produits alimentaires)` : ""
+                }`
           } vers ${destination}${
             resultat.total !== null ? ` (estimation ${format.format(resultat.total)})` : ""
           }.`
@@ -171,28 +187,6 @@ export function HeroCard({
               ))}
             </div>
 
-            {type === "colis" && tarifAlimentaireDispo && (
-              <div className="grid grid-cols-2 gap-1 rounded-lg bg-black/20 p-1 text-sm">
-                {(
-                  [
-                    [false, "Autres produits"],
-                    [true, "Produits alimentaires"],
-                  ] as const
-                ).map(([valeur, label]) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => setAlimentaire(valeur)}
-                    className={`rounded-md px-3 py-2 font-medium transition-colors ${
-                      alimentaire === valeur ? "bg-white/15 text-white" : "text-white/55 hover:text-white"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-
             {type === "colis" && (
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-white/60">
@@ -203,6 +197,21 @@ export function HeroCard({
                   value={poids}
                   onChange={(e) => setPoids(e.target.value)}
                   placeholder="Ex. 23"
+                  className={CHAMP}
+                />
+              </div>
+            )}
+
+            {type === "colis" && tarifAlimentaireDispo && (
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-white/60">
+                  dont produits alimentaires (kg) — facturés au tarif alimentaire
+                </label>
+                <input
+                  inputMode="decimal"
+                  value={poidsAlim}
+                  onChange={(e) => setPoidsAlim(e.target.value)}
+                  placeholder="Ex. 5 (laisser vide si aucun)"
                   className={CHAMP}
                 />
               </div>

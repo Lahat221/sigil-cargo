@@ -15,11 +15,11 @@ import {
   type SaisiePaiement,
 } from "./PaiementSaisie";
 import { deviseBase } from "@/lib/paiements";
-import { tarifProposeParKg } from "@/lib/prix";
+import { montantColis, partAlimentaireKg, tarifsProposes } from "@/lib/prix";
 import type { ReglesPrix } from "@/lib/parametres";
 import {
-  CaseAlimentaire,
   IndicationTarif,
+  PartAlimentaire,
   tarifAlimentaireDisponible,
   versDestinationTarif,
 } from "./TarifColisInfo";
@@ -66,9 +66,12 @@ export function NouvelleCommandeForm({
   const [volumeM3, setVolumeM3] = useState("");
   const [prixParM3, setPrixParM3] = useState(DEFAULT_PRIX_PAR_M3);
   const [enveloppe, setEnveloppe] = useState(false);
-  const [alimentaire, setAlimentaire] = useState(false);
-  // Tant que le prix n'est pas modifié à la main, il suit la destination, la case alimentaire et le poids.
+  // Part alimentaire du colis (kg) et son prix : un même colis peut mélanger alimentaire et autres produits.
+  const [poidsAlimentaire, setPoidsAlimentaire] = useState("");
+  const [prixAlimentaire, setPrixAlimentaire] = useState("");
+  // Tant qu'un prix n'est pas modifié à la main, il suit la destination et le poids.
   const [prixManuel, setPrixManuel] = useState(false);
+  const [prixAlimManuel, setPrixAlimManuel] = useState(false);
   const [nombrePaquets, setNombrePaquets] = useState(1);
   const [adresseLivraison, setAdresseLivraison] = useState("");
   const [destination, setDestination] = useState("");
@@ -101,33 +104,41 @@ export function NouvelleCommandeForm({
     const poids = parseFloat(poidsKg);
     const prix = parseFloat(prixParKg);
     if (Number.isNaN(poids) || Number.isNaN(prix)) return null;
-    return poids * prix + (enveloppe ? 15 : 0);
-  }, [enModeConteneur, volumeM3, prixParM3, poidsKg, prixParKg, enveloppe]);
+    const part = partAlimentaireKg(poids, parseFloat(poidsAlimentaire));
+    const prixAlim = parseFloat(prixAlimentaire);
+    return montantColis(poids, part, prix, Number.isNaN(prixAlim) ? prix : prixAlim) + (enveloppe ? 15 : 0);
+  }, [enModeConteneur, volumeM3, prixParM3, poidsKg, prixParKg, poidsAlimentaire, prixAlimentaire, enveloppe]);
 
-  // Tarif au kilo proposé : destination (alimentaire ou autres produits) et
-  // tarif « petit colis » sous le seuil de poids. Modifiable ensuite à la main.
-  function proposer(dest: string, alim: boolean, poidsTexte: string): number | undefined {
+  // Tarifs au kilo proposés (autres produits et part alimentaire) d'après la
+  // destination et le tarif « petit colis » sous le seuil de poids.
+  // Modifiables ensuite à la main.
+  function proposer(dest: string, poidsTexte: string) {
     const poids = parseFloat(poidsTexte);
-    return tarifProposeParKg(
+    return tarifsProposes(
       versDestinationTarif(destinations, dest),
       Number.isNaN(poids) ? null : poids,
-      regles,
-      alim
-    )?.tarif;
+      regles
+    );
   }
 
-  function appliquerProposition(dest: string, alim: boolean, poidsTexte: string) {
+  function appliquerProposition(dest: string, poidsTexte: string, respecterManuel = false) {
     if (enModeConteneur) return;
-    const tarif = proposer(dest, alim, poidsTexte);
-    if (tarif !== undefined) setPrixParKg(tarif.toString());
-    setPrixManuel(false);
+    const t = proposer(dest, poidsTexte);
+    if (t.autres && !(respecterManuel && prixManuel)) {
+      setPrixParKg(t.autres.tarif.toString());
+      setPrixManuel(false);
+    }
+    if (t.alimentaire && !(respecterManuel && prixAlimManuel)) {
+      setPrixAlimentaire(t.alimentaire.tarif.toString());
+      setPrixAlimManuel(false);
+    }
   }
 
   function handleProduitChange(id: string) {
     setProduitId(id);
     const p = produits.find((p) => p.id === id);
     if (p) {
-      const tarif = destination ? proposer(destination, alimentaire, poidsKg) : undefined;
+      const tarif = destination ? proposer(destination, poidsKg).autres?.tarif : undefined;
       setPrixParKg((tarif ?? p.prix_par_kg).toString());
       setPrixManuel(false);
     }
@@ -135,17 +146,12 @@ export function NouvelleCommandeForm({
 
   function handleDestinationChange(value: string) {
     setDestination(value);
-    appliquerProposition(value, alimentaire, poidsKg);
-  }
-
-  function handleAlimentaireChange(value: boolean) {
-    setAlimentaire(value);
-    appliquerProposition(destination, value, poidsKg);
+    appliquerProposition(value, poidsKg);
   }
 
   function handlePoidsChange(value: string) {
     setPoidsKg(value);
-    if (!prixManuel) appliquerProposition(destination, alimentaire, value);
+    appliquerProposition(destination, value, true);
   }
 
   function handlePhotosChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -192,6 +198,32 @@ export function NouvelleCommandeForm({
       if (Number.isNaN(poids) || poids <= 0) {
         setError("Indique un poids valide.");
         return;
+      }
+    }
+    // Part alimentaire du colis (même colis, deux tarifs).
+    let poidsAlim: number | null = null;
+    let prixAlim: number | null = null;
+    if (!enModeConteneur && poidsAlimentaire.trim()) {
+      const saisi = parseFloat(poidsAlimentaire);
+      if (Number.isNaN(saisi) || saisi < 0) {
+        setError("Indique un poids alimentaire valide.");
+        return;
+      }
+      if (saisi > 0) {
+        if (poids === null) {
+          setError("Indique le poids total du colis pour répartir la part alimentaire.");
+          return;
+        }
+        if (saisi > poids) {
+          setError("La part alimentaire ne peut pas dépasser le poids total du colis.");
+          return;
+        }
+        prixAlim = parseFloat(prixAlimentaire);
+        if (Number.isNaN(prixAlim) || prixAlim < 0) {
+          setError("Indique un prix alimentaire par kg valide.");
+          return;
+        }
+        poidsAlim = saisi;
       }
     }
     let prix: number | null = null;
@@ -280,7 +312,8 @@ export function NouvelleCommandeForm({
         volumeM3: volume,
         prixParM3: prixM3,
         enveloppe,
-        alimentaire,
+        poidsAlimentaireKg: poidsAlim,
+        prixAlimentaireParKg: prixAlim,
         nombrePaquets,
         adresseLivraison,
         destination,
@@ -426,7 +459,7 @@ export function NouvelleCommandeForm({
               regles={regles}
               destination={destination}
               poidsKg={poidsKg}
-              alimentaire={alimentaire}
+              part="autres"
               prixSaisi={prixParKg}
             />
           </div>
@@ -456,8 +489,20 @@ export function NouvelleCommandeForm({
         Option enveloppe (+{montantFormatter.format(15)})
       </label>
 
-      {tarifAlimentaireDisponible(destinations) && (
-        <CaseAlimentaire checked={alimentaire} onChange={handleAlimentaireChange} />
+      {tarifAlimentaireDisponible(destinations) && !enModeConteneur && (
+        <PartAlimentaire
+          destinations={destinations}
+          regles={regles}
+          destination={destination}
+          poidsKg={poidsKg}
+          poidsAlimentaire={poidsAlimentaire}
+          onPoidsAlimentaire={setPoidsAlimentaire}
+          prixAlimentaire={prixAlimentaire}
+          onPrixAlimentaire={(v) => {
+            setPrixAlimentaire(v);
+            setPrixAlimManuel(true);
+          }}
+        />
       )}
 
       <div className="rounded-md bg-slate-50 px-3 py-2 text-sm">

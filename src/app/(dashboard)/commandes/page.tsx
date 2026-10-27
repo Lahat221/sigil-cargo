@@ -47,7 +47,7 @@ export default async function CommandesPage({
 
   const page = Math.max(1, Number(searchParams.page) || 1);
   const SELECT_COLONNES =
-    `id, numero, statut, poids_kg, montant_total, destination, prix_par_kg, ${TARIF_ALIMENTAIRE_ACTIF ? "alimentaire, " : ""}mode_fret, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), paiements(montant_base)`;
+    `id, numero, statut, poids_kg, montant_total, destination, prix_par_kg, ${TARIF_ALIMENTAIRE_ACTIF ? "poids_alimentaire_kg, prix_alimentaire_par_kg, " : ""}mode_fret, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), paiements(montant_base)`;
 
   const q = searchParams.q?.trim();
   let clientIds: string[] = [];

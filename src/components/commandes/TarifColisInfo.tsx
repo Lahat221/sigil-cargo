@@ -2,9 +2,13 @@
 
 import type { Destination } from "@/lib/commandes/destinations";
 import type { ReglesPrix } from "@/lib/parametres";
-import { tarifProposeParKg, type DestinationTarif } from "@/lib/prix";
+import { partAlimentaireKg, tarifsProposes, type DestinationTarif } from "@/lib/prix";
 
 const euro = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
+const kg = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 });
+
+const INPUT =
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none";
 
 export function versDestinationTarif(
   destinations: Destination[],
@@ -16,30 +20,9 @@ export function versDestinationTarif(
     : undefined;
 }
 
-/** Au moins une destination a un tarif spécial alimentaire : la case a un sens. */
+/** Au moins une destination a un tarif spécial alimentaire : la part alimentaire a un sens. */
 export function tarifAlimentaireDisponible(destinations: Destination[]): boolean {
   return destinations.some((d) => d.tarif_alimentaire_par_kg !== null);
-}
-
-/** Case « produits alimentaires » (tarif spécial par destination). */
-export function CaseAlimentaire({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center gap-2 text-sm text-slate-700">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-slate-300"
-      />
-      Produits alimentaires (tarif spécial)
-    </label>
-  );
 }
 
 /**
@@ -51,24 +34,24 @@ export function IndicationTarif({
   regles,
   destination,
   poidsKg,
-  alimentaire,
+  part,
   prixSaisi,
 }: {
   destinations: Destination[];
   regles: ReglesPrix;
   destination: string;
   poidsKg: string;
-  alimentaire: boolean;
+  /** Tarif concerné : la part « autres produits » ou la part alimentaire. */
+  part: "autres" | "alimentaire";
   prixSaisi: string;
 }) {
   if (!destination) return null;
   const poids = parseFloat(poidsKg);
-  const proposition = tarifProposeParKg(
+  const proposition = tarifsProposes(
     versDestinationTarif(destinations, destination),
     Number.isNaN(poids) ? null : poids,
-    regles,
-    alimentaire
-  );
+    regles
+  )[part];
   if (!proposition) return null;
 
   const prix = parseFloat(prixSaisi);
@@ -83,5 +66,101 @@ export function IndicationTarif({
     <p className="mt-1 text-xs text-slate-500">
       Tarif appliqué : {euro.format(proposition.tarif)} €/kg ({proposition.raison}).
     </p>
+  );
+}
+
+/**
+ * Part de produits alimentaires d'un colis : un client peut apporter de
+ * l'alimentaire ET autre chose dans le même colis. Le poids total reste celui
+ * du colis ; on indique ici la part alimentaire, facturée au tarif alimentaire,
+ * le reste l'étant au tarif des autres produits.
+ */
+export function PartAlimentaire({
+  destinations,
+  regles,
+  destination,
+  poidsKg,
+  poidsAlimentaire,
+  onPoidsAlimentaire,
+  prixAlimentaire,
+  onPrixAlimentaire,
+}: {
+  destinations: Destination[];
+  regles: ReglesPrix;
+  destination: string;
+  poidsKg: string;
+  poidsAlimentaire: string;
+  onPoidsAlimentaire: (v: string) => void;
+  prixAlimentaire: string;
+  onPrixAlimentaire: (v: string) => void;
+}) {
+  const total = parseFloat(poidsKg);
+  const saisi = parseFloat(poidsAlimentaire);
+  const part = partAlimentaireKg(Number.isNaN(total) ? null : total, Number.isNaN(saisi) ? null : saisi);
+  const depasse = !Number.isNaN(saisi) && !Number.isNaN(total) && saisi > total;
+  const sansPoids = !Number.isNaN(saisi) && saisi > 0 && (Number.isNaN(total) || total <= 0);
+
+  return (
+    <div className="space-y-3 rounded-lg border border-slate-200 p-3">
+      <div>
+        <p className="text-sm font-medium text-slate-700">Produits alimentaires dans ce colis</p>
+        <p className="text-xs text-slate-500">
+          Si le client apporte de l&apos;alimentaire et autre chose dans le même colis, indique le poids de la part
+          alimentaire : elle est facturée au tarif alimentaire, le reste au tarif des autres produits.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            dont alimentaire (kg)
+          </label>
+          <input
+            type="number"
+            step="0.001"
+            min="0"
+            value={poidsAlimentaire}
+            onChange={(e) => onPoidsAlimentaire(e.target.value)}
+            placeholder="0"
+            className={INPUT}
+          />
+        </div>
+        {part > 0 && (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Prix alimentaire par kg (modifiable)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={prixAlimentaire}
+              onChange={(e) => onPrixAlimentaire(e.target.value)}
+              className={INPUT}
+            />
+            <IndicationTarif
+              destinations={destinations}
+              regles={regles}
+              destination={destination}
+              poidsKg={poidsKg}
+              part="alimentaire"
+              prixSaisi={prixAlimentaire}
+            />
+          </div>
+        )}
+      </div>
+      {depasse && (
+        <p className="text-xs font-medium text-red-600">
+          La part alimentaire ne peut pas dépasser le poids total du colis.
+        </p>
+      )}
+      {sansPoids && (
+        <p className="text-xs font-medium text-amber-700">Indique d&apos;abord le poids total du colis.</p>
+      )}
+      {part > 0 && !Number.isNaN(total) && (
+        <p className="text-xs text-slate-600">
+          Alimentaire : {kg.format(part)} kg — autres produits : {kg.format(total - part)} kg.
+        </p>
+      )}
+    </div>
   );
 }

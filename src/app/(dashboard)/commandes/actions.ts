@@ -253,7 +253,9 @@ type UpdateCommandeInput = {
   volumeM3: number | null;
   prixParM3: number | null;
   enveloppe: boolean;
-  alimentaire: boolean;
+  /** Part alimentaire du colis (kg, comprise dans poidsKg) et son prix au kilo. */
+  poidsAlimentaireKg: number | null;
+  prixAlimentaireParKg: number | null;
   nombrePaquets: number;
   adresseLivraison: string;
   destination: string;
@@ -292,7 +294,12 @@ export async function updateCommande(
       volume_m3: input.volumeM3,
       prix_par_m3: input.prixParM3,
       enveloppe: input.enveloppe,
-      ...(TARIF_ALIMENTAIRE_ACTIF ? { alimentaire: input.alimentaire } : {}),
+      ...(TARIF_ALIMENTAIRE_ACTIF
+        ? {
+            poids_alimentaire_kg: input.poidsAlimentaireKg,
+            prix_alimentaire_par_kg: input.prixAlimentaireParKg,
+          }
+        : {}),
       nombre_paquets: input.nombrePaquets,
       adresse_livraison: input.adresseLivraison.trim() || null,
       destination: input.destination.trim() || null,
@@ -448,7 +455,7 @@ export async function recalculerPrix(): Promise<
   const { data: commandes, error: fetchError } = await supabase
     .from("commandes")
     .select(
-      `id, produit_id, prix_par_kg, destination, poids_kg, ${TARIF_ALIMENTAIRE_ACTIF ? "alimentaire, " : ""}mode_fret`
+      `id, produit_id, prix_par_kg, destination, poids_kg, ${TARIF_ALIMENTAIRE_ACTIF ? "poids_alimentaire_kg, prix_alimentaire_par_kg, " : ""}mode_fret`
     )
     .not("statut", "in", "(livree,annulee)")
     .returns<
@@ -458,7 +465,8 @@ export async function recalculerPrix(): Promise<
         prix_par_kg: number | null;
         destination: string | null;
         poids_kg: number | null;
-        alimentaire?: boolean | null;
+        poids_alimentaire_kg?: number | null;
+        prix_alimentaire_par_kg?: number | null;
         mode_fret: "aerien" | "conteneur";
       }[]
     >();
@@ -478,7 +486,7 @@ export async function recalculerPrix(): Promise<
     (produits ?? []).map((p) => [p.id, p.prix_par_kg])
   );
 
-  // Prix attendu d'après la destination, le tarif alimentaire et la règle
+  // Prix attendus d'après la destination, le tarif alimentaire et la règle
   // « petit colis » quand ils sont connus ; sinon prix du produit (ancien
   // comportement) — sans quoi un colis alimentaire ou petit colis reprendrait
   // le tarif standard.
@@ -487,13 +495,22 @@ export async function recalculerPrix(): Promise<
 
   let nbMisAJour = 0;
   for (const c of commandes) {
-    const attendu = verifierPrixColis(c, destinations, regles).attendu;
-    const prixActuel = attendu ?? prixParProduit.get(c.produit_id);
-    if (prixActuel === undefined || prixActuel === c.prix_par_kg) continue;
+    const verif = verifierPrixColis(c, destinations, regles);
+    const prixActuel = verif.attendu ?? prixParProduit.get(c.produit_id);
+    if (prixActuel === undefined) continue;
+    // Part alimentaire : son propre tarif attendu (le tarif des autres produits en reste inchangé).
+    const prixAlim = verif.attenduAlimentaire;
+    const change =
+      prixActuel !== c.prix_par_kg ||
+      (prixAlim !== null && prixAlim !== (c.prix_alimentaire_par_kg ?? null));
+    if (!change) continue;
 
     const { error } = await supabase
       .from("commandes")
-      .update({ prix_par_kg: prixActuel })
+      .update({
+        prix_par_kg: prixActuel,
+        ...(TARIF_ALIMENTAIRE_ACTIF && prixAlim !== null ? { prix_alimentaire_par_kg: prixAlim } : {}),
+      })
       .eq("id", c.id);
     if (error) return { error: error.message };
     nbMisAJour += 1;

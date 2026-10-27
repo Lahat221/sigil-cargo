@@ -49,12 +49,12 @@ export const OUTILS: Anthropic.Tool[] = [
       properties: {
         destination: { type: "string", description: "Ville de destination (ex. Lyon)." },
         type: { type: "string", enum: ["colis", "enveloppe"] },
-        alimentaire: {
-          type: "boolean",
+        poids_kg: { type: "number", description: "Poids total du colis en kg (inutile pour une enveloppe)." },
+        poids_alimentaire_kg: {
+          type: "number",
           description:
-            "true si le colis ne contient que des produits alimentaires (tarif spécial par destination). Demande au client en cas de doute.",
+            "Part du colis (en kg, comprise dans poids_kg) composée de produits alimentaires, facturée au tarif alimentaire de la destination ; le reste est au tarif des autres produits. 0 ou absent s'il n'y a pas d'alimentaire. Demande au client en cas de doute.",
         },
-        poids_kg: { type: "number", description: "Poids en kg (inutile pour une enveloppe)." },
       },
       required: ["destination", "type"],
     },
@@ -220,20 +220,21 @@ async function estimer(entree: Record<string, unknown>, ctx: ContexteOutils) {
   const regles = reglesPrix(await chargerParametresSite(ctx.supabase));
   const type = entree.type === "enveloppe" ? "enveloppe" : "colis";
   const poids = typeof entree.poids_kg === "number" ? entree.poids_kg : null;
-  const alimentaire = entree.alimentaire === true;
+  const poidsAlimentaire = typeof entree.poids_alimentaire_kg === "number" ? entree.poids_alimentaire_kg : 0;
   const r = estimerPrix(
     { nom: dest.nom, tarif: dest.tarif_par_kg, tarifAlimentaire: dest.tarif_alimentaire_par_kg },
     type,
     poids,
     regles,
-    alimentaire
+    poidsAlimentaire
   );
   if (!r) return { erreur: "Poids manquant ou invalide : demande le poids au client." };
   return {
     destination: dest.nom,
     total_euros: r.total === null ? null : Math.round(r.total * 100) / 100,
     tarif_par_kg: r.tarifParKg,
-    tarif_alimentaire_applique: r.alimentaire,
+    poids_alimentaire_kg: r.poidsAlimentaireKg,
+    tarif_alimentaire_par_kg: r.tarifAlimentaireParKg,
     petit_colis: r.petitColis,
     enveloppe: r.enveloppe,
     note: "Estimation indicative : le montant définitif est confirmé au dépôt.",
