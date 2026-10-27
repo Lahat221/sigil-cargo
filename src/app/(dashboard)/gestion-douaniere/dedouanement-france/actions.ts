@@ -1,5 +1,6 @@
 "use server";
 
+import { getUtilisateurAutorise } from "@/lib/auth/profil";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -241,6 +242,7 @@ export async function enregistrerExpeditionFrance(
  * l'upload Storage pour éviter une erreur "Bucket not found".
  */
 export async function initLtaBucket(): Promise<{ error: string } | { ok: true }> {
+  if (!(await getUtilisateurAutorise("gestion-douaniere"))) return { error: "Action non autorisée." };
   const admin = createAdminClient();
   const { error } = await admin.storage.createBucket("lta-documents", {
     public: false,

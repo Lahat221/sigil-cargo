@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getUtilisateurAutorise } from "@/lib/auth/profil";
 import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import { PAUSE_HUMAIN_H, leverPause, mettreEnPause } from "@/lib/whatsapp-ia/reglages";
 
@@ -23,6 +24,9 @@ export async function creerCampagne(
   imageUrl: string | null,
   contentSid: string | null
 ): Promise<{ error: string } | { success: true; id: string }> {
+  if (!(await getUtilisateurAutorise("notifications-whatsapp"))) {
+    return { error: "Action non autorisée." };
+  }
   if (!nom.trim()) return { error: "Le nom de la campagne est requis." };
   if (!message.trim()) return { error: "Le message est requis." };
   if (clientIds.length === 0) {
@@ -68,6 +72,9 @@ export async function creerCampagne(
 export async function envoyerMessageWhatsApp(
   destinataireId: string
 ): Promise<{ error: string } | { success: true }> {
+  if (!(await getUtilisateurAutorise("notifications-whatsapp"))) {
+    return { error: "Action non autorisée." };
+  }
   const supabase = createClient();
 
   const { data: destinataire, error: fetchError } = await supabase
@@ -168,6 +175,9 @@ export async function envoyerReponseWhatsApp(
   mediaPath?: string | null,
   mediaType?: string | null
 ): Promise<{ error: string } | { success: true }> {
+  if (!(await getUtilisateurAutorise("chat", "notifications-whatsapp"))) {
+    return { error: "Action non autorisée." };
+  }
   const texte = body.trim();
   if (!texte && !mediaPath) {
     return { error: "Le message est vide." };
@@ -231,6 +241,9 @@ export async function envoyerReponseWhatsApp(
 export async function marquerEnvoye(
   destinataireId: string
 ): Promise<{ error: string } | { success: true }> {
+  if (!(await getUtilisateurAutorise("notifications-whatsapp"))) {
+    return { error: "Action non autorisée." };
+  }
   const supabase = createClient();
   const { error } = await supabase
     .from("campagnes_whatsapp_destinataires")
@@ -246,6 +259,9 @@ export async function marquerEnvoye(
 export async function supprimerCampagne(
   campagneId: string
 ): Promise<{ error: string } | { success: true }> {
+  if (!(await getUtilisateurAutorise("notifications-whatsapp"))) {
+    return { error: "Action non autorisée." };
+  }
   const supabase = createClient();
   const { error } = await supabase
     .from("campagnes_whatsapp")
@@ -262,6 +278,9 @@ export async function supprimerCampagne(
 export async function reactiverAgentIA(
   telephone: string
 ): Promise<{ error: string } | { success: true }> {
+  if (!(await getUtilisateurAutorise("chat", "notifications-whatsapp"))) {
+    return { error: "Action non autorisée." };
+  }
   try {
     await leverPause(createAdminClient(), telephone);
   } catch (err) {

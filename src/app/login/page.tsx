@@ -1,12 +1,14 @@
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { EmailSignInForm } from "@/components/auth/EmailSignInForm";
 import { Logo } from "@/components/layout/Logo";
+import { cheminInterne } from "@/lib/securite/redirection";
 
 export default function LoginPage({
   searchParams,
 }: {
   searchParams: { next?: string; error?: string };
 }) {
+  const next = cheminInterne(searchParams.next, "/tableau-de-bord");
   return (
     <div className="flex min-h-screen items-center justify-center bg-navy-gradient px-4">
       <div className="w-full max-w-sm rounded-xl border border-line bg-navy-2/60 p-8 shadow-xl backdrop-blur">
@@ -23,7 +25,7 @@ export default function LoginPage({
           </p>
         )}
 
-        <GoogleSignInButton next={searchParams.next ?? "/tableau-de-bord"} />
+        <GoogleSignInButton next={next} />
 
         <div className="my-5 flex items-center gap-3">
           <div className="h-px flex-1 bg-line" />
@@ -31,7 +33,7 @@ export default function LoginPage({
           <div className="h-px flex-1 bg-line" />
         </div>
 
-        <EmailSignInForm next={searchParams.next ?? "/tableau-de-bord"} />
+        <EmailSignInForm next={next} />
       </div>
     </div>
   );

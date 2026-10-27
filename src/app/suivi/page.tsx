@@ -54,8 +54,8 @@ export default async function SuiviColisPage({
     const numeroNombre = Number(numero);
     const telDigits = chiffres(telephone);
 
-    if (Number.isNaN(numeroNombre) || telDigits.length < 6) {
-      erreur = "Vérifie le numéro de colis et le numéro de téléphone saisis.";
+    if (Number.isNaN(numeroNombre) || telDigits.length < 8) {
+      erreur = "Vérifie le numéro de colis et saisis ton numéro de téléphone en entier.";
     } else {
       const supabase = createAdminClient();
       const { data } = await supabase
@@ -83,7 +83,7 @@ export default async function SuiviColisPage({
       const trouve = (data ?? []).find((c) => {
         const clientDigits = chiffres(c.clients?.telephone ?? "");
         return (
-          clientDigits.length >= 6 &&
+          clientDigits.length >= 8 &&
           (clientDigits.endsWith(telDigits) || telDigits.endsWith(clientDigits))
         );
       });
