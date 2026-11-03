@@ -5,6 +5,7 @@ import type { Database } from "@/types/database.types";
 import { getOpenAIClient, douaneModel, douaneReasoning } from "./openai";
 import { rechercherReferentiel } from "./referentiel";
 import { glossaireWolof } from "./glossaire";
+import { cleSonore } from "./phonetique";
 
 const HS_CODE_REGEX = /^\d{4}\.\d{2}\.\d{2}\.\d{2}$/;
 
@@ -33,10 +34,13 @@ const ReclassificationSchema = z.object({
   description_douane: z.string(),
   hs_code: z.string().regex(HS_CODE_REGEX),
   confiance: z.number().min(0).max(1),
+  explication: z.string(),
 });
 
 export type Reclassification = z.infer<typeof ReclassificationSchema> & {
   source: "referentiel" | "ia";
+  /** Nom à employer si le produit est connu du référentiel sous un autre nom (synonyme, ex. « ande »). */
+  nom_canonique?: string;
 };
 
 /**
@@ -56,16 +60,23 @@ export async function reclassifierProduit(
   if (!nom) return { error: "Indique un nom de produit." };
 
   const matches = await rechercherReferentiel(supabase, nom);
-  const matchExact = matches.find(
-    (m) => m.nom_local.trim().toLowerCase() === nom.toLowerCase()
+  // Même nom (ou synonyme, à la graphie près : ande / anndé) qu'une entrée du référentiel.
+  const cle = cleSonore(nom);
+  const matchExact = matches.find((m) =>
+    [m.nom_local, ...(m.synonymes ?? [])].some((n) => cleSonore(n) === cle)
   );
   if (matchExact?.hs_code) {
+    const parSynonyme = cleSonore(matchExact.nom_local) !== cle;
     return {
       type_produit: matchExact.type_produit,
       description_douane: matchExact.description_douane,
       hs_code: matchExact.hs_code,
       confiance: 0.99,
       source: "referentiel",
+      explication: `« ${nom} » est connu de votre référentiel${
+        parSynonyme ? ` (c'est un autre nom de « ${matchExact.nom_local} »)` : ""
+      } : le classement déjà validé par un agent a été repris tel quel, sans estimation de l'IA.`,
+      ...(parSynonyme ? { nom_canonique: matchExact.nom_local } : {}),
     };
   }
 
@@ -105,7 +116,10 @@ RÈGLES :
    complète avec ".00.00".
 4. "confiance" (0 à 1) reflète ta certitude réelle — jamais artificiellement haute pour un nom ambigu.
 5. "description_douane" : description factuelle du produit telle qu'elle apparaîtrait sur une déclaration
-   (pas le nom local lui-même).`,
+   (pas le nom local lui-même).
+6. "explication" : 1 à 2 phrases en français, simples, pour l'agent : ce que tu as compris du produit (nature,
+   matière, usage) et pourquoi cette position tarifaire et cette description. Si le nom est ambigu ou inconnu,
+   dis-le clairement et dis ce qu'il faut vérifier.`,
       },
       {
         role: "user",

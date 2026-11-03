@@ -264,6 +264,10 @@ export async function propagerCorrection(
     /** Seulement les champs de classement que l'agent vient de modifier. */
     classement: Partial<Pick<ProduitClassifie, "type_produit" | "description_douane" | "hs_code">>;
     userId: string | null;
+    /** Confiance de la correction d'origine (plafonnée à celle du référentiel pour les autres lignes). */
+    confiance?: number;
+    hsCodeSource?: "referentiel" | "ia" | "utilisateur";
+    hsStatus?: "propose" | "a_verifier" | "confirme";
   }
 ): Promise<number> {
   const nomAvant = params.nomAvant.trim();
@@ -328,9 +332,14 @@ export async function propagerCorrection(
       .from("douane_produits")
       .update({
         ...maj,
-        ...(maj.hs_code ? { hs_status: "propose" as const, hs_code_source: "referentiel" as const } : {}),
-        // Correction validée par un humain : la confiance remonte.
-        confiance: Math.max(ligne.confiance ?? 0, CONFIANCE_REFERENTIEL),
+        ...(maj.hs_code
+          ? {
+              hs_status: params.hsStatus ?? ("propose" as const),
+              hs_code_source: params.hsCodeSource === "ia" ? ("ia" as const) : ("referentiel" as const),
+            }
+          : {}),
+        // Correction validée par un humain : la confiance remonte (celle d'une estimation de l'IA, pas plus).
+        confiance: Math.max(ligne.confiance ?? 0, Math.min(params.confiance ?? CONFIANCE_REFERENTIEL, CONFIANCE_REFERENTIEL)),
       })
       .eq("id", ligne.id);
     if (error) continue;

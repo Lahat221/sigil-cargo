@@ -8,6 +8,7 @@ import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { genererDeclarationBuffer } from "@/lib/douane/declarationXlsx";
 import { apprendreDeCorrection, propagerCorrection, trouverLignesSimilaires } from "@/lib/douane/apprentissage";
 import { CONFIANCE_CORRIGEE, recalculerStatutExtraction } from "@/lib/douane/confiance";
+import { confidenceThreshold } from "@/lib/douane/openai";
 import type { HsCodeSource, HsStatus } from "@/types/database.types";
 
 type ColisMinimal = {
@@ -316,6 +317,22 @@ export async function mettreAJourProduit(
   produitId: string,
   champs: ChampsProduit
 ): Promise<ResultatMiseAJourProduit> {
+  return corrigerProduit(produitId, champs);
+}
+
+/** Réglages d'une correction qui ne vient pas d'un agent qui a tapé la valeur (ex. relance par l'IA). */
+type OptionsCorrection = {
+  /** Confiance de la ligne (défaut : correction d'un agent, 99 %). */
+  confiance?: number;
+  hsCodeSource?: HsCodeSource;
+  hsStatus?: HsStatus;
+};
+
+async function corrigerProduit(
+  produitId: string,
+  champs: ChampsProduit,
+  options: OptionsCorrection = {}
+): Promise<ResultatMiseAJourProduit> {
   const supabase = createClient();
   const {
     data: { user },
@@ -334,7 +351,8 @@ export async function mettreAJourProduit(
   };
   if (champs.hs_code !== undefined) {
     misAJour.hs_status = champs.hs_code ? "confirme" : "a_verifier";
-    misAJour.hs_code_source = "utilisateur";
+    misAJour.hs_code_source = options.hsCodeSource ?? "utilisateur";
+    if (options.hsStatus && champs.hs_code) misAJour.hs_status = options.hsStatus;
   }
 
   // Nom ou classement corrigé par un agent : la ligne est validée par un humain, la
@@ -342,7 +360,7 @@ export async function mettreAJourProduit(
   const classementOuNomCorrige = (
     ["type_produit", "description_douane", "hs_code", "description_produit"] as const
   ).some((c) => champs[c] !== undefined && String(champs[c] ?? "") !== String(avant[c] ?? ""));
-  if (classementOuNomCorrige) misAJour.confiance = CONFIANCE_CORRIGEE;
+  if (classementOuNomCorrige) misAJour.confiance = options.confiance ?? CONFIANCE_CORRIGEE;
 
   const { error } = await supabase.from("douane_produits").update(misAJour).eq("id", produitId);
   if (error) return { error: error.message };
@@ -407,6 +425,9 @@ export async function mettreAJourProduit(
       nomApres: apres.description_produit,
       classement,
       userId: user?.id ?? null,
+      confiance: options.confiance,
+      hsCodeSource: options.hsCodeSource,
+      hsStatus: options.hsStatus,
     });
     if (appris && apres.hs_code) {
       similaires = (
@@ -543,21 +564,39 @@ async function upsertReferentiel(
   return { success: true };
 }
 
+/** Ce que « Relancer » a changé, en clair : affiché à l'agent après la relance. */
+export type ExplicationRelance = {
+  nom: string;
+  /** Nom avant la relance, s'il a été remplacé (synonyme du référentiel, ex. « ande »). */
+  ancienNom: string | null;
+  source: "referentiel" | "ia";
+  /** Confiance de la ligne après la relance (0 à 1). */
+  confiance: number;
+  /** Raisonnement en français : pourquoi ce classement et cette description. */
+  pourquoi: string;
+  avant: { type_produit: string; description_douane: string; hs_code: string | null };
+  apres: { type_produit: string; description_douane: string; hs_code: string };
+  /** Autres lignes du même nom corrigées automatiquement (colis pas encore validés). */
+  propagees: number;
+};
+
 /**
  * "Relancer" (ExtractionTable) : reclassifie ce produit à partir de son nom
  * actuel (corrigé au préalable via "Modifier" si besoin) — relance juste la
- * recherche de HS code, pas de formulaire séparé. Met à jour la ligne ET le
- * référentiel interne en une seule action, pour que la correction soit
- * "réglée pour toujours".
+ * recherche de HS code, pas de formulaire séparé. Met à jour la ligne (type,
+ * DESCRIPTION DOUANE, code HS, confiance) ET le référentiel interne en une seule
+ * action, puis explique ce qui a changé et pourquoi.
  */
 export async function relancerHsCode(
   produitId: string
-): Promise<{ error: string } | { success: true; hsCode: string; source: "referentiel" | "ia" }> {
+): Promise<
+  { error: string } | { success: true; hsCode: string; source: "referentiel" | "ia"; explication: ExplicationRelance }
+> {
   const supabase = createClient();
 
   const { data: produit } = await supabase
     .from("douane_produits")
-    .select("description_produit")
+    .select("description_produit, type_produit, description_douane, hs_code")
     .eq("id", produitId)
     .maybeSingle();
   if (!produit) return { error: "Produit introuvable." };
@@ -565,15 +604,31 @@ export async function relancerHsCode(
   const resultat = await reclassifierProduit(supabase, produit.description_produit);
   if ("error" in resultat) return resultat;
 
-  const resultatProduit = await mettreAJourProduit(produitId, {
-    type_produit: resultat.type_produit,
-    description_douane: resultat.description_douane,
-    hs_code: resultat.hs_code,
-  });
+  // Une entrée du référentiel au nom d'un synonyme (« ande ») impose son nom.
+  const nomFinal = resultat.nom_canonique ?? produit.description_produit;
+  const ancienNom = resultat.nom_canonique ? produit.description_produit : null;
+
+  // Classement validé par un humain (référentiel) : confiance haute. Estimation de l'IA :
+  // sa propre confiance, et « à vérifier » si elle est sous le seuil.
+  const confiance = resultat.source === "referentiel" ? CONFIANCE_CORRIGEE : resultat.confiance;
+  const resultatProduit = await corrigerProduit(
+    produitId,
+    {
+      type_produit: resultat.type_produit,
+      description_douane: resultat.description_douane,
+      hs_code: resultat.hs_code,
+      ...(ancienNom ? { description_produit: nomFinal } : {}),
+    },
+    {
+      confiance,
+      hsCodeSource: resultat.source === "referentiel" ? "referentiel" : "ia",
+      hsStatus: resultat.source === "ia" && confiance < confidenceThreshold() ? "a_verifier" : "propose",
+    }
+  );
   if ("error" in resultatProduit) return resultatProduit;
 
   const resultatReferentiel = await upsertReferentiel(supabase, {
-    nomLocal: produit.description_produit,
+    nomLocal: nomFinal,
     typeProduit: resultat.type_produit,
     descriptionDouane: resultat.description_douane,
     hsCode: resultat.hs_code,
@@ -583,5 +638,27 @@ export async function relancerHsCode(
   }
 
   revalidatePath("/gestion-douaniere");
-  return { success: true, hsCode: resultat.hs_code, source: resultat.source };
+  return {
+    success: true,
+    hsCode: resultat.hs_code,
+    source: resultat.source,
+    explication: {
+      nom: nomFinal,
+      ancienNom,
+      source: resultat.source,
+      confiance,
+      pourquoi: resultat.explication,
+      avant: {
+        type_produit: produit.type_produit,
+        description_douane: produit.description_douane,
+        hs_code: produit.hs_code,
+      },
+      apres: {
+        type_produit: resultat.type_produit,
+        description_douane: resultat.description_douane,
+        hs_code: resultat.hs_code,
+      },
+      propagees: resultatProduit.propagees ?? 0,
+    },
+  };
 }

@@ -6,6 +6,7 @@ import {
   appliquerCorrectionAuxSimilaires,
   mettreAJourProduit,
   relancerHsCode,
+  type ExplicationRelance,
   type ResultatMiseAJourProduit,
 } from "@/app/(dashboard)/gestion-douaniere/actions";
 import { IconPencil, IconRefresh } from "@/components/ui/Icons";
@@ -137,7 +138,13 @@ function LigneEdition({
   );
 }
 
-function BoutonRelancer({ produit, onFait }: { produit: ProduitLigne; onFait: () => void }) {
+function BoutonRelancer({
+  produit,
+  onFait,
+}: {
+  produit: ProduitLigne;
+  onFait: (explication: ExplicationRelance) => void;
+}) {
   const [isPending, startTransition] = useTransition();
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -149,7 +156,7 @@ function BoutonRelancer({ produit, onFait }: { produit: ProduitLigne; onFait: ()
         setErreur(resultat.error);
         return;
       }
-      onFait();
+      onFait(resultat.explication);
     });
   }
 
@@ -159,7 +166,7 @@ function BoutonRelancer({ produit, onFait }: { produit: ProduitLigne; onFait: ()
         type="button"
         onClick={relancer}
         disabled={isPending}
-        title="Relance la recherche de HS code à partir du nom actuel du produit (corrige-le d'abord via Modifier si besoin) et enregistre le résultat dans le référentiel pour les prochaines extractions"
+        title="Relance le classement à partir du nom actuel du produit (corrige-le d'abord via Modifier si besoin) : met à jour la description douane, le code HS et la confiance, l'enregistre dans le référentiel, et t'explique ce qui a changé"
         className="inline-flex items-center gap-1 text-xs text-amber-700 hover:underline disabled:opacity-50"
       >
         <IconRefresh size={12} />
@@ -167,6 +174,69 @@ function BoutonRelancer({ produit, onFait }: { produit: ProduitLigne; onFait: ()
       </button>
       {erreur && <span className="text-xs text-red-600">{erreur}</span>}
     </span>
+  );
+}
+
+function ChangementLigne({ libelle, avant, apres }: { libelle: string; avant: string | null; apres: string }) {
+  const change = (avant ?? "").trim() !== apres.trim();
+  return (
+    <li>
+      <span className="font-medium">{libelle} :</span>{" "}
+      {change ? (
+        <>
+          {avant ? <span className="text-slate-500 line-through">{avant}</span> : <span className="text-slate-500">(vide)</span>}{" "}
+          → <span className="font-semibold">{apres}</span>
+        </>
+      ) : (
+        <>
+          <span className="font-semibold">{apres}</span> <span className="text-slate-500">(inchangé, déjà correct)</span>
+        </>
+      )}
+    </li>
+  );
+}
+
+/** Explique, en clair, ce que « Relancer » vient de changer sur la ligne et pourquoi. */
+function ExplicationRelanceCarte({ explication: e, onFermer }: { explication: ExplicationRelance; onFermer: () => void }) {
+  const pct = Math.round(e.confiance * 100);
+  return (
+    <div className="mb-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-950">
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-semibold">
+          ✓ Relance terminée : « {e.nom} »
+        </p>
+        <button type="button" onClick={onFermer} className="text-xs text-sky-700 hover:underline">
+          Fermer
+        </button>
+      </div>
+      <p className="mt-1">
+        <span className="font-medium">Origine :</span>{" "}
+        {e.source === "referentiel"
+          ? "votre référentiel (classement déjà validé par un agent)."
+          : `estimation de l'IA, confiance ${pct} %${e.confiance < 0.8 ? " — à vérifier" : ""}.`}
+      </p>
+      <p className="mt-1">
+        <span className="font-medium">Pourquoi :</span> {e.pourquoi}
+      </p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-5">
+        {e.ancienNom && <ChangementLigne libelle="Nom du produit" avant={e.ancienNom} apres={e.nom} />}
+        <ChangementLigne libelle="Description douane" avant={e.avant.description_douane} apres={e.apres.description_douane} />
+        <ChangementLigne libelle="Code HS" avant={e.avant.hs_code} apres={e.apres.hs_code} />
+        <ChangementLigne libelle="Type de produit" avant={e.avant.type_produit} apres={e.apres.type_produit} />
+        <li>
+          <span className="font-medium">Confiance :</span> {pct} %
+        </li>
+      </ul>
+      {e.propagees > 0 && (
+        <p className="mt-1">
+          {e.propagees} autre{e.propagees > 1 ? "s" : ""} ligne{e.propagees > 1 ? "s" : ""} du même nom corrigée
+          {e.propagees > 1 ? "s" : ""} automatiquement (colis pas encore validés).
+        </p>
+      )}
+      <p className="mt-1 text-xs text-sky-800">
+        Enregistré dans le référentiel : les prochains colis contenant ce produit seront classés ainsi.
+      </p>
+    </div>
   );
 }
 
@@ -184,6 +254,7 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
   const router = useRouter();
   const [editionId, setEditionId] = useState<string | null>(null);
   const [apprentissage, setApprentissage] = useState<Apprentissage | null>(null);
+  const [relance, setRelance] = useState<ExplicationRelance | null>(null);
   const [similairesCorriges, setSimilairesCorriges] = useState<number | null>(null);
   const [similairesPending, startSimilaires] = useTransition();
   const [similairesErreur, setSimilairesErreur] = useState<string | null>(null);
@@ -208,6 +279,7 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
 
   return (
     <div className="overflow-x-auto">
+      {relance && <ExplicationRelanceCarte explication={relance} onFermer={() => setRelance(null)} />}
       {apprentissage && (
         <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
           {apprentissage.appris ? (
@@ -278,6 +350,7 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
                 onAnnuler={() => setEditionId(null)}
                 onEnregistre={(resultat) => {
                   setEditionId(null);
+                  setRelance(null);
                   setSimilairesCorriges(null);
                   setSimilairesErreur(null);
                   setApprentissage(
@@ -322,7 +395,14 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
                       <IconPencil size={12} />
                       Modifier
                     </button>
-                    <BoutonRelancer produit={p} onFait={() => router.refresh()} />
+                    <BoutonRelancer
+                      produit={p}
+                      onFait={(explication) => {
+                        setRelance(explication);
+                        setApprentissage(null);
+                        router.refresh();
+                      }}
+                    />
                   </div>
                 </td>
               </tr>
