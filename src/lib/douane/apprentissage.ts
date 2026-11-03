@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type { ReferentielMatch } from "./referentiel";
 import { cleSonore } from "./phonetique";
+import { CONFIANCE_REFERENTIEL, recalculerStatutExtraction } from "./confiance";
 
 type Client = SupabaseClient<Database>;
 
@@ -200,14 +201,10 @@ export function appliquerReferentielAuxProduits<T extends ProduitClassifie & { c
       ...p,
       ...(nouveauNom !== null ? { description_produit: nouveauNom } : {}),
       ...(univoque
-        ? {
-            type_produit: m.type_produit,
-            description_douane: m.description_douane,
-            hs_code: m.hs_code,
-            // Classement validé par un humain : confiance haute, pas de revérification inutile.
-            confiance: Math.max(p.confiance ?? 0, 0.95),
-          }
+        ? { type_produit: m.type_produit, description_douane: m.description_douane, hs_code: m.hs_code }
         : {}),
+      // Nom ou classement validé par un humain : confiance haute, pas de revérification inutile.
+      confiance: Math.max(p.confiance ?? 0, CONFIANCE_REFERENTIEL),
     };
   });
   return { produits: resultat, corriges };
@@ -285,6 +282,7 @@ export async function propagerCorrection(
     description_douane: string;
     hs_code: string | null;
     hs_code_source: string | null;
+    confiance: number | null;
   };
 
   // Le nom n'est comparable qu'à la graphie près (clé sonore) : on lit les lignes
@@ -293,7 +291,7 @@ export async function propagerCorrection(
   for (let debut = 0; ; debut += 1000) {
     const { data } = await supabase
       .from("douane_produits")
-      .select("id, extraction_id, description_produit, type_produit, description_douane, hs_code, hs_code_source")
+      .select("id, extraction_id, description_produit, type_produit, description_douane, hs_code, hs_code_source, confiance")
       .range(debut, debut + 999);
     const page = (data ?? []) as Ligne[];
     candidates.push(
@@ -311,6 +309,7 @@ export async function propagerCorrection(
 
   const historique: Database["public"]["Tables"]["douane_historique"]["Insert"][] = [];
   let nb = 0;
+  const extractionsTouchees = new Set<string>();
   for (const ligne of candidates) {
     if (validees.has(ligne.extraction_id)) continue;
 
@@ -330,11 +329,14 @@ export async function propagerCorrection(
       .update({
         ...maj,
         ...(maj.hs_code ? { hs_status: "propose" as const, hs_code_source: "referentiel" as const } : {}),
+        // Correction validée par un humain : la confiance remonte.
+        confiance: Math.max(ligne.confiance ?? 0, CONFIANCE_REFERENTIEL),
       })
       .eq("id", ligne.id);
     if (error) continue;
 
     nb += 1;
+    extractionsTouchees.add(ligne.extraction_id);
     for (const [champ, nouvelle] of Object.entries(maj)) {
       historique.push({
         produit_id: ligne.id,
@@ -347,5 +349,7 @@ export async function propagerCorrection(
     }
   }
   if (historique.length > 0) await supabase.from("douane_historique").insert(historique);
+  // Les colis dont toutes les lignes sont maintenant sûres ne sont plus « à vérifier ».
+  for (const id of Array.from(extractionsTouchees)) await recalculerStatutExtraction(supabase, id);
   return nb;
 }

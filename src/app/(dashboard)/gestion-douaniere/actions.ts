@@ -7,6 +7,7 @@ import { reclassifierProduit } from "@/lib/douane/reclassifierProduit";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { genererDeclarationBuffer } from "@/lib/douane/declarationXlsx";
 import { apprendreDeCorrection, propagerCorrection, trouverLignesSimilaires } from "@/lib/douane/apprentissage";
+import { CONFIANCE_CORRIGEE, recalculerStatutExtraction } from "@/lib/douane/confiance";
 import type { HsCodeSource, HsStatus } from "@/types/database.types";
 
 type ColisMinimal = {
@@ -328,7 +329,7 @@ export async function mettreAJourProduit(
 
   if (!avant) return { error: "Produit introuvable." };
 
-  const misAJour: ChampsProduit & { hs_status?: HsStatus; hs_code_source?: HsCodeSource } = {
+  const misAJour: ChampsProduit & { hs_status?: HsStatus; hs_code_source?: HsCodeSource; confiance?: number } = {
     ...champs,
   };
   if (champs.hs_code !== undefined) {
@@ -336,8 +337,16 @@ export async function mettreAJourProduit(
     misAJour.hs_code_source = "utilisateur";
   }
 
+  // Nom ou classement corrigé par un agent : la ligne est validée par un humain, la
+  // confiance est recalculée à la hausse (une simple quantité ne change rien).
+  const classementOuNomCorrige = (
+    ["type_produit", "description_douane", "hs_code", "description_produit"] as const
+  ).some((c) => champs[c] !== undefined && String(champs[c] ?? "") !== String(avant[c] ?? ""));
+  if (classementOuNomCorrige) misAJour.confiance = CONFIANCE_CORRIGEE;
+
   const { error } = await supabase.from("douane_produits").update(misAJour).eq("id", produitId);
   if (error) return { error: error.message };
+  if (classementOuNomCorrige) await recalculerStatutExtraction(supabase, avant.extraction_id);
 
   const historiqueEntries = (Object.keys(champs) as (keyof ChampsProduit)[])
     .filter((champ) => String(avant[champ] ?? "") !== String(champs[champ] ?? ""))
