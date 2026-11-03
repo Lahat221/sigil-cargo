@@ -54,8 +54,11 @@ export async function rechercherReferentiel(
       const cs = cleSonore(brut);
       return (
         mots.has(c) ||
-        (c.length > 3 && texteNormalise.includes(c)) ||
-        (cs.length > 3 && (motsSonores.has(cs) || texteSonore.includes(cs)))
+        // Sous 6 lettres, seulement comme mot entier : « ande » ne doit pas se déclencher
+        // dans « viande », « commande » ou « grande ».
+        (c.length > 5 && texteNormalise.includes(c)) ||
+        (cs.length > 5 && texteSonore.includes(cs)) ||
+        (cs.length > 3 && motsSonores.has(cs))
       );
     });
     if (trouve) {

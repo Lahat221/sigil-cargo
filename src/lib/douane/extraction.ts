@@ -180,7 +180,7 @@ export async function traiterColis(
         corriges.length > 0
           ? [
               ...resultatIA.anomalies,
-              `${corriges.length} produit(s) reclassé(s) d'après le référentiel (vos corrections précédentes).`,
+              `${corriges.length} produit(s) corrigé(s) d'après le référentiel (vos corrections précédentes).`,
             ]
           : resultatIA.anomalies,
     };

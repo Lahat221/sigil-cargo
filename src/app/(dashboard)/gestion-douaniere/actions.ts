@@ -6,7 +6,7 @@ import { traiterColis } from "@/lib/douane/extraction";
 import { reclassifierProduit } from "@/lib/douane/reclassifierProduit";
 import { chargerVueEnsemble } from "@/lib/douane/vueEnsemble";
 import { genererDeclarationBuffer } from "@/lib/douane/declarationXlsx";
-import { apprendreDeCorrection, trouverLignesSimilaires } from "@/lib/douane/apprentissage";
+import { apprendreDeCorrection, propagerCorrection, trouverLignesSimilaires } from "@/lib/douane/apprentissage";
 import type { HsCodeSource, HsStatus } from "@/types/database.types";
 
 type ColisMinimal = {
@@ -305,6 +305,10 @@ export type ResultatMiseAJourProduit =
       hsCode?: string | null;
       /** Autres lignes au même nom et au code différent, pas encore validées. */
       similaires?: number;
+      /** Autres lignes du même nom corrigées automatiquement (colis pas encore validés). */
+      propagees?: number;
+      /** Nom avant la correction, si l'agent l'a changé (ex. « ande »). */
+      ancienNom?: string;
     };
 
 export async function mettreAJourProduit(
@@ -353,6 +357,7 @@ export async function mettreAJourProduit(
   // Le référentiel apprend de la correction (jamais bloquant pour l'enregistrement).
   let appris: "cree" | "maj" | null = null;
   let similaires = 0;
+  let propagees = 0;
   try {
     const apres = {
       type_produit: champs.type_produit ?? avant.type_produit,
@@ -369,6 +374,31 @@ export async function mettreAJourProduit(
       },
       apres,
     });
+    // Les autres lignes du même nom reçoivent la même correction, sans clic.
+    const classement: { type_produit?: string; description_douane?: string; hs_code?: string } = {};
+    if (champs.type_produit !== undefined && champs.type_produit.trim() !== avant.type_produit.trim()) {
+      classement.type_produit = champs.type_produit.trim();
+    }
+    if (
+      champs.description_douane !== undefined &&
+      champs.description_douane.trim() !== avant.description_douane.trim()
+    ) {
+      classement.description_douane = champs.description_douane.trim();
+    }
+    if (
+      champs.hs_code &&
+      champs.hs_code !== (avant.hs_code ?? "") &&
+      /^\d{4}\.\d{2}\.\d{2}\.\d{2}$/.test(champs.hs_code)
+    ) {
+      classement.hs_code = champs.hs_code;
+    }
+    propagees = await propagerCorrection(supabase, {
+      produitId,
+      nomAvant: avant.description_produit,
+      nomApres: apres.description_produit,
+      classement,
+      userId: user?.id ?? null,
+    });
     if (appris && apres.hs_code) {
       similaires = (
         await trouverLignesSimilaires(supabase, {
@@ -379,6 +409,7 @@ export async function mettreAJourProduit(
       ).length;
     }
     if (appris) revalidatePath("/gestion-douaniere/referentiel");
+    if (propagees > 0) revalidatePath("/gestion-douaniere", "layout");
   } catch {
     // Colonnes d'apprentissage absentes (migration pas passée) : on n'apprend simplement pas.
   }
@@ -386,12 +417,17 @@ export async function mettreAJourProduit(
   revalidatePath("/gestion-douaniere");
   return {
     success: true,
-    ...(appris
+    ...(appris || propagees > 0
       ? {
-          appris,
+          ...(appris ? { appris } : {}),
           nom: champs.description_produit ?? avant.description_produit,
           hsCode: champs.hs_code !== undefined ? champs.hs_code : avant.hs_code,
           similaires,
+          propagees,
+          ...(champs.description_produit !== undefined &&
+          champs.description_produit.trim() !== avant.description_produit.trim()
+            ? { ancienNom: avant.description_produit }
+            : {}),
         }
       : {}),
   };

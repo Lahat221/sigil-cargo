@@ -170,7 +170,15 @@ function BoutonRelancer({ produit, onFait }: { produit: ProduitLigne; onFait: ()
   );
 }
 
-type Apprentissage = { produitId: string; nom: string; hsCode: string | null; appris: "cree" | "maj"; similaires: number };
+type Apprentissage = {
+  produitId: string;
+  nom: string;
+  hsCode: string | null;
+  appris: "cree" | "maj" | null;
+  similaires: number;
+  propagees: number;
+  ancienNom: string | null;
+};
 
 export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
   const router = useRouter();
@@ -202,17 +210,32 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
     <div className="overflow-x-auto">
       {apprentissage && (
         <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          <p>
-            <span className="font-semibold">✓ Le référentiel a appris</span> : « {apprentissage.nom} »
-            {apprentissage.hsCode && (
-              <>
-                {" "}
-                → <span className="font-mono text-xs">{apprentissage.hsCode}</span>
-              </>
-            )}{" "}
-            ({apprentissage.appris === "cree" ? "nouvelle entrée" : "entrée mise à jour"}). Les prochains colis
-            contenant ce produit seront classés ainsi.
-          </p>
+          {apprentissage.appris ? (
+            <p>
+              <span className="font-semibold">✓ Le référentiel a appris</span> :{" "}
+              {apprentissage.ancienNom && <>« {apprentissage.ancienNom} » = </>}« {apprentissage.nom} »
+              {apprentissage.hsCode && (
+                <>
+                  {" "}
+                  → <span className="font-mono text-xs">{apprentissage.hsCode}</span>
+                </>
+              )}{" "}
+              ({apprentissage.appris === "cree" ? "nouvelle entrée" : "entrée mise à jour"}).{" "}
+              {apprentissage.ancienNom
+                ? `Chaque fois que « ${apprentissage.ancienNom} » réapparaîtra, il sera remplacé automatiquement.`
+                : "Les prochains colis contenant ce produit seront classés ainsi."}
+            </p>
+          ) : (
+            <p className="font-semibold">✓ Correction reportée sur les lignes du même nom.</p>
+          )}
+          {apprentissage.propagees > 0 && (
+            <p className="mt-1">
+              {apprentissage.propagees} autre{apprentissage.propagees > 1 ? "s" : ""} ligne
+              {apprentissage.propagees > 1 ? "s" : ""} «{" "}
+              {apprentissage.ancienNom ?? apprentissage.nom} » corrigée{apprentissage.propagees > 1 ? "s" : ""}{" "}
+              automatiquement (colis pas encore validés).
+            </p>
+          )}
           {apprentissage.similaires > 0 && similairesCorriges === null && (
             <p className="mt-1">
               {apprentissage.similaires} autre{apprentissage.similaires > 1 ? "s" : ""} ligne
@@ -258,13 +281,15 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
                   setSimilairesCorriges(null);
                   setSimilairesErreur(null);
                   setApprentissage(
-                    resultat.appris
+                    resultat.appris || (resultat.propagees ?? 0) > 0
                       ? {
                           produitId: p.id,
                           nom: resultat.nom ?? p.description_produit,
                           hsCode: resultat.hsCode ?? null,
-                          appris: resultat.appris,
+                          appris: resultat.appris ?? null,
                           similaires: resultat.similaires ?? 0,
+                          propagees: resultat.propagees ?? 0,
+                          ancienNom: resultat.ancienNom ?? null,
                         }
                       : null
                   );
