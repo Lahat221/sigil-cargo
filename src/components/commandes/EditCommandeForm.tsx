@@ -7,6 +7,7 @@ import { updateCommande } from "@/app/(dashboard)/commandes/actions";
 import { ClientField, type ClientSelection } from "./ClientField";
 import type { ClientMatch } from "@/app/(dashboard)/commandes/nouvelle/actions";
 import { VoiceRecorder, extensionForMimeType } from "./VoiceRecorder";
+import { DicteeButton, ajouterTexteDicte } from "./DicteeButton";
 import { VideoPreviewList } from "./VideoPreviewList";
 import { BRAND } from "@/lib/brand";
 import type { Destination } from "@/lib/commandes/destinations";
@@ -137,6 +138,23 @@ export function EditCommandeForm({
   const [newVideos, setNewVideos] = useState<File[]>([]);
   const [keepVoiceNote, setKeepVoiceNote] = useState(existingVoiceNote !== null);
   const [newVoiceNote, setNewVoiceNote] = useState<Blob | null>(null);
+  // Audio de la dernière dictée : gardé comme note vocale du colis, pour le réécouter et corriger le texte.
+  const [dicteeUrl, setDicteeUrl] = useState<string | null>(null);
+  const [infoDictee, setInfoDictee] = useState<string | null>(null);
+
+  function garderAudioDictee(audio: Blob) {
+    if (!peutGarderAudioDictee) {
+      setInfoDictee("Audio non conservé : ce colis a déjà une note vocale (supprimez-la pour garder la dictée).");
+      return;
+    }
+    if (dicteeUrl) URL.revokeObjectURL(dicteeUrl);
+    setNewVoiceNote(audio);
+    setDicteeUrl(URL.createObjectURL(audio));
+    setInfoDictee("🎧 Audio de la dictée conservé dans la note vocale du colis : réécoutez-le plus bas pour corriger le texte.");
+  }
+  // Une note vocale déjà enregistrée (ou faite à part) n'est pas écrasée par une dictée.
+  const peutGarderAudioDictee =
+    !(keepVoiceNote && existingVoiceNote) && (!newVoiceNote || dicteeUrl !== null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -577,15 +595,20 @@ export function EditCommandeForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Description
-        </label>
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <label className="block text-sm font-medium text-slate-700">Description</label>
+          <DicteeButton
+            onTexte={(texte) => setDescription((d) => ajouterTexteDicte(d, texte))}
+            onAudio={garderAudioDictee}
+          />
+        </div>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:ring-1 focus:ring-navy/20 focus:outline-none"
         />
+        {infoDictee && <p className="mt-1 text-xs text-slate-500">{infoDictee}</p>}
       </div>
 
       <div>
@@ -733,8 +756,12 @@ export function EditCommandeForm({
         </label>
         <VoiceRecorder
           onChange={setNewVoiceNote}
-          existingUrl={keepVoiceNote ? existingVoiceNote?.url ?? null : null}
-          onRemoveExisting={() => setKeepVoiceNote(false)}
+          existingUrl={keepVoiceNote ? existingVoiceNote?.url ?? null : dicteeUrl}
+          onRemoveExisting={() => {
+            setKeepVoiceNote(false);
+            setDicteeUrl(null);
+            setInfoDictee(null);
+          }}
         />
       </div>
 

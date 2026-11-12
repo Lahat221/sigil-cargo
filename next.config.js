@@ -21,6 +21,9 @@ const entetesSecurite = [
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
+  // Dictée vocale d'une description de colis : l'enregistrement transite par une action serveur
+  // (1 Mo par défaut, trop juste pour ~2 minutes de voix).
+  experimental: { serverActions: { bodySizeLimit: "4mb" } },
   async headers() {
     return [{ source: "/:path*", headers: entetesSecurite }];
   },

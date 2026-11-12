@@ -14,7 +14,7 @@ const MIME_CANDIDATES = [
   "audio/mpeg",
 ];
 
-function pickSupportedMimeType(): string | undefined {
+export function pickSupportedMimeType(): string | undefined {
   if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) {
     return undefined;
   }

@@ -45,3 +45,14 @@ produit en français dans "description_douane". Si un terme t'est inconnu ou amb
 précis : classe-le comme produit alimentaire ou divers "à préciser", mets une confiance basse (< 0,7) et note
 "terme wolof non identifié : X" dans "anomalies".`;
 }
+
+/**
+ * Noms des produits sénégalais courants (sans leur définition), pour aider une
+ * transcription vocale à les écrire correctement.
+ */
+export function termesWolofPourTranscription(): string {
+  // « bouye (buy, bouy) » : le nom et ses variantes d'écriture, chacun comme un mot.
+  return TERMES.flatMap(([terme]) => terme.replace(/[()]/g, ",").split(",").map((t) => t.trim()))
+    .filter(Boolean)
+    .join(", ");
+}
