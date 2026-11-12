@@ -60,8 +60,9 @@ export async function apprendreDeCorrection(
   if (!classementChange && !renomme) return null;
 
   const hs = apres.hs_code?.trim() ?? "";
-  const hsValide = HS_REGEX.test(hs);
-  // Un classement sans code HS complet ne s'apprend pas ; un simple renommage, si.
+  // Le classement (type, description douane, HS) ne s'apprend que s'il a été corrigé ET que le code HS
+  // est complet ; un simple renommage n'apprend que le nom (l'ancien classement peut être périmé).
+  const hsValide = classementChange && HS_REGEX.test(hs);
   if (!hsValide && !renomme) return null;
 
   // Des doublons peuvent exister (même nom saisi plusieurs fois) : on met à jour
@@ -201,10 +202,14 @@ export function appliquerReferentielAuxProduits<T extends ProduitClassifie & { c
       ...p,
       ...(nouveauNom !== null ? { description_produit: nouveauNom } : {}),
       ...(univoque
-        ? { type_produit: m.type_produit, description_douane: m.description_douane, hs_code: m.hs_code }
+        ? {
+            type_produit: m.type_produit,
+            description_douane: m.description_douane,
+            hs_code: m.hs_code,
+            // Classement validé par un humain : confiance haute, pas de revérification inutile.
+            confiance: Math.max(p.confiance ?? 0, CONFIANCE_REFERENTIEL),
+          }
         : {}),
-      // Nom ou classement validé par un humain : confiance haute, pas de revérification inutile.
-      confiance: Math.max(p.confiance ?? 0, CONFIANCE_REFERENTIEL),
     };
   });
   return { produits: resultat, corriges };
@@ -338,8 +343,16 @@ export async function propagerCorrection(
               hs_code_source: params.hsCodeSource === "ia" ? ("ia" as const) : ("referentiel" as const),
             }
           : {}),
-        // Correction validée par un humain : la confiance remonte (celle d'une estimation de l'IA, pas plus).
-        confiance: Math.max(ligne.confiance ?? 0, Math.min(params.confiance ?? CONFIANCE_REFERENTIEL, CONFIANCE_REFERENTIEL)),
+        // Classement reporté depuis une correction : la confiance remonte (celle d'une estimation de l'IA,
+        // pas plus). Un simple renommage ne change pas la confiance du classement.
+        ...(champsClassement.some((c) => c in maj)
+          ? {
+              confiance: Math.max(
+                ligne.confiance ?? 0,
+                Math.min(params.confiance ?? CONFIANCE_REFERENTIEL, CONFIANCE_REFERENTIEL)
+              ),
+            }
+          : {}),
       })
       .eq("id", ligne.id);
     if (error) continue;

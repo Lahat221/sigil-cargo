@@ -203,7 +203,9 @@ function ExplicationRelanceCarte({ explication: e, onFermer }: { explication: Ex
     <div className="mb-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-950">
       <div className="flex items-start justify-between gap-2">
         <p className="font-semibold">
-          ✓ Relance terminée : « {e.nom} »
+          {e.declencheur === "correction_nom"
+            ? `✓ Nom corrigé : « ${e.nom} » — la description douane a été recalculée`
+            : `✓ Relance terminée : « ${e.nom} »`}
         </p>
         <button type="button" onClick={onFermer} className="text-xs text-sky-700 hover:underline">
           Fermer
@@ -234,7 +236,9 @@ function ExplicationRelanceCarte({ explication: e, onFermer }: { explication: Ex
         </p>
       )}
       <p className="mt-1 text-xs text-sky-800">
-        Enregistré dans le référentiel : les prochains colis contenant ce produit seront classés ainsi.
+        {e.memorise
+          ? "Enregistré dans le référentiel : les prochains colis contenant ce produit seront classés ainsi."
+          : "Pas enregistré dans le référentiel : l'estimation de l'IA est trop incertaine. Vérifie la ligne (Modifier) : ta correction, elle, sera mémorisée."}
       </p>
     </div>
   );
@@ -255,6 +259,7 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
   const [editionId, setEditionId] = useState<string | null>(null);
   const [apprentissage, setApprentissage] = useState<Apprentissage | null>(null);
   const [relance, setRelance] = useState<ExplicationRelance | null>(null);
+  const [avertissement, setAvertissement] = useState<string | null>(null);
   const [similairesCorriges, setSimilairesCorriges] = useState<number | null>(null);
   const [similairesPending, startSimilaires] = useTransition();
   const [similairesErreur, setSimilairesErreur] = useState<string | null>(null);
@@ -279,6 +284,11 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
 
   return (
     <div className="overflow-x-auto">
+      {avertissement && (
+        <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {avertissement}
+        </p>
+      )}
       {relance && <ExplicationRelanceCarte explication={relance} onFermer={() => setRelance(null)} />}
       {apprentissage && (
         <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
@@ -350,11 +360,12 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
                 onAnnuler={() => setEditionId(null)}
                 onEnregistre={(resultat) => {
                   setEditionId(null);
-                  setRelance(null);
+                  setRelance(resultat.relance ?? null);
+                  setAvertissement(resultat.avertissement ?? null);
                   setSimilairesCorriges(null);
                   setSimilairesErreur(null);
                   setApprentissage(
-                    resultat.appris || (resultat.propagees ?? 0) > 0
+                    !resultat.relance && (resultat.appris || (resultat.propagees ?? 0) > 0)
                       ? {
                           produitId: p.id,
                           nom: resultat.nom ?? p.description_produit,
@@ -399,6 +410,7 @@ export function ExtractionTable({ produits }: { produits: ProduitLigne[] }) {
                       produit={p}
                       onFait={(explication) => {
                         setRelance(explication);
+                        setAvertissement(null);
                         setApprentissage(null);
                         router.refresh();
                       }}

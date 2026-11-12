@@ -311,12 +311,65 @@ export type ResultatMiseAJourProduit =
       propagees?: number;
       /** Nom avant la correction, si l'agent l'a changé (ex. « ande »). */
       ancienNom?: string;
+      /** Le nom a été corrigé sans toucher au classement : il a été recalculé automatiquement. */
+      relance?: ExplicationRelance;
+      /** Ce qui n'a pas pu être fait (l'enregistrement, lui, a réussi). */
+      avertissement?: string;
     };
+
+type AvantProduit = {
+  type_produit: string;
+  description_douane: string;
+  hs_code: string | null;
+  description_produit: string;
+};
 
 export async function mettreAJourProduit(
   produitId: string,
   champs: ChampsProduit
 ): Promise<ResultatMiseAJourProduit> {
+  const nom = champs.description_produit?.trim();
+  if (nom) {
+    const supabase = createClient();
+    const { data: avant } = await supabase
+      .from("douane_produits")
+      .select("description_produit, type_produit, description_douane, hs_code")
+      .eq("id", produitId)
+      .maybeSingle();
+
+    const classementInchange =
+      avant !== null &&
+      (champs.type_produit === undefined || champs.type_produit.trim() === avant.type_produit.trim()) &&
+      (champs.description_douane === undefined ||
+        champs.description_douane.trim() === avant.description_douane.trim()) &&
+      (champs.hs_code === undefined || (champs.hs_code ?? "") === (avant.hs_code ?? ""));
+
+    // Le nom change mais pas la description douane ni le code : l'ancien classement ne correspond
+    // plus au produit (ex. « Produit non identifié » devenu « vernis pour ongle »). On le recalcule.
+    if (avant && nom !== avant.description_produit.trim() && classementInchange) {
+      const reclasse = await reclasserProduit(supabase, produitId, nom, avant, {
+        quantite: champs.quantite,
+        unite: champs.unite,
+      });
+      if (!("error" in reclasse)) {
+        return {
+          success: true,
+          nom: reclasse.explication.nom,
+          hsCode: reclasse.hsCode,
+          ancienNom: avant.description_produit,
+          propagees: reclasse.explication.propagees,
+          relance: reclasse.explication,
+        };
+      }
+      // Classement impossible à recalculer (IA indisponible…) : le nom est quand même enregistré.
+      const simple = await corrigerProduit(produitId, champs);
+      if ("error" in simple) return simple;
+      return {
+        ...simple,
+        avertissement: `Nom enregistré, mais la description douane n'a pas pu être recalculée (${reclasse.error}). Clique sur « Relancer » pour la corriger.`,
+      };
+    }
+  }
   return corrigerProduit(produitId, champs);
 }
 
@@ -326,6 +379,8 @@ type OptionsCorrection = {
   confiance?: number;
   hsCodeSource?: HsCodeSource;
   hsStatus?: HsStatus;
+  /** false : ne pas enregistrer ce classement dans le référentiel (estimation de l'IA trop incertaine). */
+  memoriser?: boolean;
 };
 
 async function corrigerProduit(
@@ -355,12 +410,17 @@ async function corrigerProduit(
     if (options.hsStatus && champs.hs_code) misAJour.hs_status = options.hsStatus;
   }
 
-  // Nom ou classement corrigé par un agent : la ligne est validée par un humain, la
-  // confiance est recalculée à la hausse (une simple quantité ne change rien).
-  const classementOuNomCorrige = (
-    ["type_produit", "description_douane", "hs_code", "description_produit"] as const
-  ).some((c) => champs[c] !== undefined && String(champs[c] ?? "") !== String(avant[c] ?? ""));
-  if (classementOuNomCorrige) misAJour.confiance = options.confiance ?? CONFIANCE_CORRIGEE;
+  // Classement corrigé par un agent : la ligne est validée par un humain, la confiance est
+  // recalculée à la hausse. Un simple renommage ou une quantité ne changent pas la confiance :
+  // le classement, lui, n'a pas été revu.
+  const classementCorrige = (["type_produit", "description_douane", "hs_code"] as const).some(
+    (c) => champs[c] !== undefined && String(champs[c] ?? "") !== String(avant[c] ?? "")
+  );
+  const classementOuNomCorrige =
+    classementCorrige ||
+    (champs.description_produit !== undefined &&
+      champs.description_produit.trim() !== avant.description_produit.trim());
+  if (classementCorrige) misAJour.confiance = options.confiance ?? CONFIANCE_CORRIGEE;
 
   const { error } = await supabase.from("douane_produits").update(misAJour).eq("id", produitId);
   if (error) return { error: error.message };
@@ -392,7 +452,7 @@ async function corrigerProduit(
       hs_code: champs.hs_code !== undefined ? champs.hs_code : avant.hs_code,
       description_produit: champs.description_produit ?? avant.description_produit,
     };
-    appris = await apprendreDeCorrection(supabase, {
+    appris = options.memoriser === false ? null : await apprendreDeCorrection(supabase, {
       avant: {
         type_produit: avant.type_produit,
         description_douane: avant.description_douane,
@@ -564,13 +624,13 @@ async function upsertReferentiel(
   return { success: true };
 }
 
-/** Ce que « Relancer » a changé, en clair : affiché à l'agent après la relance. */
+/** Ce que « Relancer » (ou la correction d'un nom) a changé, en clair : affiché à l'agent. */
 export type ExplicationRelance = {
   nom: string;
-  /** Nom avant la relance, s'il a été remplacé (synonyme du référentiel, ex. « ande »). */
+  /** Nom avant, s'il a changé (correction de l'agent ou synonyme du référentiel, ex. « ande »). */
   ancienNom: string | null;
   source: "referentiel" | "ia";
-  /** Confiance de la ligne après la relance (0 à 1). */
+  /** Confiance de la ligne après le recalcul (0 à 1). */
   confiance: number;
   /** Raisonnement en français : pourquoi ce classement et cette description. */
   pourquoi: string;
@@ -578,63 +638,68 @@ export type ExplicationRelance = {
   apres: { type_produit: string; description_douane: string; hs_code: string };
   /** Autres lignes du même nom corrigées automatiquement (colis pas encore validés). */
   propagees: number;
+  /** Classement enregistré dans le référentiel (faux si l'estimation de l'IA est trop incertaine). */
+  memorise: boolean;
+  /** Ce qui a déclenché le recalcul : le bouton « Relancer » ou la correction du nom. */
+  declencheur: "relance" | "correction_nom";
 };
 
+type ResultatReclassement =
+  | { error: string }
+  | { success: true; hsCode: string; source: "referentiel" | "ia"; explication: ExplicationRelance };
+
 /**
- * "Relancer" (ExtractionTable) : reclassifie ce produit à partir de son nom
- * actuel (corrigé au préalable via "Modifier" si besoin) — relance juste la
- * recherche de HS code, pas de formulaire séparé. Met à jour la ligne (type,
- * DESCRIPTION DOUANE, code HS, confiance) ET le référentiel interne en une seule
- * action, puis explique ce qui a changé et pourquoi.
+ * Reclasse un produit d'après son nom : met à jour la ligne (type, DESCRIPTION DOUANE, code HS,
+ * confiance) et le référentiel, et prépare l'explication. Sert au bouton « Relancer » et à la
+ * correction d'un nom (l'ancien classement n'ayant alors plus de sens).
  */
-export async function relancerHsCode(
-  produitId: string
-): Promise<
-  { error: string } | { success: true; hsCode: string; source: "referentiel" | "ia"; explication: ExplicationRelance }
-> {
-  const supabase = createClient();
-
-  const { data: produit } = await supabase
-    .from("douane_produits")
-    .select("description_produit, type_produit, description_douane, hs_code")
-    .eq("id", produitId)
-    .maybeSingle();
-  if (!produit) return { error: "Produit introuvable." };
-
-  const resultat = await reclassifierProduit(supabase, produit.description_produit);
+async function reclasserProduit(
+  supabase: ReturnType<typeof createClient>,
+  produitId: string,
+  nom: string,
+  avant: AvantProduit,
+  champsBase: ChampsProduit = {}
+): Promise<ResultatReclassement> {
+  const resultat = await reclassifierProduit(supabase, nom);
   if ("error" in resultat) return resultat;
 
   // Une entrée du référentiel au nom d'un synonyme (« ande ») impose son nom.
-  const nomFinal = resultat.nom_canonique ?? produit.description_produit;
-  const ancienNom = resultat.nom_canonique ? produit.description_produit : null;
+  const nomFinal = resultat.nom_canonique ?? nom;
 
-  // Classement validé par un humain (référentiel) : confiance haute. Estimation de l'IA :
-  // sa propre confiance, et « à vérifier » si elle est sous le seuil.
+  // Classement validé par un humain (référentiel) : confiance haute. Estimation de l'IA : sa propre
+  // confiance, « à vérifier » et pas mémorisée tant qu'elle est sous le seuil.
+  const fiable = resultat.source === "referentiel" || resultat.confiance >= confidenceThreshold();
   const confiance = resultat.source === "referentiel" ? CONFIANCE_CORRIGEE : resultat.confiance;
+  const declencheur = nom !== avant.description_produit.trim() ? "correction_nom" : "relance";
+
   const resultatProduit = await corrigerProduit(
     produitId,
     {
+      ...champsBase,
       type_produit: resultat.type_produit,
       description_douane: resultat.description_douane,
       hs_code: resultat.hs_code,
-      ...(ancienNom ? { description_produit: nomFinal } : {}),
+      ...(nomFinal !== avant.description_produit.trim() ? { description_produit: nomFinal } : {}),
     },
     {
       confiance,
       hsCodeSource: resultat.source === "referentiel" ? "referentiel" : "ia",
-      hsStatus: resultat.source === "ia" && confiance < confidenceThreshold() ? "a_verifier" : "propose",
+      hsStatus: fiable ? "propose" : "a_verifier",
+      memoriser: fiable,
     }
   );
   if ("error" in resultatProduit) return resultatProduit;
 
-  const resultatReferentiel = await upsertReferentiel(supabase, {
-    nomLocal: nomFinal,
-    typeProduit: resultat.type_produit,
-    descriptionDouane: resultat.description_douane,
-    hsCode: resultat.hs_code,
-  });
-  if ("error" in resultatReferentiel) {
-    return { error: "HS code mis à jour, mais référentiel non enregistré : " + resultatReferentiel.error };
+  if (fiable) {
+    const resultatReferentiel = await upsertReferentiel(supabase, {
+      nomLocal: nomFinal,
+      typeProduit: resultat.type_produit,
+      descriptionDouane: resultat.description_douane,
+      hsCode: resultat.hs_code,
+    });
+    if ("error" in resultatReferentiel) {
+      return { error: "HS code mis à jour, mais référentiel non enregistré : " + resultatReferentiel.error };
+    }
   }
 
   revalidatePath("/gestion-douaniere");
@@ -644,14 +709,14 @@ export async function relancerHsCode(
     source: resultat.source,
     explication: {
       nom: nomFinal,
-      ancienNom,
+      ancienNom: avant.description_produit.trim() !== nomFinal.trim() ? avant.description_produit : null,
       source: resultat.source,
       confiance,
       pourquoi: resultat.explication,
       avant: {
-        type_produit: produit.type_produit,
-        description_douane: produit.description_douane,
-        hs_code: produit.hs_code,
+        type_produit: avant.type_produit,
+        description_douane: avant.description_douane,
+        hs_code: avant.hs_code,
       },
       apres: {
         type_produit: resultat.type_produit,
@@ -659,6 +724,26 @@ export async function relancerHsCode(
         hs_code: resultat.hs_code,
       },
       propagees: resultatProduit.propagees ?? 0,
+      memorise: fiable,
+      declencheur,
     },
   };
+}
+
+/**
+ * "Relancer" (ExtractionTable) : reclassifie ce produit à partir de son nom actuel — relance le
+ * classement, pas de formulaire séparé. Met à jour la ligne (type, DESCRIPTION DOUANE, code HS,
+ * confiance) et le référentiel interne, puis explique ce qui a changé et pourquoi.
+ */
+export async function relancerHsCode(produitId: string): Promise<ResultatReclassement> {
+  const supabase = createClient();
+
+  const { data: produit } = await supabase
+    .from("douane_produits")
+    .select("description_produit, type_produit, description_douane, hs_code")
+    .eq("id", produitId)
+    .maybeSingle();
+  if (!produit) return { error: "Produit introuvable." };
+
+  return reclasserProduit(supabase, produitId, produit.description_produit.trim(), produit);
 }
