@@ -1,5 +1,4 @@
 import { BRAND } from "@/lib/brand";
-import { dateDepuisNom } from "@/lib/commandes/analyse";
 import { formaterAvecEquivalent, resumePaiements } from "@/lib/paiements";
 import type { PointRetrait } from "@/lib/parametres";
 
@@ -8,7 +7,6 @@ const montantFormatter = new Intl.NumberFormat("fr-FR", {
   currency: BRAND.devise,
 });
 const poidsFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 });
-const dateLongue = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 export type ColisNotif = {
   clientNom: string;
@@ -20,9 +18,6 @@ export type ColisNotif = {
   montantTotal: number;
   /** Déjà encaissé (devise de l'entreprise). */
   montantPaye?: number;
-  /** Départ (projet) du colis : sa date est reprise dans la notification « colis reçu ». */
-  projetNom?: string | null;
-  dateDepart?: string | null;
 };
 
 export type ContexteNotif = {
@@ -102,13 +97,6 @@ function lienSuivi(colis: ColisNotif, ctx: ContexteNotif): (string | null)[] {
   return [`🔎 *Suivre votre colis :* https://${site}/suivi`, `(numéro *#${colis.numero}* + votre numéro de téléphone)`];
 }
 
-function dateDuDepartTexte(colis: ColisNotif): string | null {
-  const brute = colis.dateDepart ?? (colis.projetNom ? dateDepuisNom(colis.projetNom) : null);
-  if (!brute) return null;
-  const date = new Date(brute.length === 10 ? `${brute}T12:00:00` : brute);
-  return Number.isNaN(date.getTime()) ? null : dateLongue.format(date);
-}
-
 function assembler(lignes: (string | null)[]): string {
   const gardees = lignes.filter((l): l is string => l !== null);
   // Un bloc absent (point de retrait, lien de suivi) ne doit pas laisser deux lignes vides de suite.
@@ -117,8 +105,8 @@ function assembler(lignes: (string | null)[]): string {
 
 /**
  * Notification « colis reçu » : confirme la réception à Dakar et annonce la
- * ville d'arrivée, le départ, ce qui reste à payer, où retirer le colis et
- * comment le suivre. Pour les marques sans fret vers la France : message simple.
+ * ville d'arrivée, ce qui reste à payer, où retirer le colis et comment le
+ * suivre. Aucune date annoncée : le colis est remis quand il arrive. Pour les marques sans fret vers la France : message simple.
  */
 export function construireNotifCommande(colis: ColisNotif, ctx: ContexteNotif): string {
   const { clientNom, numero } = colis;
@@ -130,7 +118,6 @@ export function construireNotifCommande(colis: ColisNotif, ctx: ContexteNotif): 
 
   const point = pointRetraitPour(colis.destination, ctx);
   const ville = point?.ville ?? (colis.destination?.trim() || null);
-  const depart = dateDuDepartTexte(colis);
   return assembler([
     `Bonjour ${clientNom} 👋`,
     "",
@@ -138,7 +125,6 @@ export function construireNotifCommande(colis: ColisNotif, ctx: ContexteNotif): 
     "",
     ...lignesColis(colis),
     ...lignesPaiement(colis, false),
-    depart ? `✈️ *Départ prévu :* ${depart}` : null,
     point ? "" : null,
     point ? `📍 *Retrait à ${point.ville} :*` : null,
     point?.adresse ?? null,

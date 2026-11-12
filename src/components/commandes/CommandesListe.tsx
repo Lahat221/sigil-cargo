@@ -48,8 +48,6 @@ function colisNotif(c: CommandeListItem): ColisNotif {
     poidsKg: c.poids_kg,
     montantTotal: c.montant_total,
     montantPaye: resumePaiements(c.montant_total, c.paiements).paye,
-    projetNom: c.projets?.nom ?? null,
-    dateDepart: c.projets?.date_depart ?? null,
   };
 }
 

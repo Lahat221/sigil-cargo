@@ -57,7 +57,7 @@ type CommandeDetail = {
     telephone_pays: string | null;
     adresse: string | null;
   } | null;
-  projets: { nom: string; date_depart: string | null } | null;
+  projets: { nom: string } | null;
   produits: { nom: string } | null;
 };
 
@@ -71,7 +71,7 @@ export default async function CommandeDetailPage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, montant_total, adresse_livraison, destination, description, remarque_interne, code_barre_colis, photo_urls, video_urls, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom, date_depart), produits(nom)"
+      "id, numero, statut, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, montant_total, adresse_livraison, destination, description, remarque_interne, code_barre_colis, photo_urls, video_urls, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
     )
     .eq("id", params.id)
     .maybeSingle<CommandeDetail>();
@@ -103,8 +103,6 @@ export default async function CommandeDetailPage({
     poidsKg: commande.poids_kg,
     montantTotal: commande.montant_total,
     montantPaye: resumePaiement.paye,
-    projetNom: commande.projets?.nom ?? null,
-    dateDepart: commande.projets?.date_depart ?? null,
   };
 
   const photoItems: { path: string; url: string }[] = [];
