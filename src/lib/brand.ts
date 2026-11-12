@@ -167,7 +167,7 @@ const SIGIL_CARGO: BrandConfig = {
   retrait: {
     villeLivraison: "Lyon",
     adresse: "2 rue Jean Baptiste Croibier, 69200 Vénissieux",
-    horaires: "17h à 20h30",
+    horaires: "Du lundi au samedi, de 17h à 20h30",
     livraisonDomicile: "Livraison à domicile disponible sur Lyon : 14 €",
   },
 };
