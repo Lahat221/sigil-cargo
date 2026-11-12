@@ -2,7 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FiltresBar } from "@/components/commandes/FiltresBar";
 import { chargerDestinations } from "@/lib/commandes/destinations";
-import { chargerParametresSite, listerPointsRetrait, reglesPrix } from "@/lib/parametres";
+import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
+import { chargerContexteNotif } from "@/lib/commandes/contexteNotif";
 import { verifierPrixColis } from "@/lib/commandes/verifPrix";
 import { TARIF_ALIMENTAIRE_ACTIF } from "@/lib/commandes/tarifAlimentaire";
 import { CommandesListe } from "@/components/commandes/CommandesListe";
@@ -122,7 +123,7 @@ export default async function CommandesPage({
   // Contrôle du prix au kilo (destination + règle « petit colis ») sur chaque colis.
   const site = await chargerParametresSite(supabase);
   const regles = reglesPrix(site);
-  const contexteNotif = { pointsRetrait: listerPointsRetrait(site.pointsRetrait), siteWeb: site.siteWeb };
+  const contexteNotif = await chargerContexteNotif(supabase);
   const avecVerif = (c: CommandeListItem): CommandeListItem => ({
     ...c,
     verif_prix: verifierPrixColis(c, destinations, regles),

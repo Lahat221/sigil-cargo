@@ -2,11 +2,11 @@ import { BRAND } from "@/lib/brand";
 import { formaterAvecEquivalent, resumePaiements } from "@/lib/paiements";
 import type { PointRetrait } from "@/lib/parametres";
 
+const poidsFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 });
 const montantFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
   currency: BRAND.devise,
 });
-const poidsFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 });
 
 export type ColisNotif = {
   clientNom: string;
@@ -25,6 +25,8 @@ export type ContexteNotif = {
   pointsRetrait: PointRetrait[];
   /** Adresse du site (ex. www.sigilcargo.com), pour le lien de suivi. */
   siteWeb: string;
+  /** Lien TikTok (module Publicités) : pour ne pas rater le prochain départ. */
+  lienTiktok?: string | null;
 };
 
 function normaliser(texte: string): string {
@@ -65,48 +67,47 @@ function remarqueDuPoint(point: PointRetrait): string {
   return "";
 }
 
-function lignesColis(colis: ColisNotif): (string | null)[] {
-  return [
-    colis.description?.trim() ? `📦 *Contenu :* ${colis.description.trim()}` : null,
-    colis.poidsKg !== null ? `⚖️ *Poids :* ${poidsFormatter.format(colis.poidsKg)} kg` : null,
-    `💰 *Montant :* ${montantFormatter.format(colis.montantTotal)}`,
-  ];
+/** « 2 boîtes de thiakry · 14,5 kg » — la description est coupée si elle est longue. */
+function ligneContenu(colis: ColisNotif): string | null {
+  const description = colis.description?.trim().replace(/\s+/g, " ") ?? "";
+  const court = description.length > 90 ? `${description.slice(0, 87).trimEnd()}…` : description;
+  const poids = colis.poidsKg !== null ? `${poidsFormatter.format(colis.poidsKg)} kg` : "";
+  const contenu = [court, poids].filter(Boolean).join(" · ");
+  return contenu ? `📦 ${contenu}` : null;
 }
 
-function lignesPaiement(colis: ColisNotif, aLaRemise: boolean): (string | null)[] {
+/** Une seule ligne pour le montant et ce qui reste à payer. */
+function ligneMontant(colis: ColisNotif): string {
   const paye = colis.montantPaye ?? 0;
-  const resume = resumePaiements(colis.montantTotal, paye > 0 ? [{ montant_base: paye }] : []);
-  if (paye <= 0) {
-    return [
-      aLaRemise
-        ? `🧾 *À régler au retrait :* ${formaterAvecEquivalent(colis.montantTotal)}`
-        : "🧾 Le montant se règle au retrait du colis.",
-    ];
-  }
-  return [
-    `✅ *Déjà réglé :* ${montantFormatter.format(resume.paye)}`,
-    resume.reste > 0
-      ? `🧾 *Reste à payer au retrait :* ${formaterAvecEquivalent(resume.reste)}`
-      : "🧾 Votre colis est entièrement payé, rien à régler au retrait.",
-  ];
+  const total = montantFormatter.format(colis.montantTotal);
+  if (paye <= 0) return `💰 *${formaterAvecEquivalent(colis.montantTotal)}* à régler au retrait`;
+  const resume = resumePaiements(colis.montantTotal, [{ montant_base: paye }]);
+  if (resume.reste <= 0) return `💰 *${total}* — entièrement payé ✅`;
+  return `💰 *${total}* — déjà réglé ${montantFormatter.format(resume.paye)}, reste *${formaterAvecEquivalent(resume.reste)}* à payer au retrait`;
 }
 
-function lienSuivi(colis: ColisNotif, ctx: ContexteNotif): (string | null)[] {
+function ligneSuivi(colis: ColisNotif, ctx: ContexteNotif): string | null {
   const site = ctx.siteWeb.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
-  if (!site) return [null];
-  return [`🔎 *Suivre votre colis :* https://${site}/suivi`, `(numéro *#${colis.numero}* + votre numéro de téléphone)`];
+  return site ? `🔎 Suivi : https://${site}/suivi (n° *#${colis.numero}* + votre téléphone)` : null;
+}
+
+function ligneTiktok(ctx: ContexteNotif): string | null {
+  return ctx.lienTiktok ? `🎵 Pour ne pas rater le prochain départ, suivez-nous sur TikTok : ${ctx.lienTiktok}` : null;
+}
+
+/** Pour un texte placé entre parenthèses : « Du lundi… » devient « du lundi… » (« 7j/7 » reste tel quel). */
+function minuscule(texte: string): string {
+  return texte.charAt(0).toLowerCase() + texte.slice(1);
 }
 
 function assembler(lignes: (string | null)[]): string {
-  const gardees = lignes.filter((l): l is string => l !== null);
-  // Un bloc absent (point de retrait, lien de suivi) ne doit pas laisser deux lignes vides de suite.
-  return gardees.filter((l, i) => !(l === "" && (i === 0 || gardees[i - 1] === ""))).join("\n");
+  return lignes.filter((l): l is string => l !== null).join("\n");
 }
 
 /**
- * Notification « colis reçu » : confirme la réception à Dakar et annonce la
- * ville d'arrivée, ce qui reste à payer, où retirer le colis et comment le
- * suivre. Aucune date annoncée : le colis est remis quand il arrive. Pour les marques sans fret vers la France : message simple.
+ * Notification « colis reçu » : courte, adaptée à la ville de destination
+ * (retrait, horaires, reste à payer, suivi). Aucune date annoncée : le colis est
+ * remis à son arrivée. Pour les marques sans fret vers la France : message simple.
  */
 export function construireNotifCommande(colis: ColisNotif, ctx: ContexteNotif): string {
   const { clientNom, numero } = colis;
@@ -120,27 +121,23 @@ export function construireNotifCommande(colis: ColisNotif, ctx: ContexteNotif): 
   const ville = point?.ville ?? (colis.destination?.trim() || null);
   return assembler([
     `Bonjour ${clientNom} 👋`,
-    "",
-    `Nous avons bien reçu votre colis *#${numero}* à ${BRAND.villeDepart}${ville ? `, à destination de *${ville}*` : ""}. ✅`,
-    "",
-    ...lignesColis(colis),
-    ...lignesPaiement(colis, false),
-    point ? "" : null,
-    point ? `📍 *Retrait à ${point.ville} :*` : null,
-    point?.adresse ?? null,
-    point?.horaires ? `🕐 *Horaires :* ${point.horaires}` : null,
-    "",
-    ...lienSuivi(colis, ctx),
-    "",
-    "Merci de votre confiance ! 🙏",
-    BRAND.nom,
+    `Votre colis *#${numero}* est bien arrivé chez nous à ${BRAND.villeDepart}${ville ? `, direction *${ville}*` : ""} ✈️`,
+    ligneContenu(colis),
+    ligneMontant(colis),
+    point
+      ? `📍 Retrait à ${point.ville} : ${point.adresse}${point.horaires ? ` (${minuscule(point.horaires)})` : ""}`
+      : null,
+    ligneSuivi(colis, ctx),
+    "Merci pour votre confiance 🙏",
+    ligneTiktok(ctx),
+    `— ${BRAND.nom}`,
   ]);
 }
 
 /**
- * Notification « prêt pour le retrait » : l'adresse, les horaires et les options
- * (ex. livraison à domicile) sont ceux de la ville du colis — Lyon, Paris,
- * Marseille… — avec le reste à payer. Sans ville connue, tous les points sont listés.
+ * Notification « prêt pour le retrait » : courte, avec l'adresse, les horaires et
+ * les options (ex. livraison à domicile) de la ville du colis — Lyon, Paris,
+ * Marseille… Sans ville connue, tous les points sont listés.
  */
 export function construireNotifRetrait(colis: ColisNotif, ctx: ContexteNotif): string {
   const { clientNom, numero } = colis;
@@ -155,36 +152,24 @@ export function construireNotifRetrait(colis: ColisNotif, ctx: ContexteNotif): s
   if (point) {
     const remarque = remarqueDuPoint(point);
     lieu = [
-      `📍 *Où retirer votre colis (${point.ville}) :*`,
-      point.adresse,
-      point.horaires ? `🕐 *Horaires :* ${point.horaires}` : null,
-      remarque ? "" : null,
+      `📍 ${point.adresse}`,
+      point.horaires ? `🕐 ${point.horaires}` : null,
       remarque ? `🚚 ${remarque}` : null,
     ];
   } else if (ville) {
     lieu = [`📍 Nous vous confirmons très vite le lieu de retrait à ${ville}.`];
   } else {
-    const points = pointsConnus(ctx);
-    lieu =
-      points.length > 0
-        ? [
-            "📍 *Nos points de retrait :*",
-            ...points.map((p) => `• *${p.ville}* : ${p.adresse}${p.horaires ? ` (${p.horaires})` : ""}`),
-          ]
-        : [];
+    lieu = pointsConnus(ctx).map((p) => `📍 *${p.ville}* : ${p.adresse}${p.horaires ? ` (${p.horaires})` : ""}`);
   }
 
   return assembler([
     `Bonjour ${clientNom} 🎉`,
-    "",
-    `Bonne nouvelle : votre colis *#${numero}* est arrivé${ville ? ` à *${ville}*` : ""} et prêt pour le retrait !`,
-    "",
-    ...lignesColis(colis),
-    ...lignesPaiement(colis, true),
-    "",
+    `Bonne nouvelle, votre colis *#${numero}* est arrivé${ville ? ` à *${ville}*` : ""} et vous attend !`,
+    ligneContenu(colis),
+    ligneMontant(colis),
     ...lieu,
-    "",
-    "Merci de votre confiance ! 🙏",
-    BRAND.nom,
+    "À très vite 🙏",
+    ligneTiktok(ctx),
+    `— ${BRAND.nom}`,
   ]);
 }

@@ -11,7 +11,7 @@ import { PartagerFichierButton } from "@/components/commandes/PartagerFichierBut
 import { PartagerVideoWhatsAppButton } from "@/components/commandes/PartagerVideoWhatsAppButton";
 import { PartagerVideoLazyButton } from "@/components/commandes/PartagerVideoLazyButton";
 import { construireNotifCommande, construireNotifRetrait, type ColisNotif } from "@/lib/commandes/notifications";
-import { chargerParametresSite, listerPointsRetrait } from "@/lib/parametres";
+import { chargerContexteNotif } from "@/lib/commandes/contexteNotif";
 import { PaiementsPanel } from "@/components/commandes/PaiementsPanel";
 import { resumePaiements, type PaiementLigne } from "@/lib/paiements";
 import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
@@ -93,8 +93,7 @@ export default async function CommandeDetailPage({
   const resumePaiement = resumePaiements(commande.montant_total, paiements);
 
   // Notifications au client : adaptées à la ville du colis (point de retrait, horaires, départ).
-  const site = await chargerParametresSite(supabase);
-  const contexteNotif = { pointsRetrait: listerPointsRetrait(site.pointsRetrait), siteWeb: site.siteWeb };
+  const contexteNotif = await chargerContexteNotif(supabase);
   const colisNotif: ColisNotif = {
     clientNom: commande.clients?.nom ?? "",
     numero: commande.numero,
