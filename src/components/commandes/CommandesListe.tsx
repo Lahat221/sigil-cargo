@@ -6,13 +6,17 @@ import Link from "next/link";
 import { StatutBadge, STATUT_LABELS } from "./StatutBadge";
 import { SupprimerCommandeButton } from "./SupprimerCommandeButton";
 import { NotifButtons } from "./NotifButtons";
-import { NotifRetraitButton } from "./NotifRetraitButton";
 import { PartagerVideoLazyButton } from "./PartagerVideoLazyButton";
 import { changerStatutMasse } from "@/app/(dashboard)/commandes/actions";
 import type { CommandeListItem } from "./types";
 import type { StatutCommande } from "@/types/database.types";
 import { BRAND } from "@/lib/brand";
-import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
+import {
+  construireNotifCommande,
+  construireNotifRetrait,
+  type ColisNotif,
+  type ContexteNotif,
+} from "@/lib/commandes/notifications";
 import { STATUTS_AFFICHES } from "@/lib/commandes/statuts";
 import {
   LIBELLES_STATUT_PAIEMENT,
@@ -34,15 +38,19 @@ function formatPoids(poids: number | null) {
   return poids !== null ? `${poids.toLocaleString("fr-FR")} kg` : "—";
 }
 
-function texteRetrait(c: CommandeListItem): string {
-  return construireTexteRetrait({
+// Données du colis pour les messages au client (adaptés à la ville de destination).
+function colisNotif(c: CommandeListItem): ColisNotif {
+  return {
     clientNom: c.clients?.nom ?? "",
     numero: c.numero,
+    destination: c.destination ?? null,
     description: c.description,
     poidsKg: c.poids_kg,
     montantTotal: c.montant_total,
     montantPaye: resumePaiements(c.montant_total, c.paiements).paye,
-  });
+    projetNom: c.projets?.nom ?? null,
+    dateDepart: c.projets?.date_depart ?? null,
+  };
 }
 
 // Prix au kilo appliqué au colis + alerte s'il diffère du tarif attendu
@@ -97,8 +105,10 @@ function BadgePaiement({ c }: { c: CommandeListItem }) {
 
 export function CommandesListe({
   commandes,
+  contexteNotif,
 }: {
   commandes: CommandeListItem[];
+  contexteNotif: ContexteNotif;
 }) {
   const [vue, setVue] = useState<"table" | "cartes">("table");
   const [selectionnes, setSelectionnes] = useState<Set<string>>(new Set());
@@ -310,23 +320,11 @@ export function CommandesListe({
                         Étiquette colis
                       </Link>
                       <NotifButtons
-                        commandeId={c.id}
-                        numero={c.numero}
-                        clientNom={c.clients?.nom ?? ""}
                         clientTelephone={c.clients?.telephone ?? null}
                         clientTelephonePays={c.clients?.telephone_pays ?? null}
-                        poidsKg={c.poids_kg}
-                        montantTotal={c.montant_total}
-                        description={c.description}
+                        texteCommande={construireNotifCommande(colisNotif(c), contexteNotif)}
+                        texteRetrait={construireNotifRetrait(colisNotif(c), contexteNotif)}
                       />
-                      {BRAND.retrait && (
-                        <NotifRetraitButton
-                          clientNom={c.clients?.nom ?? ""}
-                          clientTelephone={c.clients?.telephone ?? null}
-                          clientTelephonePays={c.clients?.telephone_pays ?? null}
-                          texte={texteRetrait(c)}
-                        />
-                      )}
                       {BRAND.retrait && c.video_urls?.[0] && (
                         <PartagerVideoLazyButton videoPath={c.video_urls[0]} />
                       )}
@@ -407,23 +405,11 @@ export function CommandesListe({
                   Étiquette colis
                 </Link>
                 <NotifButtons
-                        commandeId={c.id}
-                        numero={c.numero}
-                        clientNom={c.clients?.nom ?? ""}
-                        clientTelephone={c.clients?.telephone ?? null}
-                        clientTelephonePays={c.clients?.telephone_pays ?? null}
-                        poidsKg={c.poids_kg}
-                        montantTotal={c.montant_total}
-                        description={c.description}
-                      />
-                {BRAND.retrait && (
-                  <NotifRetraitButton
-                    clientNom={c.clients?.nom ?? ""}
-                    clientTelephone={c.clients?.telephone ?? null}
-                    clientTelephonePays={c.clients?.telephone_pays ?? null}
-                    texte={texteRetrait(c)}
-                  />
-                )}
+                  clientTelephone={c.clients?.telephone ?? null}
+                  clientTelephonePays={c.clients?.telephone_pays ?? null}
+                  texteCommande={construireNotifCommande(colisNotif(c), contexteNotif)}
+                  texteRetrait={construireNotifRetrait(colisNotif(c), contexteNotif)}
+                />
                 {BRAND.retrait && c.video_urls?.[0] && (
                   <PartagerVideoLazyButton videoPath={c.video_urls[0]} />
                 )}

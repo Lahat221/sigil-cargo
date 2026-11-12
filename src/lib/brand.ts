@@ -101,6 +101,8 @@ export type BrandConfig = {
   // qu'un tenant n'a pas de point de retrait fixe configuré — le bouton ne
   // s'affiche alors pas.
   retrait: {
+    /** Ville du point de retrait et de l'option de livraison (ex. « Lyon »). */
+    villeLivraison: string;
     adresse: string;
     horaires: string;
     livraisonDomicile: string;
@@ -163,6 +165,7 @@ const SIGIL_CARGO: BrandConfig = {
     cachetPath: "/colle-agro-cachet.jpg",
   },
   retrait: {
+    villeLivraison: "Lyon",
     adresse: "2 rue Jean Baptiste Croibier, Vénissieux",
     horaires: "17h à 20h30",
     livraisonDomicile: "Livraison à domicile disponible sur Lyon : 14 €",

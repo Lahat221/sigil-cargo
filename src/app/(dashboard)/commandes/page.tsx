@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FiltresBar } from "@/components/commandes/FiltresBar";
 import { chargerDestinations } from "@/lib/commandes/destinations";
-import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
+import { chargerParametresSite, listerPointsRetrait, reglesPrix } from "@/lib/parametres";
 import { verifierPrixColis } from "@/lib/commandes/verifPrix";
 import { TARIF_ALIMENTAIRE_ACTIF } from "@/lib/commandes/tarifAlimentaire";
 import { CommandesListe } from "@/components/commandes/CommandesListe";
@@ -47,7 +47,7 @@ export default async function CommandesPage({
 
   const page = Math.max(1, Number(searchParams.page) || 1);
   const SELECT_COLONNES =
-    `id, numero, statut, poids_kg, montant_total, destination, prix_par_kg, ${TARIF_ALIMENTAIRE_ACTIF ? "poids_alimentaire_kg, prix_alimentaire_par_kg, " : ""}mode_fret, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), paiements(montant_base)`;
+    `id, numero, statut, poids_kg, montant_total, destination, prix_par_kg, ${TARIF_ALIMENTAIRE_ACTIF ? "poids_alimentaire_kg, prix_alimentaire_par_kg, " : ""}mode_fret, description, video_urls, code_barre_colis, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom, date_depart), paiements(montant_base)`;
 
   const q = searchParams.q?.trim();
   let clientIds: string[] = [];
@@ -120,7 +120,9 @@ export default async function CommandesPage({
   commandesExport = exportResultat.data ?? [];
 
   // Contrôle du prix au kilo (destination + règle « petit colis ») sur chaque colis.
-  const regles = reglesPrix(await chargerParametresSite(supabase));
+  const site = await chargerParametresSite(supabase);
+  const regles = reglesPrix(site);
+  const contexteNotif = { pointsRetrait: listerPointsRetrait(site.pointsRetrait), siteWeb: site.siteWeb };
   const avecVerif = (c: CommandeListItem): CommandeListItem => ({
     ...c,
     verif_prix: verifierPrixColis(c, destinations, regles),
@@ -191,7 +193,7 @@ export default async function CommandesPage({
           </p>
         ) : (
           <>
-            <CommandesListe commandes={commandes} />
+            <CommandesListe commandes={commandes} contexteNotif={contexteNotif} />
             <Pagination page={page} totalPages={totalPages} total={total} />
           </>
         )}

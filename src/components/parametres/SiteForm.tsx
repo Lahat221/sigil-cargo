@@ -88,11 +88,11 @@ export function SiteForm({ initial }: { initial: ParametresSite }) {
           value={valeurs.pointsRetrait}
           onChange={(e) => maj("pointsRetrait", e.target.value)}
           rows={4}
-          placeholder={"Lyon | Gare de Parilly (métro D), Vénissieux | Tous les jours, de 17h à 20h30\nParis | Paris 19ème, rue Riquet | Tous les jours, de 9h à 19h"}
+          placeholder={"Lyon | Gare de Parilly (métro D), Vénissieux | Tous les jours, de 17h à 20h30 | Livraison à domicile sur Lyon : 14 €\nParis | Paris 19ème, rue Riquet | Tous les jours, de 9h à 19h"}
           className={INPUT_CLASS}
         />
         <p className="mt-1 text-xs text-slate-500">
-          Un point par ligne : Ville | Adresse | Horaires. S&apos;affichent sur le site, dans la FAQ et
+          Un point par ligne : Ville | Adresse | Horaires | Remarque (facultative, ex. livraison à domicile). La ville doit être celle du colis : elle choisit le message de retrait envoyé au client. S&apos;affichent sur le site, dans la FAQ et
           dans les réponses de l&apos;agent WhatsApp. Vide : l&apos;adresse et les horaires ci-dessous sont utilisés.
         </p>
       </div>

@@ -18,7 +18,7 @@ export type CommandeListItem = {
     telephone_pays: string | null;
     adresse: string | null;
   } | null;
-  projets: { nom: string } | null;
+  projets: { nom: string; date_depart?: string | null } | null;
   // Versements (montants convertis dans la devise de l'entreprise) — absents sur certaines vues.
   paiements?: { montant_base: number }[] | null;
   // Suivi : colis vérifié à Dakar et dates de passage à chaque étape.

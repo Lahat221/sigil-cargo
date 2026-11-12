@@ -3,9 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { resolveClientId } from "@/lib/commandes/resolveClient";
-import { getTwilioClient, whatsappAddress } from "@/lib/twilio/client";
 import type { StatutCommande } from "@/types/database.types";
-import { BRAND } from "@/lib/brand";
 import { chargerDestinations } from "@/lib/commandes/destinations";
 import { chargerParametresSite, reglesPrix } from "@/lib/parametres";
 import { verifierPrixColis } from "@/lib/commandes/verifPrix";
@@ -319,131 +317,6 @@ export async function updateCommande(
   revalidatePath("/commandes");
   revalidatePath("/commandes/pipeline");
   revalidatePath(`/commandes/${commandeId}`);
-  return { success: true };
-}
-
-// Modèles approuvés par Meta (Twilio Content Template Builder) pour les
-// notifications de commande — permettent l'envoi même hors fenêtre de 24h.
-const TEMPLATE_COMMANDE_RECUE_SID = "HXdae5b92c8994c3dd488142f08518de28";
-const TEMPLATE_COMMANDE_PRETE_SID = "HX1c2dc12ebe5ffa069883940e2ab6f52f";
-
-const montantFormatter = new Intl.NumberFormat("fr-FR", {
-  style: "currency",
-  currency: BRAND.devise,
-});
-
-export async function envoyerNotificationCommande(
-  commandeId: string,
-  statutCommande: StatutCommande,
-  message: string
-): Promise<{ error: string } | { success: true }> {
-  const supabase = createClient();
-
-  const { data: commande, error: commandeError } = await supabase
-    .from("commandes")
-    .select(
-      "numero, poids_kg, montant_total, description, client_id, clients(id, nom, telephone, telephone_pays)"
-    )
-    .eq("id", commandeId)
-    .single();
-
-  if (commandeError || !commande) {
-    return { error: "Colis introuvable." };
-  }
-
-  const client = commande.clients as unknown as {
-    id: string;
-    nom: string;
-    telephone: string | null;
-    telephone_pays: string | null;
-  } | null;
-
-  if (!client?.telephone) {
-    return { error: "Ce client n'a pas de numéro de téléphone enregistré." };
-  }
-
-  const chiffres = client.telephone.replace(/\D/g, "");
-  const indicatif = (client.telephone_pays ?? "+33").replace(/\D/g, "");
-  const digits = chiffres.startsWith(indicatif) ? chiffres : indicatif + chiffres;
-  const numero = `+${digits}`;
-
-  const from = process.env.TWILIO_WHATSAPP_FROM;
-  if (!from) {
-    return {
-      error:
-        "TWILIO_WHATSAPP_FROM n'est pas configuré (numéro WhatsApp Twilio manquant).",
-    };
-  }
-
-  const contentSid =
-    statutCommande === "recue"
-      ? TEMPLATE_COMMANDE_RECUE_SID
-      : statutCommande === "prete"
-      ? TEMPLATE_COMMANDE_PRETE_SID
-      : null;
-
-  const contentVariables =
-    statutCommande === "recue"
-      ? {
-          "1": client.nom,
-          "2": String(commande.numero),
-          "3": String(commande.poids_kg),
-          "4": montantFormatter.format(commande.montant_total),
-          "5": commande.description?.trim()
-            ? `Contenu : ${commande.description.trim()}.`
-            : "Bien noté.",
-        }
-      : { "1": client.nom, "2": String(commande.numero) };
-
-  const twilioClient = getTwilioClient();
-  let sid: string | null = null;
-
-  if (contentSid) {
-    try {
-      const twilioMessage = await twilioClient.messages.create({
-        from: whatsappAddress(from),
-        to: whatsappAddress(numero),
-        contentSid,
-        contentVariables: JSON.stringify(contentVariables),
-      });
-      sid = twilioMessage.sid;
-    } catch {
-      // Modèle pas encore approuvé ou refusé : on retombe sur l'envoi libre.
-    }
-  }
-
-  if (!sid) {
-    try {
-      const twilioMessage = await twilioClient.messages.create({
-        from: whatsappAddress(from),
-        to: whatsappAddress(numero),
-        body: message,
-      });
-      sid = twilioMessage.sid;
-    } catch (err) {
-      return {
-        error: err instanceof Error ? err.message : "Erreur inconnue.",
-      };
-    }
-  }
-
-  await supabase.from("whatsapp_messages").insert({
-    client_id: client.id,
-    telephone: numero,
-    direction: "out",
-    body: message,
-    message_sid: sid,
-  });
-
-  await supabase.from("notifications_a_envoyer").insert({
-    commande_id: commandeId,
-    statut_commande: statutCommande,
-    destinataire_telephone: digits,
-    envoyee: true,
-    envoyee_at: new Date().toISOString(),
-  });
-
-  revalidatePath("/notifications-whatsapp");
   return { success: true };
 }
 

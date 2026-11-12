@@ -9,9 +9,9 @@ import { NotifButtons } from "@/components/commandes/NotifButtons";
 import { PartagerWhatsAppButton } from "@/components/commandes/PartagerMediaButton";
 import { PartagerFichierButton } from "@/components/commandes/PartagerFichierButton";
 import { PartagerVideoWhatsAppButton } from "@/components/commandes/PartagerVideoWhatsAppButton";
-import { NotifRetraitButton } from "@/components/commandes/NotifRetraitButton";
 import { PartagerVideoLazyButton } from "@/components/commandes/PartagerVideoLazyButton";
-import { construireTexteRetrait } from "@/lib/commandes/texteRetrait";
+import { construireNotifCommande, construireNotifRetrait, type ColisNotif } from "@/lib/commandes/notifications";
+import { chargerParametresSite, listerPointsRetrait } from "@/lib/parametres";
 import { PaiementsPanel } from "@/components/commandes/PaiementsPanel";
 import { resumePaiements, type PaiementLigne } from "@/lib/paiements";
 import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
@@ -57,7 +57,7 @@ type CommandeDetail = {
     telephone_pays: string | null;
     adresse: string | null;
   } | null;
-  projets: { nom: string } | null;
+  projets: { nom: string; date_depart: string | null } | null;
   produits: { nom: string } | null;
 };
 
@@ -71,7 +71,7 @@ export default async function CommandeDetailPage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, statut, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, montant_total, adresse_livraison, destination, description, remarque_interne, code_barre_colis, photo_urls, video_urls, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom), produits(nom)"
+      "id, numero, statut, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, enveloppe, nombre_paquets, montant_total, adresse_livraison, destination, description, remarque_interne, code_barre_colis, photo_urls, video_urls, note_vocale_url, date_livraison_reelle, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom, date_depart), produits(nom)"
     )
     .eq("id", params.id)
     .maybeSingle<CommandeDetail>();
@@ -91,6 +91,21 @@ export default async function CommandeDetailPage({
     .order("created_at", { ascending: true });
   const paiements = (paiementsData ?? []) as PaiementLigne[];
   const resumePaiement = resumePaiements(commande.montant_total, paiements);
+
+  // Notifications au client : adaptées à la ville du colis (point de retrait, horaires, départ).
+  const site = await chargerParametresSite(supabase);
+  const contexteNotif = { pointsRetrait: listerPointsRetrait(site.pointsRetrait), siteWeb: site.siteWeb };
+  const colisNotif: ColisNotif = {
+    clientNom: commande.clients?.nom ?? "",
+    numero: commande.numero,
+    destination: commande.destination,
+    description: commande.description,
+    poidsKg: commande.poids_kg,
+    montantTotal: commande.montant_total,
+    montantPaye: resumePaiement.paye,
+    projetNom: commande.projets?.nom ?? null,
+    dateDepart: commande.projets?.date_depart ?? null,
+  };
 
   const photoItems: { path: string; url: string }[] = [];
   if (commande.photo_urls) {
@@ -175,14 +190,10 @@ export default async function CommandeDetailPage({
           Accusé de réception
         </Link>
         <NotifButtons
-          commandeId={commande.id}
-          numero={commande.numero}
-          clientNom={commande.clients?.nom ?? ""}
           clientTelephone={commande.clients?.telephone ?? null}
           clientTelephonePays={commande.clients?.telephone_pays ?? null}
-          poidsKg={commande.poids_kg}
-          montantTotal={commande.montant_total}
-          description={commande.description}
+          texteCommande={construireNotifCommande(colisNotif, contexteNotif)}
+          texteRetrait={construireNotifRetrait(colisNotif, contexteNotif)}
         />
         <PartagerWhatsAppButton
           label="Partager la commande (WhatsApp perso)"
@@ -202,21 +213,6 @@ export default async function CommandeDetailPage({
             .filter(Boolean)
             .join("\n")}
         />
-        {BRAND.retrait && (
-          <NotifRetraitButton
-            clientNom={commande.clients?.nom ?? ""}
-            clientTelephone={commande.clients?.telephone ?? null}
-            clientTelephonePays={commande.clients?.telephone_pays ?? null}
-            texte={construireTexteRetrait({
-              clientNom: commande.clients?.nom ?? "",
-              numero: commande.numero,
-              description: commande.description,
-              poidsKg: commande.poids_kg,
-              montantTotal: commande.montant_total,
-              montantPaye: resumePaiement.paye,
-            })}
-          />
-        )}
         {BRAND.retrait && videoItems[0] && (
           <PartagerVideoLazyButton videoPath={videoItems[0].path} />
         )}

@@ -128,15 +128,15 @@ export async function chargerParametresSite(
   };
 }
 
-export type PointRetrait = { ville: string; adresse: string; horaires: string };
+export type PointRetrait = { ville: string; adresse: string; horaires: string; remarque: string };
 
-/** Points de retrait saisis (une ligne : « Ville | Adresse | Horaires »). */
+/** Points de retrait saisis (une ligne : « Ville | Adresse | Horaires | Remarque facultative »). */
 export function listerPointsRetrait(texte: string): PointRetrait[] {
   return texte
     .split(/\r?\n/)
     .map((ligne) => ligne.split("|").map((x) => x.trim()))
     .filter((p) => p[0])
-    .map((p) => ({ ville: p[0], adresse: p[1] ?? "", horaires: p[2] ?? "" }));
+    .map((p) => ({ ville: p[0], adresse: p[1] ?? "", horaires: p[2] ?? "", remarque: p[3] ?? "" }));
 }
 
 export function reglesPrix(site: ParametresSite): ReglesPrix {

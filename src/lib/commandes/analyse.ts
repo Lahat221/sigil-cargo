@@ -144,16 +144,19 @@ type ProjetDate = { id: string; nom: string; date_depart: string | null; created
  * dans son nom (« Fret Aérien du 06-07-2026 », « du 05/10/2026 »), sinon sa
  * date de création — les anciens départs n'ont pas de date de départ saisie.
  */
-export function dateDuDepart(p: ProjetDate): string {
-  if (p.date_depart) return p.date_depart;
-  const m = p.nom.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+export function dateDepuisNom(nom: string): string | null {
+  const m = nom.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
   if (m) {
     const [jour, mois, annee] = [Number(m[1]), Number(m[2]), Number(m[3])];
     if (mois >= 1 && mois <= 12 && jour >= 1 && jour <= 31) {
       return `${annee}-${String(mois).padStart(2, "0")}-${String(jour).padStart(2, "0")}`;
     }
   }
-  return p.created_at;
+  return null;
+}
+
+export function dateDuDepart(p: ProjetDate): string {
+  return p.date_depart || dateDepuisNom(p.nom) || p.created_at;
 }
 
 /**
