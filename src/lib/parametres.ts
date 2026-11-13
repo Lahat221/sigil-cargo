@@ -128,7 +128,14 @@ export async function chargerParametresSite(
   };
 }
 
-export type PointRetrait = { ville: string; adresse: string; horaires: string; remarque: string };
+export type PointRetrait = {
+  ville: string;
+  adresse: string;
+  horaires: string;
+  remarque: string;
+  /** Seul moyen de paiement accepté sur place (ex. « Wave ou Wero » : pas d'espèces dans cette ville). */
+  paiement?: string;
+};
 
 /** Points de retrait saisis (une ligne : « Ville | Adresse | Horaires | Remarque facultative »). */
 export function listerPointsRetrait(texte: string): PointRetrait[] {

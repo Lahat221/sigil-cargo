@@ -46,6 +46,7 @@ function colisNotif(c: CommandeListItem): ColisNotif {
     destination: c.destination ?? null,
     description: c.description,
     poidsKg: c.poids_kg,
+    poidsAlimentaireKg: c.poids_alimentaire_kg ?? null,
     montantTotal: c.montant_total,
     montantPaye: resumePaiements(c.montant_total, c.paiements).paye,
   };

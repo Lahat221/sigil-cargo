@@ -15,6 +15,8 @@ export type ColisNotif = {
   destination: string | null;
   description: string | null;
   poidsKg: number | null;
+  /** Part alimentaire du colis, en kg (comprise dans poidsKg) : annoncée au client si elle existe. */
+  poidsAlimentaireKg?: number | null;
   montantTotal: number;
   /** Déjà encaissé (devise de l'entreprise). */
   montantPaye?: number;
@@ -58,7 +60,11 @@ export function pointRetraitPour(destination: string | null, ctx: ContexteNotif)
 function ligneContenu(colis: ColisNotif): string | null {
   const description = colis.description?.trim().replace(/\s+/g, " ") ?? "";
   const court = description.length > 90 ? `${description.slice(0, 87).trimEnd()}…` : description;
-  const poids = colis.poidsKg !== null ? `${poidsFormatter.format(colis.poidsKg)} kg` : "";
+  const alimentaire =
+    colis.poidsKg !== null && colis.poidsAlimentaireKg && colis.poidsAlimentaireKg > 0
+      ? ` (dont ${poidsFormatter.format(Math.min(colis.poidsAlimentaireKg, colis.poidsKg))} kg d'alimentaire)`
+      : "";
+  const poids = colis.poidsKg !== null ? `${poidsFormatter.format(colis.poidsKg)} kg${alimentaire}` : "";
   const contenu = [court, poids].filter(Boolean).join(" · ");
   return contenu ? `📦 ${contenu}` : null;
 }
@@ -74,6 +80,19 @@ function lignesMontant(colis: ColisNotif): string[] {
     `💰 *${total}* — déjà réglé ${montantFormatter.format(resume.paye)} ✅`,
     `🧾 Reste à payer au retrait : *${formaterAvecEquivalent(resume.reste)}*`,
   ];
+}
+
+/** Reste-t-il quelque chose à payer ? (sinon inutile de rappeler le mode de paiement) */
+function resteAPayer(colis: ColisNotif): boolean {
+  const paye = colis.montantPaye ?? 0;
+  return paye <= 0 || resumePaiements(colis.montantTotal, [{ montant_base: paye }]).reste > 0;
+}
+
+/** Mode de paiement imposé par la ville (ex. Paris, Marseille : Wave ou Wero, pas d'espèces). */
+function lignePaiement(colis: ColisNotif, point: PointRetrait | null): string | null {
+  return point?.paiement && resteAPayer(colis)
+    ? `💳 Paiement par *${point.paiement}* uniquement — pas d'espèces`
+    : null;
 }
 
 /** Bloc encadré : contenu du colis et montants. */
@@ -127,7 +146,13 @@ export function construireNotifCommande(colis: ColisNotif, ctx: ContexteNotif): 
     "",
     ...blocColis(colis),
     ...(point
-      ? ["", `📍 *Retrait à ${point.ville}*`, point.adresse, point.horaires ? `🕐 _${point.horaires}_` : null]
+      ? [
+          "",
+          `📍 *Retrait à ${point.ville}*`,
+          point.adresse,
+          point.horaires ? `🕐 _${point.horaires}_` : null,
+          lignePaiement(colis, point),
+        ]
       : []),
     "",
     "Merci pour votre confiance 🙏",
@@ -156,6 +181,7 @@ export function construireNotifRetrait(colis: ColisNotif, ctx: ContexteNotif): s
       point.adresse,
       point.horaires ? `🕐 _${point.horaires}_` : null,
       point.remarque ? `🚚 ${point.remarque}` : null,
+      lignePaiement(colis, point),
     ];
   } else if (ville) {
     lieu = [`📍 Nous vous confirmons très vite le lieu de retrait à ${ville}.`];

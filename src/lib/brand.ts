@@ -110,7 +110,7 @@ export type BrandConfig = {
      * Points de retrait par ville, EXACTS : ils font foi pour les notifications WhatsApp aux clients
      * (une ville absente d'ici garde l'adresse saisie dans Paramètres → Site).
      */
-    points: { ville: string; adresse: string; horaires: string; remarque: string }[];
+    points: { ville: string; adresse: string; horaires: string; remarque: string; paiement?: string }[];
   } | null;
 };
 
@@ -186,12 +186,14 @@ const SIGIL_CARGO: BrandConfig = {
         adresse: "10 rue Riquet, 75019 Paris",
         horaires: "7j/7, de 8h à 19h",
         remarque: "",
+        paiement: "Wave ou Wero",
       },
       {
         ville: "Marseille",
         adresse: "47 rue de la Palud, 13001 Marseille (chez Trésors Westaf)",
         horaires: "Du lundi au samedi, de 9h à 19h",
         remarque: "",
+        paiement: "Wave ou Wero",
       },
     ],
   },

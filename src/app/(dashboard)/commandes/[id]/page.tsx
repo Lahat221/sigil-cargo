@@ -12,6 +12,7 @@ import { PartagerVideoWhatsAppButton } from "@/components/commandes/PartagerVide
 import { PartagerVideoLazyButton } from "@/components/commandes/PartagerVideoLazyButton";
 import { construireNotifCommande, construireNotifRetrait, type ColisNotif } from "@/lib/commandes/notifications";
 import { chargerContexteNotif } from "@/lib/commandes/contexteNotif";
+import { TARIF_ALIMENTAIRE_ACTIF } from "@/lib/commandes/tarifAlimentaire";
 import { PaiementsPanel } from "@/components/commandes/PaiementsPanel";
 import { resumePaiements, type PaiementLigne } from "@/lib/paiements";
 import { IconPencil, IconFileText, IconPrinter } from "@/components/ui/Icons";
@@ -94,12 +95,23 @@ export default async function CommandeDetailPage({
 
   // Notifications au client : adaptées à la ville du colis (point de retrait, horaires, départ).
   const contexteNotif = await chargerContexteNotif(supabase);
+  // Part alimentaire (SIGIL seulement : la colonne n'existe pas chez les autres tenants).
+  const poidsAlimentaireKg = TARIF_ALIMENTAIRE_ACTIF
+    ? (
+        await supabase
+          .from("commandes")
+          .select("poids_alimentaire_kg")
+          .eq("id", commande.id)
+          .maybeSingle()
+      ).data?.poids_alimentaire_kg ?? null
+    : null;
   const colisNotif: ColisNotif = {
     clientNom: commande.clients?.nom ?? "",
     numero: commande.numero,
     destination: commande.destination,
     description: commande.description,
     poidsKg: commande.poids_kg,
+    poidsAlimentaireKg,
     montantTotal: commande.montant_total,
     montantPaye: resumePaiement.paye,
   };
