@@ -110,8 +110,15 @@ export function identifiantTiktok(lien: string | null | undefined): string | nul
 }
 
 /** Pied de message : TikTok (pour ne pas rater le prochain départ) et signature de la marque. */
-function piedDeMessage(ctx: ContexteNotif): string[] {
+function piedDeMessage(ctx: ContexteNotif, compact = false): string[] {
   const tiktok = identifiantTiktok(ctx.lienTiktok);
+  if (compact) {
+    return [
+      "",
+      ...(tiktok ? [`🎵 Ne ratez pas le prochain départ : suivez-nous sur TikTok *${tiktok}*`] : []),
+      `_${BRAND.nom} — ${BRAND.tagline}_`,
+    ];
+  }
   return [
     ...(tiktok ? ["", "🎵 *Ne ratez pas le prochain départ !*", `Suivez-nous sur TikTok : *${tiktok}*`] : []),
     "",
@@ -138,25 +145,23 @@ export function construireNotifCommande(colis: ColisNotif, ctx: ContexteNotif): 
 
   const point = pointRetraitPour(colis.destination, ctx);
   const ville = point?.ville ?? (colis.destination?.trim() || null);
+  // Format compact (économie de place) : pas de séparateurs ni de lignes vides superflues.
+  const contenu = ligneContenu(colis);
   return assembler([
-    "📦✨ *Colis bien reçu !*",
+    `📦✨ *Colis bien reçu !* Merci ${clientNom} 🙏`,
+    `Votre colis *#${numero}* est arrivé à ${BRAND.villeDepart}, direction *${ville ?? "la France"}* ✈️🇫🇷`,
     "",
-    `Bonjour ${clientNom} 👋`,
-    `Votre colis *#${numero}* est arrivé chez nous à ${BRAND.villeDepart}, direction *${ville ?? "la France"}* ✈️🇫🇷`,
-    "",
-    ...blocColis(colis),
+    contenu,
+    ...lignesMontant(colis),
     ...(point
       ? [
           "",
-          `📍 *Retrait à ${point.ville}*`,
-          point.adresse,
+          `📍 *Retrait à ${point.ville}* : ${point.adresse}`,
           point.horaires ? `🕐 _${point.horaires}_` : null,
           lignePaiement(colis, point),
         ]
       : []),
-    "",
-    "Merci pour votre confiance 🙏",
-    ...piedDeMessage(ctx),
+    ...piedDeMessage(ctx, true),
   ]);
 }
 
