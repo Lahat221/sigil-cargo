@@ -21,7 +21,6 @@ export async function chargerContexteNotif(supabase: SupabaseClient<Database>): 
   const tiktok = (reseaux ?? []).find((r) => r.lien && /tiktok/i.test(`${r.lien} ${r.titre}`));
   return {
     pointsRetrait: listerPointsRetrait(site.pointsRetrait),
-    siteWeb: site.siteWeb,
     lienTiktok: tiktok?.lien ?? null,
   };
 }
