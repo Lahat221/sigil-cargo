@@ -82,12 +82,19 @@ function blocColis(colis: ColisNotif): string[] {
   return [SEPARATEUR, ...(contenu ? [contenu] : []), ...lignesMontant(colis), SEPARATEUR];
 }
 
+/**
+ * Nom du compte TikTok (« @sigilcargo ») tiré du lien. On écrit le nom et non le lien : WhatsApp
+ * transforme un lien en grande carte d'aperçu (image, titre) qui encombre le message.
+ */
+export function identifiantTiktok(lien: string | null | undefined): string | null {
+  return lien?.match(/tiktok\.com\/(@[\w.]+)/i)?.[1] ?? null;
+}
+
 /** Pied de message : TikTok (pour ne pas rater le prochain départ) et signature de la marque. */
 function piedDeMessage(ctx: ContexteNotif): string[] {
+  const tiktok = identifiantTiktok(ctx.lienTiktok);
   return [
-    ...(ctx.lienTiktok
-      ? ["", "🎵 *Ne ratez pas le prochain départ !*", `Suivez-nous sur TikTok 👉 ${ctx.lienTiktok}`]
-      : []),
+    ...(tiktok ? ["", "🎵 *Ne ratez pas le prochain départ !*", `Suivez-nous sur TikTok : *${tiktok}*`] : []),
     "",
     `_${BRAND.nom} — ${BRAND.tagline}_`,
   ];
