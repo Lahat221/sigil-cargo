@@ -17,6 +17,7 @@
     "@vercel/functions": "^3.9.11",
     "exceljs": "^4.4.0",
     "html-to-image": "^1.11.13",
+    "jspdf": "^2.5.2",
     "next": "^14.2.35",
     "openai": "^7.5.0",
     "qrcode": "^1.5.4",

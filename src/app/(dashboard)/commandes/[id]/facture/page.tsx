@@ -3,7 +3,7 @@ import { deviseBase, formaterMontant, libelleMode, resumePaiements } from "@/lib
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PrintButton } from "@/components/commandes/PrintButton";
+import { FactureActions } from "@/components/commandes/FactureActions";
 import { BRAND } from "@/lib/brand"; // cache-bust: force recompile after BRAND fix
 
 export const dynamic = "force-dynamic";
@@ -81,11 +81,16 @@ export default async function FactureCommandePage({
           Facture — Colis #{commande.numero}
         </h1>
         <Suspense fallback={null}>
-          <PrintButton />
+          <FactureActions
+            cibleId="facture-document"
+            nomFichier={`Facture-${BRAND.nom.split(" ")[0]}-${numeroFacture}`}
+          />
         </Suspense>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg print:border-0 print:shadow-none">
+      <div
+        id="facture-document"
+        className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg print:border-0 print:shadow-none">
         <div
           className="h-2 w-full print:h-1.5"
           style={{
