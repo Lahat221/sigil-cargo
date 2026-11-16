@@ -43,7 +43,7 @@ export default async function FactureCommandePage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "numero, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, montant_total, created_at, clients(nom, telephone, adresse), projets(nom)"
+      "numero, poids_kg, prix_par_kg, mode_fret, volume_m3, prix_par_m3, montant_total, created_at, clients(nom, telephone, telephone_pays, adresse), projets(nom)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -76,7 +76,7 @@ export default async function FactureCommandePage({
 
   return (
     <div className="mx-auto max-w-2xl p-8">
-      <div className="mb-6 flex items-center justify-between print:hidden">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3 print:hidden">
         <h1 className="text-xl font-bold text-ink">
           Facture — Colis #{commande.numero}
         </h1>
@@ -84,6 +84,10 @@ export default async function FactureCommandePage({
           <FactureActions
             cibleId="facture-document"
             nomFichier={`Facture-${BRAND.nom.split(" ")[0]}-${numeroFacture}`}
+            clientNom={commande.clients?.nom ?? null}
+            clientTelephone={commande.clients?.telephone ?? null}
+            clientTelephonePays={commande.clients?.telephone_pays ?? null}
+            numeroFacture={numeroFacture}
           />
         </Suspense>
       </div>
