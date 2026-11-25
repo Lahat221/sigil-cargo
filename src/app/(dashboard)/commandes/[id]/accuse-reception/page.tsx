@@ -17,7 +17,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
-  dateStyle: "long",
+  dateStyle: "short",
   timeStyle: "short",
 });
 
@@ -31,7 +31,7 @@ export default async function AccuseReceptionPage({
   const { data: commande } = await supabase
     .from("commandes")
     .select(
-      "id, numero, poids_kg, mode_fret, volume_m3, description, livreur_nom, livreur_telephone, contenu_verifie, created_at, montant_total, clients(nom, telephone)"
+      "id, numero, destination, poids_kg, mode_fret, volume_m3, description, livreur_nom, livreur_telephone, contenu_verifie, created_at, montant_total, clients(nom, telephone)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -74,30 +74,31 @@ export default async function AccuseReceptionPage({
           Accusé de réception de colis
         </h2>
 
-        <div className="mb-4 grid grid-cols-2 gap-3 text-sm print:mb-2 print:grid-cols-1 print:gap-1 print:text-[11px]">
-          <div>
-            <p className="text-slate-500">Colis</p>
-            <p className="font-semibold text-slate-900">#{commande.numero}</p>
-          </div>
-          <div>
-            <p className="text-slate-500">Reçu le</p>
-            <p className="font-semibold text-slate-900">
-              {dateFormatter.format(new Date(commande.created_at))}
-            </p>
-          </div>
+        <div className="mb-3 rounded-md border-2 border-slate-900 bg-slate-900 px-3 py-2 text-center text-white print:mb-2 print:px-1 print:py-1">
+          <p className="text-[10px] font-medium uppercase tracking-widest opacity-80 print:text-[8px]">
+            Destination
+          </p>
+          <p className="text-2xl font-extrabold uppercase leading-tight tracking-wide print:text-lg">
+            {commande.destination?.trim() || "À confirmer"}
+          </p>
         </div>
 
+        <p className="mb-3 text-sm print:mb-2 print:text-[11px]">
+          <span className="font-semibold text-slate-900">Colis #{commande.numero}</span>
+          <span className="text-slate-500"> · reçu le {dateFormatter.format(new Date(commande.created_at))}</span>
+        </p>
+
         <div className="mb-4 border-t border-slate-200 pt-3 text-sm print:mb-2 print:pt-2 print:text-[11px]">
-          <p className="text-slate-500">Client</p>
-          <p className="font-medium text-slate-900">
+          <p className="text-slate-500 print:inline">Client{" "}</p>
+          <p className="font-medium text-slate-900 print:inline">
             {commande.clients?.nom ?? "—"}
             {commande.clients?.telephone && ` · ${commande.clients.telephone}`}
           </p>
         </div>
 
         <div className="mb-4 border-t border-slate-200 pt-3 text-sm print:mb-2 print:pt-2 print:text-[11px]">
-          <p className="text-slate-500">Déposé par</p>
-          <p className="font-medium text-slate-900">
+          <p className="text-slate-500 print:inline">Déposé par{" "}</p>
+          <p className="font-medium text-slate-900 print:inline">
             {deposantEstClient
               ? "Le client lui-même"
               : [commande.livreur_nom, commande.livreur_telephone]

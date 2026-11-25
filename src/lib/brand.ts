@@ -190,7 +190,7 @@ const SIGIL_CARGO: BrandConfig = {
       },
       {
         ville: "Marseille",
-        adresse: "47 rue de la Palud, 13001 Marseille (chez Trésors Westaf)",
+        adresse: "87 boulevard de Strasbourg, 13001 Marseille (chez Trésors Westaf)",
         horaires: "Du lundi au samedi, de 9h à 19h",
         remarque: "",
         paiement: "Wave ou Wero",

@@ -318,6 +318,13 @@ export function CommandesListe({
                       >
                         Étiquette colis
                       </Link>
+                      <Link
+                        href={`/commandes/${c.id}/accuse-reception`}
+                        target="_blank"
+                        className="text-sm text-slate-600 hover:underline"
+                      >
+                        Accusé de réception
+                      </Link>
                       <NotifButtons
                         clientTelephone={c.clients?.telephone ?? null}
                         clientTelephonePays={c.clients?.telephone_pays ?? null}
@@ -402,6 +409,13 @@ export function CommandesListe({
                   className="text-sm text-slate-600 hover:underline"
                 >
                   Étiquette colis
+                </Link>
+                <Link
+                  href={`/commandes/${c.id}/accuse-reception`}
+                  target="_blank"
+                  className="text-sm text-slate-600 hover:underline"
+                >
+                  Accusé de réception
                 </Link>
                 <NotifButtons
                   clientTelephone={c.clients?.telephone ?? null}
